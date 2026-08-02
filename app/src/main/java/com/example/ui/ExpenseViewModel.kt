@@ -280,13 +280,15 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
 
     fun setTotalMonthlyBudget(total: Double) {
         viewModelScope.launch {
-            val currentCats = repository.categories.first()
-            if (currentCats.isNotEmpty()) {
-                val perCatLimit = (total / currentCats.size)
-                currentCats.forEach { cat ->
+            // Income/savings categories (e.g. "Salary & Income") don't get a slice of an
+            // expense budget - only categories people actually spend against do.
+            val expenseCats = repository.categories.first().filter { !it.isIncomeCategory }
+            if (expenseCats.isNotEmpty()) {
+                val perCatLimit = (total / expenseCats.size)
+                expenseCats.forEach { cat ->
                     repository.updateCategory(cat.copy(monthlyBudgetLimit = perCatLimit))
                 }
-                _importStatusMessage.value = "Set overall monthly budget to ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", total)} across ${currentCats.size} categories"
+                _importStatusMessage.value = "Set overall monthly budget to ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", total)} across ${expenseCats.size} categories"
             }
         }
     }
@@ -331,18 +333,25 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
 
     fun markRecurringAsPaid(transaction: TransactionEntity) {
         viewModelScope.launch {
+            val now = System.currentTimeMillis()
             val paidTx = TransactionEntity(
                 title = "Paid: ${transaction.title}",
                 amount = transaction.amount,
                 type = transaction.type,
                 accountId = transaction.accountId,
                 categoryTag = transaction.categoryTag,
-                dateTimestamp = System.currentTimeMillis(),
+                dateTimestamp = now,
                 source = "RECURRING_PAID",
                 isPendingReview = false,
                 notes = "Recurring ${transaction.recurringFrequency ?: "MONTHLY"} payment recorded on ${java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date())}"
             )
-            repository.addTransaction(paidTx)
+            repository.runInTransaction {
+                repository.addTransaction(paidTx)
+                // Record the payment on the recurring bill itself too, so its due/overdue alert
+                // is suppressed for this cycle instead of still nagging right after being paid.
+                // type/amount are unchanged so this doesn't touch the account balance again.
+                repository.updateTransaction(transaction, transaction.copy(lastPaidTimestamp = now))
+            }
             _importStatusMessage.value = "Recorded payment for '${transaction.title}' (${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", transaction.amount)})"
         }
     }

@@ -34,11 +34,11 @@ class BudgetRepository(
                 CategoryEntity(name = "Groceries", iconName = "ShoppingCart", colorHex = "#10B981", monthlyBudgetLimit = 500.0),
                 CategoryEntity(name = "Shopping", iconName = "ShoppingBag", colorHex = "#3B82F6", monthlyBudgetLimit = 250.0),
                 CategoryEntity(name = "Bills & Utilities", iconName = "Receipt", colorHex = "#8B5CF6", monthlyBudgetLimit = 400.0),
-                CategoryEntity(name = "Salary & Income", iconName = "Payments", colorHex = "#10B981", monthlyBudgetLimit = 0.0),
+                CategoryEntity(name = "Salary & Income", iconName = "Payments", colorHex = "#10B981", monthlyBudgetLimit = 0.0, isIncomeCategory = true),
                 CategoryEntity(name = "Transportation", iconName = "DirectionsCar", colorHex = "#F59E0B", monthlyBudgetLimit = 150.0),
                 CategoryEntity(name = "Entertainment", iconName = "Movie", colorHex = "#EC4899", monthlyBudgetLimit = 100.0),
                 CategoryEntity(name = "Health & Wellness", iconName = "LocalHospital", colorHex = "#14B8A6", monthlyBudgetLimit = 150.0),
-                CategoryEntity(name = "Investment & Savings", iconName = "Savings", colorHex = "#6366F1", monthlyBudgetLimit = 0.0),
+                CategoryEntity(name = "Investment & Savings", iconName = "Savings", colorHex = "#6366F1", monthlyBudgetLimit = 0.0, isIncomeCategory = true),
                 CategoryEntity(name = "Uncategorized", iconName = "Label", colorHex = "#64748B", monthlyBudgetLimit = 0.0)
             )
             categoryDao.insertCategories(defaultCategories)

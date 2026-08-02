@@ -62,7 +62,6 @@ import com.example.ui.dialogs.AddTransactionDialog
 import com.example.ui.dialogs.EditCategoryBudgetDialog
 import com.example.ui.dialogs.EditTransactionDialog
 import com.example.ui.dialogs.ExportImportBackupDialog
-import com.example.ui.screens.AccountsAndSmsScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen

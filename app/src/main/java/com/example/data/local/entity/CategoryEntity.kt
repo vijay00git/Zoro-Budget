@@ -10,5 +10,8 @@ data class CategoryEntity(
     val iconName: String, // Material icon identifier
     val colorHex: String,
     val isPredefined: Boolean = true,
-    val monthlyBudgetLimit: Double = 0.0
+    val monthlyBudgetLimit: Double = 0.0,
+    // True for income/savings categories (e.g. "Salary & Income", "Investment & Savings") that
+    // shouldn't receive a share when the user sets an overall monthly expense budget.
+    val isIncomeCategory: Boolean = false
 )

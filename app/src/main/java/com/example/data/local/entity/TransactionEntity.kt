@@ -34,5 +34,9 @@ data class TransactionEntity(
     // (instead of a hard delete) so rawSmsMessage/dateTimestamp still match on the next inbox
     // scan and checkDuplicateSms rejects it - otherwise the same still-present phone SMS gets
     // re-parsed and the "deleted" transaction comes right back.
-    val isDismissed: Boolean = false
+    val isDismissed: Boolean = false,
+    // For isRecurring rows only: epoch millis of the last time this bill was marked paid, so
+    // RecurringBillUtils.calculateAlert can tell the current cycle is already settled instead
+    // of continuing to show it as due/overdue right after the user paid it.
+    val lastPaidTimestamp: Long? = null
 )

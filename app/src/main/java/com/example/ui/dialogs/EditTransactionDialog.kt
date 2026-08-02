@@ -90,6 +90,7 @@ fun EditTransactionDialog(
     var recurringDueDate by remember { androidx.compose.runtime.mutableIntStateOf(transaction.recurringDueDate ?: 4) }
     var recurringDueDateText by remember { mutableStateOf(transaction.recurringDueDate?.toString() ?: "4") }
     var accountDropdownExpanded by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -121,7 +122,7 @@ fun EditTransactionDialog(
                 }
 
                 IconButton(
-                    onClick = onDelete,
+                    onClick = { showDeleteConfirm = true },
                     modifier = Modifier.testTag("delete_transaction_button")
                 ) {
                     Icon(
@@ -553,4 +554,16 @@ fun EditTransactionDialog(
             }
         }
     )
+
+    if (showDeleteConfirm) {
+        ConfirmDeleteDialog(
+            title = stringResource(R.string.confirm_delete_transaction_title),
+            message = stringResource(R.string.confirm_delete_transaction_message),
+            onConfirm = {
+                showDeleteConfirm = false
+                onDelete()
+            },
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
 }

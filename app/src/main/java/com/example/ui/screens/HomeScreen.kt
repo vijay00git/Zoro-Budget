@@ -72,6 +72,8 @@ import com.example.ui.components.TransactionItem
 import com.example.ui.theme.ExpenseOnRedContainer
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.ExpenseRedContainer
+import com.example.ui.theme.IncomeGreenContainer
+import com.example.ui.theme.IncomeOnGreenContainer
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -755,6 +757,7 @@ fun HomeScreen(
                     BillAlertSeverity.URGENT -> ExpenseRedContainer to ExpenseOnRedContainer
                     BillAlertSeverity.WARNING -> Color(0xFFFEF3C7) to Color(0xFF92400E) // Amber/Yellow alert
                     BillAlertSeverity.INFO -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                    BillAlertSeverity.PAID -> IncomeGreenContainer to IncomeOnGreenContainer
                 }
 
                 Card(

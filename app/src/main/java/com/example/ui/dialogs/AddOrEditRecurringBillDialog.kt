@@ -106,6 +106,7 @@ fun AddOrEditRecurringBillDialog(
 
     var accountDropdownExpanded by remember { mutableStateOf(false) }
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -156,7 +157,7 @@ fun AddOrEditRecurringBillDialog(
                 }
 
                 if (billToEdit != null && onDelete != null) {
-                    IconButton(onClick = onDelete) {
+                    IconButton(onClick = { showDeleteConfirm = true }) {
                         Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.recurring_bill_dialog_delete_cd), tint = ExpenseRed)
                     }
                 }
@@ -572,4 +573,16 @@ fun AddOrEditRecurringBillDialog(
             }
         }
     )
+
+    if (showDeleteConfirm && onDelete != null) {
+        ConfirmDeleteDialog(
+            title = stringResource(R.string.confirm_delete_recurring_bill_title),
+            message = stringResource(R.string.confirm_delete_recurring_bill_message, title.ifBlank { billToEdit?.title ?: "" }),
+            onConfirm = {
+                showDeleteConfirm = false
+                onDelete()
+            },
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
 }

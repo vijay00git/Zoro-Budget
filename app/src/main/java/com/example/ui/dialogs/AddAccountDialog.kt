@@ -86,6 +86,7 @@ fun AddOrEditAccountDialog(
     var senderKeywords by remember { mutableStateOf(accountToEdit?.senderKeywords ?: "") }
     var selectedColorHex by remember { mutableStateOf(accountToEdit?.colorHex ?: "#2563EB") }
     var typeDropdownExpanded by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val accountTypes = listOf(
         "CHECKING" to stringResource(R.string.add_account_dialog_type_checking),
@@ -115,7 +116,7 @@ fun AddOrEditAccountDialog(
 
                 if (accountToEdit != null && onDelete != null) {
                     TextButton(
-                        onClick = onDelete,
+                        onClick = { showDeleteConfirm = true },
                         colors = ButtonDefaults.textButtonColors(contentColor = ExpenseRed)
                     ) {
                         Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.add_account_dialog_delete_label), modifier = Modifier.size(18.dp))
@@ -317,6 +318,18 @@ fun AddOrEditAccountDialog(
             }
         }
     )
+
+    if (showDeleteConfirm && onDelete != null) {
+        ConfirmDeleteDialog(
+            title = stringResource(R.string.confirm_delete_account_title),
+            message = stringResource(R.string.confirm_delete_account_message, accountToEdit?.name ?: ""),
+            onConfirm = {
+                showDeleteConfirm = false
+                onDelete()
+            },
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
 }
 
 // Backwards compatibility wrapper for AddAccountDialog

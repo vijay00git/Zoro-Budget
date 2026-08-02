@@ -10,7 +10,8 @@ import kotlin.math.abs
 enum class BillAlertSeverity {
     URGENT,   // Due today, yesterday, or overdue
     WARNING,  // Due tomorrow, or in 2-5 days
-    INFO      // Due in > 5 days
+    INFO,     // Due in > 5 days
+    PAID      // Already marked paid for the current cycle
 }
 
 data class BillAlertInfo(
@@ -110,7 +111,21 @@ object RecurringBillUtils {
         val dateFormatter = SimpleDateFormat("MMM d", Locale.getDefault())
         val formattedDueDate = dateFormatter.format(Date(targetCal.timeInMillis))
 
+        // A payment recorded any time since the start of the cycle `targetCal` represents
+        // covers that cycle - without this, "mark as paid" would insert a payment transaction
+        // but the bill would still show as due/overdue right after the user paid it.
+        val cycleStartCal = (targetCal.clone() as Calendar).apply {
+            when (freq) {
+                "WEEKLY" -> add(Calendar.WEEK_OF_YEAR, -1)
+                "YEARLY" -> add(Calendar.YEAR, -1)
+                else -> add(Calendar.MONTH, -1)
+            }
+        }
+        val paidThisCycle = transaction.lastPaidTimestamp != null &&
+            transaction.lastPaidTimestamp >= cycleStartCal.timeInMillis
+
         val (alertMsg, severity) = when {
+            paidThisCycle -> "Paid" to BillAlertSeverity.PAID
             diffDays == 0L -> "Due Today" to BillAlertSeverity.URGENT
             diffDays == 1L -> "Due Tomorrow" to BillAlertSeverity.WARNING
             diffDays in 2L..5L -> "Due in $diffDays days" to BillAlertSeverity.WARNING

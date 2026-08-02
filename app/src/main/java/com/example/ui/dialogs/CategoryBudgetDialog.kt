@@ -55,6 +55,7 @@ fun EditCategoryBudgetDialog(
     currencySymbol: String = "$"
 ) {
     var budgetInput by remember { mutableStateOf(if (category.monthlyBudgetLimit > 0) category.monthlyBudgetLimit.toString() else "") }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val presets = listOf(100, 250, 500, 750, 1000)
 
     val catColor = try {
@@ -95,7 +96,7 @@ fun EditCategoryBudgetDialog(
 
                 if (!category.isPredefined && onDeleteCategory != null) {
                     IconButton(
-                        onClick = onDeleteCategory,
+                        onClick = { showDeleteConfirm = true },
                         modifier = Modifier.testTag("delete_category_button")
                     ) {
                         Icon(
@@ -175,4 +176,16 @@ fun EditCategoryBudgetDialog(
             }
         }
     )
+
+    if (showDeleteConfirm && onDeleteCategory != null) {
+        ConfirmDeleteDialog(
+            title = stringResource(R.string.confirm_delete_category_title),
+            message = stringResource(R.string.confirm_delete_category_message, category.name),
+            onConfirm = {
+                showDeleteConfirm = false
+                onDeleteCategory()
+            },
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
 }

@@ -96,6 +96,33 @@ class RecurringBillUtilsTest {
     }
 
     @Test
+    fun monthlyBillPaidThisCycleIsSuppressed() {
+        // Regression test: markRecurringAsPaid must actually stop the bill from showing as
+        // due/overdue for the cycle it was just paid in.
+        val now = fixedNow(2026, 3, 15)
+        val paidRecently = fixedNow(2026, 3, 10) // within the current cycle (since Feb 15)
+        val bill = monthlyBill(dueDate = 15).copy(lastPaidTimestamp = paidRecently)
+
+        val info = RecurringBillUtils.calculateAlert(bill, nowMillis = now)
+
+        assertEquals("Paid", info.alertMessage)
+        assertEquals(BillAlertSeverity.PAID, info.severity)
+    }
+
+    @Test
+    fun monthlyBillPaidLastCycleStillShowsAsDue() {
+        // A payment from a PREVIOUS cycle must not suppress the alert for the current one.
+        val now = fixedNow(2026, 3, 15)
+        val paidLastCycle = fixedNow(2026, 1, 20) // before this cycle started (Feb 15)
+        val bill = monthlyBill(dueDate = 15).copy(lastPaidTimestamp = paidLastCycle)
+
+        val info = RecurringBillUtils.calculateAlert(bill, nowMillis = now)
+
+        assertEquals("Due Today", info.alertMessage)
+        assertEquals(BillAlertSeverity.URGENT, info.severity)
+    }
+
+    @Test
     fun yearlyBillMatchesOriginalMonthAndDay() {
         val originalTimestamp = fixedNow(2020, 6, 10)
         val yearlyBill = TransactionEntity(

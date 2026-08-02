@@ -19,7 +19,7 @@ import com.example.data.local.entity.TransactionEntity
         TransactionEntity::class,
         CategoryEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -50,6 +50,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v6 -> v7: added transactions.lastPaidTimestamp (suppress a recurring bill's due/overdue
+        // alert for the cycle it was just paid in) and categories.isIncomeCategory (exclude
+        // income/savings categories from the overall monthly budget split).
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transactions ADD COLUMN lastPaidTimestamp INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE categories ADD COLUMN isIncomeCategory INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE categories SET isIncomeCategory = 1 WHERE name IN ('Salary & Income', 'Investment & Savings')")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -57,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "smart_budget_db"
                 )
-                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     // Versions 1-3 predate this app's first real release and have no schema
                     // history captured (exportSchema was off), so there's no real user data to
                     // preserve for those - a destructive fallback is only acceptable for THEM.

@@ -195,7 +195,7 @@ fun SettingsScreen(
     }
 
     val totalBudgetLimit = remember(categories) {
-        categories.sumOf { it.monthlyBudgetLimit }
+        categories.filter { !it.isIncomeCategory }.sumOf { it.monthlyBudgetLimit }
     }
 
     LazyColumn(

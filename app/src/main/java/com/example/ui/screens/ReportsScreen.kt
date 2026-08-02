@@ -136,9 +136,10 @@ fun ReportsScreen(
             .mapValues { entry -> entry.value.sumOf { it.amount } }
     }
 
-    // Total Budgeted vs Spent across all categories
+    // Total Budgeted vs Spent across all expense categories (income/savings categories like
+    // "Salary & Income" don't count toward a spending budget).
     val totalBudgetLimit = remember(categories) {
-        categories.sumOf { it.monthlyBudgetLimit }
+        categories.filter { !it.isIncomeCategory }.sumOf { it.monthlyBudgetLimit }
     }
     val totalSpentInBudgetedCategories = remember(categoryExpensesMap, categories) {
         categories.filter { it.monthlyBudgetLimit > 0 }.sumOf { categoryExpensesMap[it.name] ?: 0.0 }
@@ -865,6 +866,7 @@ fun ReportsScreen(
                                             com.example.data.utils.BillAlertSeverity.URGENT -> com.example.ui.theme.ExpenseRedContainer to com.example.ui.theme.ExpenseOnRedContainer
                                             com.example.data.utils.BillAlertSeverity.WARNING -> Color(0xFFFEF3C7) to Color(0xFF92400E)
                                             com.example.data.utils.BillAlertSeverity.INFO -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                                            com.example.data.utils.BillAlertSeverity.PAID -> com.example.ui.theme.IncomeGreenContainer to com.example.ui.theme.IncomeOnGreenContainer
                                         }
 
                                         Card(
