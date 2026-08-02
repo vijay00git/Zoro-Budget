@@ -1,0 +1,8 @@
+{
+  "name": "Smart Budget",
+  "description": "Automated expense and budget tracker that reads SMS messages, categorizes credits and debits, supports multi-account tracking, and provides visual monthly spending reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

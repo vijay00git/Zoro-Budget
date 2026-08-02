@@ -1,0 +1,1024 @@
+package com.example.ui.screens
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.data.local.entity.CategoryEntity
+import com.example.data.local.entity.TransactionEntity
+import com.example.ui.components.CategoryDonutChart
+import com.example.ui.components.MonthlyBarChart
+import com.example.ui.components.MonthlySpendingTrendChart
+import com.example.ui.dialogs.EditSavingsGoalDialog
+import com.example.ui.dialogs.ManageSubscriptionDialog
+import com.example.ui.dialogs.TotalBudgetDialog
+import com.example.ui.theme.ExpenseRed
+import com.example.ui.theme.IncomeGreen
+import com.example.ui.theme.PendingAmber
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ReportsScreen(
+    transactions: List<TransactionEntity>,
+    categories: List<CategoryEntity>,
+    selectedMonthOffset: Int,
+    currencySymbol: String = "$",
+    savingsGoalTarget: Double = 500.0,
+    onMonthOffsetChange: (Int) -> Unit,
+    onEditCategoryBudget: (CategoryEntity) -> Unit,
+    onAddCustomCategoryClick: () -> Unit,
+    onToggleRecurring: (TransactionEntity, Boolean, String?, Int?) -> Unit,
+    onAddRecurringBillClick: () -> Unit = {},
+    onTransactionClick: (TransactionEntity) -> Unit,
+    onUpdateSavingsGoalTarget: (Double) -> Unit,
+    onSetTotalMonthlyBudget: (Double) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    // Dialog States
+    var selectedSubscriptionToManage by remember { mutableStateOf<TransactionEntity?>(null) }
+
+    // Selected Tab State (0: All, 1: Budget Planning, 2: Savings Goals, 3: Subscriptions)
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var budgetFilterMode by remember { mutableStateOf("ALL") } // ALL, OVER_BUDGET, BUDGETED
+
+    // Month Calculations
+    val (monthTitle, monthTx) = remember(transactions, selectedMonthOffset) {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.MONTH, selectedMonthOffset)
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        val startMs = cal.timeInMillis
+
+        cal.add(Calendar.MONTH, 1)
+        val endMs = cal.timeInMillis
+
+        val format = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+        cal.add(Calendar.MONTH, -1)
+        val title = format.format(cal.time)
+
+        val filtered = transactions.filter { it.dateTimestamp in startMs until endMs }
+        Pair(title, filtered)
+    }
+
+    val totalIncome = monthTx.filter { it.type == "CREDIT" }.sumOf { it.amount }
+    val totalExpense = monthTx.filter { it.type == "DEBIT" }.sumOf { it.amount }
+    val netSavings = totalIncome - totalExpense
+    val savingsRate = if (totalIncome > 0.0) ((netSavings / totalIncome) * 100).coerceIn(-100.0, 100.0) else 0.0
+
+    // Group expenses by category name
+    val categoryExpensesMap = remember(monthTx) {
+        monthTx.filter { it.type == "DEBIT" }
+            .groupBy { it.categoryTag }
+            .mapValues { entry -> entry.value.sumOf { it.amount } }
+    }
+
+    // Total Budgeted vs Spent across all categories
+    val totalBudgetLimit = remember(categories) {
+        categories.sumOf { it.monthlyBudgetLimit }
+    }
+    val totalSpentInBudgetedCategories = remember(categoryExpensesMap, categories) {
+        categories.filter { it.monthlyBudgetLimit > 0 }.sumOf { categoryExpensesMap[it.name] ?: 0.0 }
+    }
+    val overallBudgetProgress = if (totalBudgetLimit > 0) (totalSpentInBudgetedCategories / totalBudgetLimit).toFloat() else 0f
+
+    // Recurring subscriptions & bills with custom due date alerts
+    val recurringTxWithAlerts = remember(transactions) {
+        transactions.filter { it.isRecurring }
+            .distinctBy { it.title.lowercase() }
+            .map { sub -> sub to com.example.data.utils.RecurringBillUtils.calculateAlert(sub) }
+            .sortedBy { (_, alert) -> alert.daysDifference }
+    }
+    val totalMonthlySubscriptions = recurringTxWithAlerts.sumOf { (sub, _) -> sub.amount }
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("reports_screen"),
+        contentPadding = PaddingValues(bottom = 90.dp)
+    ) {
+        // Top Header & Month Selector
+        item {
+            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                Text(
+                    text = "Planning & Analytics",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { onMonthOffsetChange(selectedMonthOffset - 1) },
+                            modifier = Modifier.testTag("prev_month_button")
+                        ) {
+                            Icon(imageVector = Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                        }
+
+                        Text(
+                            text = monthTitle,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+
+                        IconButton(
+                            onClick = { onMonthOffsetChange(selectedMonthOffset + 1) },
+                            enabled = selectedMonthOffset < 0,
+                            modifier = Modifier.testTag("next_month_button")
+                        ) {
+                            Icon(imageVector = Icons.Default.ChevronRight, contentDescription = "Next Month")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Section Tabs Row
+        item {
+            ScrollableTabRow(
+                selectedTabIndex = selectedTabIndex,
+                edgePadding = 20.dp,
+                divider = {},
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                listOf("All Overview", "Smart Budget", "Savings Goals", "Subscriptions").forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Medium
+                                )
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        // --- OVERVIEW SECTION ---
+        if (selectedTabIndex == 0 || selectedTabIndex == 1) {
+            // Net Cash Flow Summary Card
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Net Monthly Cash Flow",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    )
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "$%,.2f", netSavings),
+                                        style = MaterialTheme.typography.headlineMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (netSavings >= 0) IncomeGreen else ExpenseRed
+                                        )
+                                    )
+                                }
+
+                                Surface(
+                                    color = (if (savingsRate >= 0) IncomeGreen else ExpenseRed).copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "Savings: %.1f%%", savingsRate),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (savingsRate >= 0) IncomeGreen else ExpenseRed
+                                        )
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Total Income",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                    )
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "+$%,.2f", totalIncome),
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = IncomeGreen
+                                        )
+                                    )
+                                }
+
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "Total Expenses",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                    )
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "-$%,.2f", totalExpense),
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = ExpenseRed
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- SMART BUDGET PLANNING SECTION ---
+        if (selectedTabIndex == 0 || selectedTabIndex == 1) {
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Smart Budget Planning",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        OutlinedButton(
+                            onClick = onAddCustomCategoryClick,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.testTag("add_custom_category_button")
+                        ) {
+                            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New Category", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Overall Budget Health Summary Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Total Monthly Budget Health",
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = if (totalBudgetLimit > 0) {
+                                            String.format(
+                                                Locale.getDefault(),
+                                                "$%,.2f spent of $%,.2f budget",
+                                                totalSpentInBudgetedCategories,
+                                                totalBudgetLimit
+                                            )
+                                        } else {
+                                            "No category budget limits configured yet"
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    )
+                                }
+
+                                if (totalBudgetLimit > 0) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    val statusColor = when {
+                                        overallBudgetProgress > 1.0f -> ExpenseRed
+                                        overallBudgetProgress > 0.85f -> PendingAmber
+                                        else -> IncomeGreen
+                                    }
+                                    val statusText = when {
+                                        overallBudgetProgress > 1.0f -> "Over Budget"
+                                        overallBudgetProgress > 0.85f -> "Near Limit"
+                                        else -> "On Track"
+                                    }
+
+                                    Surface(
+                                        color = statusColor.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            text = statusText,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = statusColor
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (totalBudgetLimit > 0) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                LinearProgressIndicator(
+                                    progress = { overallBudgetProgress.coerceAtMost(1.0f) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(10.dp)
+                                        .clip(RoundedCornerShape(5.dp)),
+                                    color = when {
+                                        overallBudgetProgress > 1.0f -> ExpenseRed
+                                        overallBudgetProgress > 0.85f -> PendingAmber
+                                        else -> IncomeGreen
+                                    },
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+
+                                Spacer(modifier = Modifier.height(6.dp))
+                                val remaining = totalBudgetLimit - totalSpentInBudgetedCategories
+                                Text(
+                                    text = if (remaining >= 0) {
+                                        String.format(Locale.getDefault(), "$%,.2f remaining in budget", remaining)
+                                    } else {
+                                        String.format(Locale.getDefault(), "$%,.2f OVER TOTAL BUDGET!", -remaining)
+                                    },
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (remaining >= 0) IncomeGreen else ExpenseRed
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Budget Category Filters
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = budgetFilterMode == "ALL",
+                            onClick = { budgetFilterMode = "ALL" },
+                            label = { Text("All Categories (${categories.size})") }
+                        )
+                        FilterChip(
+                            selected = budgetFilterMode == "OVER_BUDGET",
+                            onClick = { budgetFilterMode = "OVER_BUDGET" },
+                            label = {
+                                val overCount = categories.count {
+                                    val spent = categoryExpensesMap[it.name] ?: 0.0
+                                    it.monthlyBudgetLimit > 0 && spent > it.monthlyBudgetLimit
+                                }
+                                Text("Over Budget ($overCount)")
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Categories List Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            val filteredCategories = categories.filter { cat ->
+                                val spent = categoryExpensesMap[cat.name] ?: 0.0
+                                when (budgetFilterMode) {
+                                    "OVER_BUDGET" -> cat.monthlyBudgetLimit > 0 && spent > cat.monthlyBudgetLimit
+                                    else -> true
+                                }
+                            }
+
+                            if (filteredCategories.isEmpty()) {
+                                Text(
+                                    text = "No categories match the selected filter.",
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                                    modifier = Modifier.padding(vertical = 12.dp)
+                                )
+                            } else {
+                                filteredCategories.forEach { cat ->
+                                    val spent = categoryExpensesMap[cat.name] ?: 0.0
+                                    val limit = cat.monthlyBudgetLimit
+                                    val hasLimit = limit > 0.0
+                                    val progress = if (hasLimit) (spent / limit).toFloat().coerceIn(0f, 1.2f) else 0f
+
+                                    val catColor = try {
+                                        Color(android.graphics.Color.parseColor(cat.colorHex))
+                                    } catch (e: Exception) {
+                                        MaterialTheme.colorScheme.primary
+                                    }
+
+                                    val progressColor = when {
+                                        !hasLimit -> MaterialTheme.colorScheme.primary
+                                        progress > 1.0f -> ExpenseRed
+                                        progress > 0.8f -> PendingAmber
+                                        else -> IncomeGreen
+                                    }
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable { onEditCategoryBudget(cat) }
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(32.dp)
+                                                        .clip(CircleShape)
+                                                        .background(catColor.copy(alpha = 0.2f)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(14.dp)
+                                                            .clip(CircleShape)
+                                                            .background(catColor)
+                                                    )
+                                                }
+
+                                                Spacer(modifier = Modifier.width(10.dp))
+
+                                                Column {
+                                                    Text(
+                                                        text = cat.name,
+                                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                                    )
+                                                    if (!cat.isPredefined) {
+                                                        Text(
+                                                            text = "Custom Category",
+                                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                fontSize = 10.sp
+                                                            )
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Column(horizontalAlignment = Alignment.End) {
+                                                    Text(
+                                                        text = String.format(Locale.getDefault(), "$%,.2f spent", spent),
+                                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (hasLimit && spent > limit) ExpenseRed else MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                    )
+                                                    Text(
+                                                        text = if (hasLimit) String.format(Locale.getDefault(), "Limit: $%,.2f", limit) else "Tap to set limit",
+                                                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    )
+                                                }
+
+                                                Spacer(modifier = Modifier.width(8.dp))
+
+                                                IconButton(
+                                                    onClick = { onEditCategoryBudget(cat) },
+                                                    modifier = Modifier.size(28.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Edit,
+                                                        contentDescription = "Edit Budget Limit",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        if (hasLimit) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            LinearProgressIndicator(
+                                                progress = { progress.coerceAtMost(1.0f) },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(8.dp)
+                                                    .clip(RoundedCornerShape(4.dp)),
+                                                color = progressColor,
+                                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- SAVINGS TARGET & GOALS SECTION ---
+        if (selectedTabIndex == 0 || selectedTabIndex == 2) {
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Smart Savings Target",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val goalProgress = if (savingsGoalTarget > 0) (netSavings / savingsGoalTarget).toFloat().coerceIn(0f, 1f) else 0f
+                    val goalAchieved = netSavings >= savingsGoalTarget && savingsGoalTarget > 0
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .background(IncomeGreen.copy(alpha = 0.2f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Savings,
+                                            contentDescription = null,
+                                            tint = IncomeGreen,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Monthly Savings Goal",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = String.format(Locale.getDefault(), "Target: $%,.2f / month", savingsGoalTarget),
+                                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Surface(
+                                    color = if (goalAchieved) IncomeGreen.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "%.0f%% Achieved", goalProgress * 100),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (goalAchieved) IncomeGreen else MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = String.format(Locale.getDefault(), "Current Savings: $%,.2f", netSavings.coerceAtLeast(0.0)),
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (netSavings >= 0) IncomeGreen else ExpenseRed
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LinearProgressIndicator(
+                                progress = { goalProgress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(12.dp)
+                                    .clip(RoundedCornerShape(6.dp)),
+                                color = IncomeGreen,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Motivation & Smart Insight Tip
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (goalAchieved) Icons.Default.Savings else Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = if (goalAchieved) IncomeGreen else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = when {
+                                            goalAchieved -> "🎉 Goal Reached! You have saved $${String.format(Locale.getDefault(), "%.2f", netSavings)} this month."
+                                            netSavings > 0 -> "You need $${String.format(Locale.getDefault(), "%.2f", savingsGoalTarget - netSavings)} more to reach your target goal."
+                                            else -> "Net spending exceeds income this month. Adjust category budget limits to increase savings."
+                                        },
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- RECURRING SUBSCRIPTIONS & BILLS SECTION ---
+        if (selectedTabIndex == 0 || selectedTabIndex == 3) {
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Subscriptions & Recurring Bills",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "Custom due date alerts & schedules",
+                                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Button(
+                                onClick = onAddRecurringBillClick,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("+ Bill", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            }
+
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = String.format(Locale.getDefault(), "$%,.2f/mo", totalMonthlySubscriptions),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    ),
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            if (recurringTxWithAlerts.isEmpty()) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Autorenew,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "No active recurring bills or EMIs found.",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Tap '+ Bill' above to add recurring EMI or bill due dates.",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                }
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    recurringTxWithAlerts.forEach { (sub, alert) ->
+                                        val (badgeBg, badgeFg) = when (alert.severity) {
+                                            com.example.data.utils.BillAlertSeverity.URGENT -> com.example.ui.theme.ExpenseRedContainer to com.example.ui.theme.ExpenseOnRedContainer
+                                            com.example.data.utils.BillAlertSeverity.WARNING -> Color(0xFFFEF3C7) to Color(0xFF92400E)
+                                            com.example.data.utils.BillAlertSeverity.INFO -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                                        }
+
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { selectedSubscriptionToManage = sub },
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                            )
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(36.dp)
+                                                            .clip(CircleShape)
+                                                            .background(badgeBg),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Autorenew,
+                                                            contentDescription = null,
+                                                            tint = badgeFg,
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.width(10.dp))
+
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            text = sub.title,
+                                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                            Surface(
+                                                                color = badgeBg,
+                                                                shape = RoundedCornerShape(4.dp)
+                                                            ) {
+                                                                Text(
+                                                                    text = alert.alertMessage.uppercase(),
+                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                                        fontWeight = FontWeight.Bold,
+                                                                        color = badgeFg,
+                                                                        fontSize = 10.sp
+                                                                    )
+                                                                )
+                                                            }
+
+                                                            Text(
+                                                                text = alert.frequencyLabel,
+                                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                    fontSize = 11.sp
+                                                                ),
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.width(8.dp))
+
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = String.format(Locale.getDefault(), "$%,.2f", sub.amount),
+                                                        style = MaterialTheme.typography.titleMedium.copy(
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (alert.severity == com.example.data.utils.BillAlertSeverity.URGENT) ExpenseRed else MaterialTheme.colorScheme.primary
+                                                        )
+                                                    )
+
+                                                    Spacer(modifier = Modifier.width(4.dp))
+
+                                                    IconButton(
+                                                        onClick = { selectedSubscriptionToManage = sub },
+                                                        modifier = Modifier.size(28.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Settings,
+                                                            contentDescription = "Manage Subscription",
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- VISUAL CHARTS SECTION ---
+        if (selectedTabIndex == 0) {
+            // Categorized Monthly Spending Trend Chart
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                    MonthlySpendingTrendChart(
+                        transactions = transactions,
+                        categories = categories,
+                        currencySymbol = currencySymbol
+                    )
+                }
+            }
+
+            // Category Expenses Donut Chart
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                    CategoryDonutChart(
+                        transactions = monthTx,
+                        categories = categories
+                    )
+                }
+            }
+
+            // Daily Spending Bar Graph
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                    MonthlyBarChart(
+                        transactions = monthTx
+                    )
+                }
+            }
+        }
+    }
+
+    // Dialogs
+    selectedSubscriptionToManage?.let { sub ->
+        ManageSubscriptionDialog(
+            transaction = sub,
+            onDismiss = { selectedSubscriptionToManage = null },
+            onSaveFrequency = { newFreq, newDueDate ->
+                onToggleRecurring(sub, true, newFreq, newDueDate)
+            },
+            onRemoveSubscription = {
+                onToggleRecurring(sub, false, null, null)
+            },
+            onOpenEditTransaction = {
+                onTransactionClick(sub)
+            }
+        )
+    }
+}
