@@ -97,6 +97,7 @@ fun AddOrEditRecurringBillDialog(
     var selectedCategoryTag by remember { mutableStateOf(billToEdit?.categoryTag ?: "Bills & Utilities") }
     var frequency by remember { mutableStateOf(billToEdit?.recurringFrequency ?: "MONTHLY") } // "MONTHLY", "WEEKLY", "YEARLY"
     var dueDate by remember { mutableIntStateOf(billToEdit?.recurringDueDate ?: 4) } // Default day 4 for EMI
+    var dueDateText by remember { mutableStateOf(billToEdit?.recurringDueDate?.toString() ?: "4") }
     var notes by remember { mutableStateOf(billToEdit?.notes ?: "") }
     var receiptUri by remember { mutableStateOf<String?>(billToEdit?.receiptUri) }
 
@@ -205,7 +206,10 @@ fun AddOrEditRecurringBillDialog(
                             selected = frequency == freqKey,
                             onClick = {
                                 frequency = freqKey
-                                if (freqKey == "WEEKLY" && dueDate > 7) dueDate = 1
+                                if (freqKey == "WEEKLY" && dueDate > 7) {
+                                    dueDate = 1
+                                    dueDateText = "1"
+                                }
                             },
                             label = { Text(freqLabel, style = MaterialTheme.typography.labelMedium) },
                             modifier = Modifier.weight(1f)
@@ -277,13 +281,16 @@ fun AddOrEditRecurringBillDialog(
                         } else {
                             // Monthly Day of Month TextField & Quick Presets
                             OutlinedTextField(
-                                value = dueDate.toString(),
+                                value = dueDateText,
                                 onValueChange = { input ->
-                                    val parsed = input.toIntOrNull()
-                                    if (parsed != null && parsed in 1..31) {
-                                        dueDate = parsed
-                                    } else if (input.isEmpty()) {
-                                        dueDate = 1
+                                    if (input.isBlank()) {
+                                        dueDateText = ""
+                                    } else {
+                                        val parsed = input.toIntOrNull()
+                                        if (parsed != null && parsed in 1..31) {
+                                            dueDate = parsed
+                                            dueDateText = parsed.toString()
+                                        }
                                     }
                                 },
                                 label = { Text("Day of Month (1 - 31)") },
@@ -311,7 +318,10 @@ fun AddOrEditRecurringBillDialog(
                                 listOf(1, 4, 5, 10, 15, 25, 30).forEach { day ->
                                     FilterChip(
                                         selected = dueDate == day,
-                                        onClick = { dueDate = day },
+                                        onClick = {
+                                            dueDate = day
+                                            dueDateText = day.toString()
+                                        },
                                         label = { Text("Day $day", style = MaterialTheme.typography.labelSmall) }
                                     )
                                 }
@@ -524,6 +534,7 @@ fun AddOrEditRecurringBillDialog(
             Button(
                 onClick = {
                     val parsedAmount = amountText.toDoubleOrNull()
+                    val resolvedDueDate = dueDateText.toIntOrNull()?.coerceIn(1, 31) ?: dueDate
                     if (title.isNotBlank() && parsedAmount != null && parsedAmount > 0) {
                         onSave(
                             title,
@@ -532,7 +543,7 @@ fun AddOrEditRecurringBillDialog(
                             selectedAccountId,
                             selectedCategoryTag,
                             frequency,
-                            dueDate,
+                            resolvedDueDate,
                             notes.ifBlank { null },
                             receiptUri
                         )

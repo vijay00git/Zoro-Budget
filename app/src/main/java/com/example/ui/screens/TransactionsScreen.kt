@@ -107,6 +107,10 @@ fun TransactionsScreen(
     customStartDate: Long? = null,
     customEndDate: Long? = null,
     onSetCustomDateRange: (Long?, Long?) -> Unit = { _, _ -> },
+    minAmountFilter: Double? = null,
+    maxAmountFilter: Double? = null,
+    onSetMinAmountFilter: (Double?) -> Unit = {},
+    onSetMaxAmountFilter: (Double?) -> Unit = {},
     onClearAllFilters: () -> Unit = {},
     onTransactionClick: (TransactionEntity) -> Unit,
     onAddClick: () -> Unit,
@@ -131,7 +135,8 @@ fun TransactionsScreen(
     val activeFilterCount = (if (selectedAccountId != null) 1 else 0) +
             (if (selectedCategory != null) 1 else 0) +
             (if (selectedTypeFilter != "ALL") 1 else 0) +
-            (if (selectedDateRange != "ALL") 1 else 0)
+            (if (selectedDateRange != "ALL") 1 else 0) +
+            (if (minAmountFilter != null || maxAmountFilter != null) 1 else 0)
 
     val dateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
 
@@ -375,6 +380,28 @@ fun TransactionsScreen(
                                 }
                             }
 
+                            if (minAmountFilter != null || maxAmountFilter != null) {
+                                val amountLabel = when {
+                                    minAmountFilter != null && maxAmountFilter != null ->
+                                        "${currencySymbol}${String.format(Locale.getDefault(), "%.0f", minAmountFilter)} - ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", maxAmountFilter)}"
+                                    minAmountFilter != null -> "Min ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", minAmountFilter)}"
+                                    else -> "Max ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", maxAmountFilter)}"
+                                }
+                                item {
+                                    InputChip(
+                                        selected = true,
+                                        onClick = {
+                                            onSetMinAmountFilter(null)
+                                            onSetMaxAmountFilter(null)
+                                        },
+                                        label = { Text("Amount: $amountLabel") },
+                                        trailingIcon = {
+                                            Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.height(16.dp))
+                                        }
+                                    )
+                                }
+                            }
+
                             item {
                                 TextButton(onClick = onClearAllFilters) {
                                     Text("Clear All", style = MaterialTheme.typography.labelSmall)
@@ -489,11 +516,15 @@ fun TransactionsScreen(
             customStartDate = customStartDate,
             customEndDate = customEndDate,
             selectedCategory = selectedCategory,
+            minAmountFilter = minAmountFilter,
+            maxAmountFilter = maxAmountFilter,
             onSelectAccountId = onSelectAccountId,
             onSelectTypeFilter = onSelectTypeFilter,
             onSelectDateRange = onSelectDateRange,
             onSetCustomDateRange = onSetCustomDateRange,
             onSelectCategory = onSelectCategory,
+            onSetMinAmountFilter = onSetMinAmountFilter,
+            onSetMaxAmountFilter = onSetMaxAmountFilter,
             onClearAllFilters = onClearAllFilters,
             onDismiss = { showFilterSheet = false }
         )
@@ -511,11 +542,15 @@ fun TransactionFilterBottomSheet(
     customStartDate: Long?,
     customEndDate: Long?,
     selectedCategory: String?,
+    minAmountFilter: Double? = null,
+    maxAmountFilter: Double? = null,
     onSelectAccountId: (Long?) -> Unit,
     onSelectTypeFilter: (String) -> Unit,
     onSelectDateRange: (String) -> Unit,
     onSetCustomDateRange: (Long?, Long?) -> Unit,
     onSelectCategory: (String?) -> Unit,
+    onSetMinAmountFilter: (Double?) -> Unit = {},
+    onSetMaxAmountFilter: (Double?) -> Unit = {},
     onClearAllFilters: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -803,6 +838,50 @@ fun TransactionFilterBottomSheet(
                         label = { Text(cat.name) }
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 5. Amount Range Filter
+            Text(
+                text = "Amount Range",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            var minAmountText by remember(minAmountFilter) {
+                mutableStateOf(minAmountFilter?.let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() } ?: "")
+            }
+            var maxAmountText by remember(maxAmountFilter) {
+                mutableStateOf(maxAmountFilter?.let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() } ?: "")
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = minAmountText,
+                    onValueChange = {
+                        minAmountText = it
+                        onSetMinAmountFilter(it.toDoubleOrNull())
+                    },
+                    label = { Text("Min") },
+                    placeholder = { Text("No min") },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f).testTag("min_amount_filter_input")
+                )
+                OutlinedTextField(
+                    value = maxAmountText,
+                    onValueChange = {
+                        maxAmountText = it
+                        onSetMaxAmountFilter(it.toDoubleOrNull())
+                    },
+                    label = { Text("Max") },
+                    placeholder = { Text("No max") },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f).testTag("max_amount_filter_input")
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

@@ -37,15 +37,22 @@ class SmsReceiver : BroadcastReceiver() {
 
             val parsed = SmsParser.parseMessage(rawMessage, timestamp, senderAddress) ?: return
 
-            val db = AppDatabase.getDatabase(context)
-            val repository = BudgetRepository(db.accountDao(), db.transactionDao(), db.categoryDao())
+            // goAsync() keeps the receiver (and its process) alive long enough for the
+            // background DB write to finish; without it Android can kill the process the
+            // instant onReceive() returns, dropping the transaction silently.
+            val pendingResult = goAsync()
+            val appContext = context.applicationContext
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
+                    val db = AppDatabase.getDatabase(appContext)
+                    val repository = BudgetRepository(db.accountDao(), db.transactionDao(), db.categoryDao())
                     repository.processParsedSmsTransaction(parsed)
                     Log.d("SmsReceiver", "Successfully processed SMS transaction: ${parsed.amount} ${parsed.type}")
                 } catch (e: Exception) {
                     Log.e("SmsReceiver", "Error saving SMS transaction", e)
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }

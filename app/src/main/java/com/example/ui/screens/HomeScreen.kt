@@ -631,10 +631,12 @@ fun HomeScreen(
                     )
                     1 -> CategoryDonutChart(
                         transactions = displayTransactions,
-                        categories = categories
+                        categories = categories,
+                        currencySymbol = currencySymbol
                     )
                     2 -> MonthlyBarChart(
-                        transactions = displayTransactions
+                        transactions = displayTransactions,
+                        currencySymbol = currencySymbol
                     )
                 }
             }

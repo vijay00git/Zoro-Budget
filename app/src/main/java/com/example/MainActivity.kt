@@ -65,6 +65,7 @@ import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.TransactionsScreen
 import com.example.ui.theme.PendingAmber
 import com.example.ui.theme.SmartBudgetTheme
+import com.example.utils.AppDebugLogger
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Overview", Icons.Default.Home)
@@ -84,6 +85,7 @@ class MainActivity : ComponentActivity() {
         val db = AppDatabase.getDatabase(applicationContext)
         val repository = BudgetRepository(db.accountDao(), db.transactionDao(), db.categoryDao())
         viewModel = ExpenseViewModel(repository)
+        AppDebugLogger.init(applicationContext)
 
         setContent {
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -118,6 +120,8 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
     val dateRangeFilter by viewModel.dateRangeFilter.collectAsStateWithLifecycle()
     val customStartDate by viewModel.customStartDate.collectAsStateWithLifecycle()
     val customEndDate by viewModel.customEndDate.collectAsStateWithLifecycle()
+    val minAmountFilter by viewModel.minAmountFilter.collectAsStateWithLifecycle()
+    val maxAmountFilter by viewModel.maxAmountFilter.collectAsStateWithLifecycle()
     val selectedMonthOffset by viewModel.selectedMonthOffset.collectAsStateWithLifecycle()
     val savingsGoalTarget by viewModel.savingsGoalTarget.collectAsStateWithLifecycle()
     val lowBalanceThreshold by viewModel.lowBalanceThreshold.collectAsStateWithLifecycle()
@@ -281,6 +285,10 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     customStartDate = customStartDate,
                     customEndDate = customEndDate,
                     onSetCustomDateRange = { start, end -> viewModel.setCustomDateRange(start, end) },
+                    minAmountFilter = minAmountFilter,
+                    maxAmountFilter = maxAmountFilter,
+                    onSetMinAmountFilter = { viewModel.setMinAmountFilter(it) },
+                    onSetMaxAmountFilter = { viewModel.setMaxAmountFilter(it) },
                     onClearAllFilters = { viewModel.clearAllFilters() },
                     onTransactionClick = { editingTransaction = it },
                     onAddClick = { showAddTransactionDialog = true },
@@ -314,11 +322,11 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     savingsGoalTarget = savingsGoalTarget,
                     lowBalanceThreshold = lowBalanceThreshold,
                     categories = categories,
-                    onSelectCurrency = { viewModel.setCurrencySymbol(it) },
-                    onSelectThemeMode = { viewModel.setThemeMode(it) },
-                    onUpdateSavingsGoalTarget = { viewModel.setSavingsGoalTarget(it) },
+                    onSelectCurrency = { viewModel.setCurrencySymbol(it, context) },
+                    onSelectThemeMode = { viewModel.setThemeMode(it, context) },
+                    onUpdateSavingsGoalTarget = { viewModel.setSavingsGoalTarget(it, context) },
                     onSetTotalMonthlyBudget = { viewModel.setTotalMonthlyBudget(it) },
-                    onSetLowBalanceThreshold = { viewModel.setLowBalanceThreshold(it) },
+                    onSetLowBalanceThreshold = { viewModel.setLowBalanceThreshold(it, context) },
                     onEditCategoryBudget = { editingCategoryBudget = it },
                     onAddCustomCategoryClick = { showAddCategoryDialog = true },
                     onOpenBackupDialog = { showBackupDialog = true },
@@ -355,10 +363,20 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     transaction = tx,
                     accounts = accounts,
                     categories = categories,
+                    currencySymbol = currencySymbol,
                     onDismiss = { editingTransaction = null },
                     onSave = { title, category, accountId, notes, isRecurring, frequency, dueDate, receiptUri ->
-                        viewModel.updateTransactionTitleAndTag(tx, title, category, accountId, notes, receiptUri)
-                        viewModel.toggleTransactionRecurring(tx, isRecurring, frequency, dueDate)
+                        viewModel.updateTransactionTitleAndTag(
+                            tx,
+                            title,
+                            category,
+                            accountId,
+                            notes,
+                            receiptUri,
+                            isRecurring,
+                            frequency,
+                            dueDate
+                        )
                         editingTransaction = null
                     },
                     onDelete = {
@@ -394,6 +412,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
             editingCategoryBudget?.let { cat ->
                 EditCategoryBudgetDialog(
                     category = cat,
+                    currencySymbol = currencySymbol,
                     onDismiss = { editingCategoryBudget = null },
                     onSaveLimit = { limit ->
                         viewModel.updateCategoryBudget(cat, limit)
@@ -431,6 +450,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                 AddTransactionDialog(
                     accounts = accounts,
                     categories = categories,
+                    currencySymbol = currencySymbol,
                     onDismiss = { showAddTransactionDialog = false },
                     onAdd = { title, amount, type, accountId, categoryTag, notes, dateTimestamp, receiptUri ->
                         viewModel.addManualTransaction(title, amount, type, accountId, categoryTag, notes, dateTimestamp, receiptUri)

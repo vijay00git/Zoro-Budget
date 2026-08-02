@@ -49,7 +49,8 @@ fun EditCategoryBudgetDialog(
     category: CategoryEntity,
     onDismiss: () -> Unit,
     onSaveLimit: (limit: Double) -> Unit,
-    onDeleteCategory: (() -> Unit)? = null
+    onDeleteCategory: (() -> Unit)? = null,
+    currencySymbol: String = "$"
 ) {
     var budgetInput by remember { mutableStateOf(if (category.monthlyBudgetLimit > 0) category.monthlyBudgetLimit.toString() else "") }
     val presets = listOf(100, 250, 500, 750, 1000)
@@ -117,8 +118,8 @@ fun EditCategoryBudgetDialog(
                 OutlinedTextField(
                     value = budgetInput,
                     onValueChange = { budgetInput = it.filter { char -> char.isDigit() || char == '.' } },
-                    label = { Text("Monthly Limit ($)") },
-                    prefix = { Text("$ ") },
+                    label = { Text("Monthly Limit ($currencySymbol)") },
+                    prefix = { Text("$currencySymbol ") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -143,7 +144,7 @@ fun EditCategoryBudgetDialog(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = "$$preset",
+                                text = "$currencySymbol$preset",
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold,

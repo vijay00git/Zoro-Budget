@@ -254,7 +254,7 @@ fun ReportsScreen(
                                         )
                                     )
                                     Text(
-                                        text = String.format(Locale.getDefault(), "$%,.2f", netSavings),
+                                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, netSavings),
                                         style = MaterialTheme.typography.headlineMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = if (netSavings >= 0) IncomeGreen else ExpenseRed
@@ -289,7 +289,7 @@ fun ReportsScreen(
                                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                                     )
                                     Text(
-                                        text = String.format(Locale.getDefault(), "+$%,.2f", totalIncome),
+                                        text = String.format(Locale.getDefault(), "+%s%,.2f", currencySymbol, totalIncome),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = IncomeGreen
@@ -303,7 +303,7 @@ fun ReportsScreen(
                                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                                     )
                                     Text(
-                                        text = String.format(Locale.getDefault(), "-$%,.2f", totalExpense),
+                                        text = String.format(Locale.getDefault(), "-%s%,.2f", currencySymbol, totalExpense),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = ExpenseRed
@@ -372,8 +372,10 @@ fun ReportsScreen(
                                         text = if (totalBudgetLimit > 0) {
                                             String.format(
                                                 Locale.getDefault(),
-                                                "$%,.2f spent of $%,.2f budget",
+                                                "%s%,.2f spent of %s%,.2f budget",
+                                                currencySymbol,
                                                 totalSpentInBudgetedCategories,
+                                                currencySymbol,
                                                 totalBudgetLimit
                                             )
                                         } else {
@@ -433,9 +435,9 @@ fun ReportsScreen(
                                 val remaining = totalBudgetLimit - totalSpentInBudgetedCategories
                                 Text(
                                     text = if (remaining >= 0) {
-                                        String.format(Locale.getDefault(), "$%,.2f remaining in budget", remaining)
+                                        String.format(Locale.getDefault(), "%s%,.2f remaining in budget", currencySymbol, remaining)
                                     } else {
-                                        String.format(Locale.getDefault(), "$%,.2f OVER TOTAL BUDGET!", -remaining)
+                                        String.format(Locale.getDefault(), "%s%,.2f OVER TOTAL BUDGET!", currencySymbol, -remaining)
                                     },
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
@@ -568,7 +570,7 @@ fun ReportsScreen(
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Column(horizontalAlignment = Alignment.End) {
                                                     Text(
-                                                        text = String.format(Locale.getDefault(), "$%,.2f spent", spent),
+                                                        text = String.format(Locale.getDefault(), "%s%,.2f spent", currencySymbol, spent),
                                                         style = MaterialTheme.typography.bodyMedium.copy(
                                                             fontWeight = FontWeight.Bold,
                                                             color = if (hasLimit && spent > limit) ExpenseRed else MaterialTheme.colorScheme.onSurface
@@ -676,7 +678,7 @@ fun ReportsScreen(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = String.format(Locale.getDefault(), "Target: $%,.2f / month", savingsGoalTarget),
+                                            text = String.format(Locale.getDefault(), "Target: %s%,.2f / month", currencySymbol, savingsGoalTarget),
                                             style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }
@@ -742,8 +744,8 @@ fun ReportsScreen(
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
                                         text = when {
-                                            goalAchieved -> "🎉 Goal Reached! You have saved $${String.format(Locale.getDefault(), "%.2f", netSavings)} this month."
-                                            netSavings > 0 -> "You need $${String.format(Locale.getDefault(), "%.2f", savingsGoalTarget - netSavings)} more to reach your target goal."
+                                            goalAchieved -> "🎉 Goal Reached! You have saved ${currencySymbol}${String.format(Locale.getDefault(), "%.2f", netSavings)} this month."
+                                            netSavings > 0 -> "You need ${currencySymbol}${String.format(Locale.getDefault(), "%.2f", savingsGoalTarget - netSavings)} more to reach your target goal."
                                             else -> "Net spending exceeds income this month. Adjust category budget limits to increase savings."
                                         },
                                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
@@ -797,7 +799,7 @@ fun ReportsScreen(
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text(
-                                    text = String.format(Locale.getDefault(), "$%,.2f/mo", totalMonthlySubscriptions),
+                                    text = String.format(Locale.getDefault(), "%s%,.2f/mo", currencySymbol, totalMonthlySubscriptions),
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
@@ -939,7 +941,7 @@ fun ReportsScreen(
 
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Text(
-                                                        text = String.format(Locale.getDefault(), "$%,.2f", sub.amount),
+                                                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, sub.amount),
                                                         style = MaterialTheme.typography.titleMedium.copy(
                                                             fontWeight = FontWeight.Bold,
                                                             color = if (alert.severity == com.example.data.utils.BillAlertSeverity.URGENT) ExpenseRed else MaterialTheme.colorScheme.primary
@@ -989,7 +991,8 @@ fun ReportsScreen(
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                     CategoryDonutChart(
                         transactions = monthTx,
-                        categories = categories
+                        categories = categories,
+                        currencySymbol = currencySymbol
                     )
                 }
             }
@@ -998,7 +1001,8 @@ fun ReportsScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                     MonthlyBarChart(
-                        transactions = monthTx
+                        transactions = monthTx,
+                        currencySymbol = currencySymbol
                     )
                 }
             }
@@ -1009,6 +1013,7 @@ fun ReportsScreen(
     selectedSubscriptionToManage?.let { sub ->
         ManageSubscriptionDialog(
             transaction = sub,
+            currencySymbol = currencySymbol,
             onDismiss = { selectedSubscriptionToManage = null },
             onSaveFrequency = { newFreq, newDueDate ->
                 onToggleRecurring(sub, true, newFreq, newDueDate)

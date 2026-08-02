@@ -74,6 +74,7 @@ import java.util.Locale
 fun AddTransactionDialog(
     accounts: List<AccountEntity>,
     categories: List<CategoryEntity>,
+    currencySymbol: String = "$",
     onDismiss: () -> Unit,
     onAdd: (title: String, amount: Double, type: String, accountId: Long, categoryTag: String, notes: String?, dateTimestamp: Long, receiptUri: String?) -> Unit
 ) {
@@ -159,7 +160,7 @@ fun AddTransactionDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Amount ($)") },
+                    label = { Text("Amount ($currencySymbol)") },
                     placeholder = { Text("0.00") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
@@ -367,7 +368,7 @@ fun AddTransactionDialog(
                     ) {
                         accounts.forEach { acc ->
                             DropdownMenuItem(
-                                text = { Text("${acc.name} (${String.format(Locale.getDefault(), "$%,.2f", acc.balance)})") },
+                                text = { Text("${acc.name} (${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, acc.balance)})") },
                                 onClick = {
                                     selectedAccountId = acc.id
                                     accountDropdownExpanded = false

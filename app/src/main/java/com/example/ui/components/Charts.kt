@@ -75,6 +75,7 @@ data class CategoryExpense(
 fun CategoryDonutChart(
     transactions: List<TransactionEntity>,
     categories: List<CategoryEntity>,
+    currencySymbol: String = "$",
     modifier: Modifier = Modifier
 ) {
     val expenseTx = transactions.filter { it.type == "DEBIT" }
@@ -117,8 +118,10 @@ fun CategoryDonutChart(
 
     val categoryExpenses = expenseTx
         .groupBy { it.categoryTag }
-        .map { (catName, txList) ->
-            val sum = txList.sumOf { it.amount }
+        .mapNotNull { (catName, txList) ->
+            val sum = txList.sumOf { it.amount }.coerceAtLeast(0.0)
+            if (sum <= 0.0) return@mapNotNull null
+
             val catObj = categories.find { it.name.equals(catName, ignoreCase = true) }
             val color = catObj?.colorHex?.let { hex ->
                 try { Color(android.graphics.Color.parseColor(hex)) } catch (e: Exception) { null }
@@ -127,7 +130,7 @@ fun CategoryDonutChart(
             CategoryExpense(
                 categoryName = catName,
                 amount = sum,
-                percentage = ((sum / totalExpense) * 100).toFloat(),
+                percentage = (((sum / totalExpense) * 100).coerceIn(0.0, 100.0)).toFloat(),
                 color = color
             )
         }
@@ -191,13 +194,14 @@ fun CategoryDonutChart(
                     val strokeWidth = 36.dp.toPx()
 
                     categoryExpenses.forEachIndexed { index, item ->
-                        val sweepAngle = (item.percentage / 100f) * 360f
+                        val safePercentage = item.percentage.coerceIn(0f, 100f)
+                        val sweepAngle = (safePercentage / 100f) * 360f
                         val isSelected = selectedIndex == index
 
                         drawArc(
                             color = item.color,
                             startAngle = startAngle,
-                            sweepAngle = sweepAngle - 2f, // Small gap
+                            sweepAngle = (sweepAngle - 2f).coerceAtLeast(0f),
                             useCenter = false,
                             style = Stroke(
                                 width = if (isSelected) strokeWidth * 1.15f else strokeWidth,
@@ -224,7 +228,7 @@ fun CategoryDonutChart(
                             )
                         )
                         Text(
-                            text = String.format(Locale.getDefault(), "$%,.2f", displayCat.amount),
+                            text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, displayCat.amount),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             )
@@ -243,7 +247,7 @@ fun CategoryDonutChart(
                             )
                         )
                         Text(
-                            text = String.format(Locale.getDefault(), "$%,.2f", totalExpense),
+                            text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, totalExpense),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             )
@@ -287,7 +291,7 @@ fun CategoryDonutChart(
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = String.format(Locale.getDefault(), "$%,.2f", item.amount),
+                                text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, item.amount),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Bold
                                 )
@@ -310,6 +314,7 @@ fun CategoryDonutChart(
 @Composable
 fun MonthlyBarChart(
     transactions: List<TransactionEntity>,
+    currencySymbol: String = "$",
     modifier: Modifier = Modifier
 ) {
     // Group debits by day of month (1..31)
@@ -354,7 +359,7 @@ fun MonthlyBarChart(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "Peak: $${String.format(Locale.getDefault(), "%.0f", maxAmount)}",
+                        text = "Peak: ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", maxAmount)}",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = ExpenseRed,
@@ -487,9 +492,9 @@ fun MonthlySpendingTrendChart(
                 .mapValues { entry -> entry.value.sumOf { it.amount } }
 
             val total = if (selectedCategoryFilter != null) {
-                categoryMap[selectedCategoryFilter] ?: 0.0
+                (categoryMap[selectedCategoryFilter] ?: 0.0).coerceAtLeast(0.0)
             } else {
-                monthDebits.sumOf { it.amount }
+                monthDebits.sumOf { it.amount }.coerceAtLeast(0.0)
             }
 
             list.add(
@@ -722,8 +727,8 @@ fun MonthlySpendingTrendChart(
                             val isSelected = selectedMonthIndex == idx
 
                             if (selectedCategoryFilter != null) {
-                                val amount = item.totalExpense
-                                val barHeight = ((amount / maxVal) * h).toFloat()
+                                val amount = item.totalExpense.coerceAtLeast(0.0)
+                                val barHeight = ((amount / maxVal) * h).toFloat().coerceAtLeast(0f)
                                 val catColor = getCategoryColor(selectedCategoryFilter!!)
 
                                 if (barHeight > 0) {
@@ -736,10 +741,12 @@ fun MonthlySpendingTrendChart(
                                 }
                             } else {
                                 var currentY = h
-                                val sortedCategories = item.categoryBreakdown.entries.sortedByDescending { it.value }
+                                val sortedCategories = item.categoryBreakdown.entries
+                                    .filter { it.value > 0.0 }
+                                    .sortedByDescending { it.value }
 
                                 sortedCategories.forEach { (catName, amount) ->
-                                    val segmentHeight = ((amount / maxVal) * h).toFloat()
+                                    val segmentHeight = ((amount.coerceAtLeast(0.0) / maxVal) * h).toFloat().coerceAtLeast(0f)
                                     val catColor = getCategoryColor(catName)
 
                                     if (segmentHeight > 0) {
@@ -764,7 +771,8 @@ fun MonthlySpendingTrendChart(
                     } else {
                         val points = monthlyData.mapIndexed { idx, item ->
                             val x = idx * colWidth + (colWidth / 2f)
-                            val y = h - ((item.totalExpense / maxVal) * h).toFloat()
+                            val safeAmount = item.totalExpense.coerceAtLeast(0.0)
+                            val y = h - ((safeAmount / maxVal) * h).toFloat()
                             Offset(x, y)
                         }
 

@@ -43,7 +43,8 @@ import com.example.ui.theme.IncomeGreen
 fun EditSavingsGoalDialog(
     currentGoalTarget: Double,
     onDismiss: () -> Unit,
-    onSaveGoalTarget: (target: Double) -> Unit
+    onSaveGoalTarget: (target: Double) -> Unit,
+    currencySymbol: String = "$"
 ) {
     var goalInput by remember { mutableStateOf(if (currentGoalTarget > 0) currentGoalTarget.toString() else "500") }
     val presets = listOf(250, 500, 750, 1000, 1500, 2000)
@@ -85,8 +86,8 @@ fun EditSavingsGoalDialog(
                 OutlinedTextField(
                     value = goalInput,
                     onValueChange = { goalInput = it },
-                    label = { Text("Monthly Savings Target ($)") },
-                    prefix = { Text("$ ") },
+                    label = { Text("Monthly Savings Target ($currencySymbol)") },
+                    prefix = { Text("$currencySymbol ") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -109,7 +110,7 @@ fun EditSavingsGoalDialog(
                     presets.forEach { preset ->
                         SuggestionChip(
                             onClick = { goalInput = preset.toString() },
-                            label = { Text("$$preset") }
+                            label = { Text("$currencySymbol$preset") }
                         )
                     }
                 }

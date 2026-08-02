@@ -318,6 +318,24 @@ class BudgetRepository(
         accountDao.insertAccount(account)
     }
 
+    /**
+     * Inserts an account as a brand-new row (id forced to 0 so Room autogenerates a fresh id
+     * instead of REPLACE-ing/colliding with an existing row) and returns the generated id.
+     * Used by backup restore, which supplies a balance that already reflects all its transactions.
+     */
+    suspend fun restoreAccount(account: AccountEntity): Long {
+        return accountDao.insertAccount(account.copy(id = 0))
+    }
+
+    /**
+     * Inserts a transaction as-is without touching account balances. Used by backup restore,
+     * where the imported account balance already accounts for every imported transaction -
+     * replaying addTransaction's balance delta here would double-count it.
+     */
+    suspend fun restoreTransaction(transaction: TransactionEntity) {
+        transactionDao.insertTransaction(transaction.copy(id = 0))
+    }
+
     suspend fun updateAccount(account: AccountEntity) {
         accountDao.updateAccount(account)
     }

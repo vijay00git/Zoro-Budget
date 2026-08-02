@@ -41,7 +41,8 @@ import androidx.compose.ui.unit.dp
 fun TotalBudgetDialog(
     currentTotalBudget: Double,
     onDismiss: () -> Unit,
-    onSaveTotalBudget: (totalBudget: Double) -> Unit
+    onSaveTotalBudget: (totalBudget: Double) -> Unit,
+    currencySymbol: String = "$"
 ) {
     var budgetInput by remember {
         mutableStateOf(if (currentTotalBudget > 0) currentTotalBudget.toInt().toString() else "2000")
@@ -85,8 +86,8 @@ fun TotalBudgetDialog(
                 OutlinedTextField(
                     value = budgetInput,
                     onValueChange = { budgetInput = it },
-                    label = { Text("Total Monthly Budget ($)") },
-                    prefix = { Text("$ ") },
+                    label = { Text("Total Monthly Budget ($currencySymbol)") },
+                    prefix = { Text("$currencySymbol ") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -109,7 +110,7 @@ fun TotalBudgetDialog(
                     presets.forEach { preset ->
                         SuggestionChip(
                             onClick = { budgetInput = preset.toString() },
-                            label = { Text("$$preset") }
+                            label = { Text("$currencySymbol$preset") }
                         )
                     }
                 }

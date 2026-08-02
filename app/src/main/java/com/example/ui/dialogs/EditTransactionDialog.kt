@@ -73,6 +73,7 @@ fun EditTransactionDialog(
     transaction: TransactionEntity,
     accounts: List<AccountEntity>,
     categories: List<CategoryEntity>,
+    currencySymbol: String = "$",
     onDismiss: () -> Unit,
     onSave: (title: String, category: String, accountId: Long, notes: String?, isRecurring: Boolean, frequency: String?, dueDate: Int?, receiptUri: String?) -> Unit,
     onDelete: () -> Unit
@@ -85,6 +86,7 @@ fun EditTransactionDialog(
     var isRecurring by remember { mutableStateOf(transaction.isRecurring) }
     var recurringFrequency by remember { mutableStateOf(transaction.recurringFrequency ?: "MONTHLY") }
     var recurringDueDate by remember { androidx.compose.runtime.mutableIntStateOf(transaction.recurringDueDate ?: 4) }
+    var recurringDueDateText by remember { mutableStateOf(transaction.recurringDueDate?.toString() ?: "4") }
     var accountDropdownExpanded by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -184,7 +186,7 @@ fun EditTransactionDialog(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "Amount: ${if (transaction.type == "CREDIT") "+" else "-"}${String.format(Locale.getDefault(), "$%,.2f", transaction.amount)}",
+                            text = "Amount: ${if (transaction.type == "CREDIT") "+" else "-"}${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, transaction.amount)}",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = if (transaction.type == "CREDIT") com.example.ui.theme.IncomeGreen else MaterialTheme.colorScheme.primary
@@ -296,7 +298,7 @@ fun EditTransactionDialog(
                     ) {
                         accounts.forEach { acc ->
                             DropdownMenuItem(
-                                text = { Text("${acc.name} (${String.format(Locale.getDefault(), "$%,.2f", acc.balance)})") },
+                                text = { Text("${acc.name} (${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, acc.balance)})") },
                                 onClick = {
                                     selectedAccountId = acc.id
                                     accountDropdownExpanded = false
@@ -487,9 +489,18 @@ fun EditTransactionDialog(
 
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
-                            value = recurringDueDate.toString(),
+                            value = recurringDueDateText,
                             onValueChange = { input ->
-                                input.toIntOrNull()?.let { if (it in 1..31) recurringDueDate = it }
+                                if (input.isBlank()) {
+                                    recurringDueDateText = ""
+                                } else {
+                                    input.toIntOrNull()?.let { parsed ->
+                                        if (parsed in 1..31) {
+                                            recurringDueDate = parsed
+                                            recurringDueDateText = parsed.toString()
+                                        }
+                                    }
+                                }
                             },
                             label = { Text("Due Day (e.g. Day 4 for EMI)") },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
@@ -503,6 +514,7 @@ fun EditTransactionDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    val resolvedDueDate = recurringDueDateText.toIntOrNull()?.coerceIn(1, 31) ?: recurringDueDate
                     onSave(
                         title,
                         selectedCategory,
@@ -510,7 +522,7 @@ fun EditTransactionDialog(
                         notes.ifBlank { null },
                         isRecurring,
                         if (isRecurring) recurringFrequency else null,
-                        if (isRecurring) recurringDueDate else null,
+                        if (isRecurring) resolvedDueDate else null,
                         receiptUri
                     )
                 },

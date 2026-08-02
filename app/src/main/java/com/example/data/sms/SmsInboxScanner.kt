@@ -32,8 +32,11 @@ class SmsInboxScanner(private val context: Context, private val repository: Budg
                 while (it.moveToNext() && count < maxCount) {
                     val date = if (dateIdx >= 0) it.getLong(dateIdx) else System.currentTimeMillis()
 
+                    // Cursor is sorted "date DESC", so once one message is older than the
+                    // cutoff every remaining row is too - stop scanning instead of reading
+                    // through the rest of the inbox for nothing.
                     if (minTimestamp > 0L && date < minTimestamp) {
-                        continue
+                        break
                     }
 
                     val body = if (bodyIdx >= 0) it.getString(bodyIdx) else null

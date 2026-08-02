@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.export.DataExporter
 import com.example.data.local.BudgetRepository
 import com.example.data.local.entity.AccountEntity
+import com.example.data.preferences.AppPreferences
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.sms.SmsInboxScanner
@@ -96,7 +97,9 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         _typeFilter,
         _dateRangeFilter,
         _customStartDate,
-        _customEndDate
+        _customEndDate,
+        _minAmountFilter,
+        _maxAmountFilter
     ) { args ->
         @Suppress("UNCHECKED_CAST")
         val allTx = args[0] as List<TransactionEntity>
@@ -107,6 +110,8 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         val dateRange = args[5] as String
         val customStart = args[6] as Long?
         val customEnd = args[7] as Long?
+        val minAmount = args[8] as Double?
+        val maxAmount = args[9] as Double?
 
         val now = System.currentTimeMillis()
         val cal = Calendar.getInstance()
@@ -154,7 +159,10 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 else -> true
             }
 
-            matchAccount && matchQuery && matchCategory && matchType && matchDateRange
+            val matchAmount = (minAmount == null || tx.amount >= minAmount) &&
+                    (maxAmount == null || tx.amount <= maxAmount)
+
+            matchAccount && matchQuery && matchCategory && matchType && matchDateRange && matchAmount
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -174,12 +182,13 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         _typeFilter.value = type
     }
 
-    fun setCurrencySymbol(symbol: String) {
+    fun setCurrencySymbol(symbol: String, context: Context? = null) {
         _currencySymbol.value = symbol
         _importStatusMessage.value = "Updated default currency symbol to $symbol"
+        context?.let { AppPreferences.save(context = it, currencySymbol = symbol) }
     }
 
-    fun setThemeMode(mode: String) {
+    fun setThemeMode(mode: String, context: Context? = null) {
         _themeMode.value = mode
         val label = when (mode) {
             "LIGHT" -> "Light mode"
@@ -187,16 +196,19 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
             else -> "System default theme"
         }
         _importStatusMessage.value = "App theme set to $label"
+        context?.let { AppPreferences.save(context = it, themeMode = mode) }
     }
 
-    fun setSavingsGoalTarget(target: Double) {
+    fun setSavingsGoalTarget(target: Double, context: Context? = null) {
         _savingsGoalTarget.value = target
         _importStatusMessage.value = "Updated monthly savings target to ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", target)}"
+        context?.let { AppPreferences.save(context = it, savingsGoalTarget = target) }
     }
 
-    fun setLowBalanceThreshold(threshold: Double) {
+    fun setLowBalanceThreshold(threshold: Double, context: Context? = null) {
         _lowBalanceThreshold.value = threshold
         _importStatusMessage.value = "Updated low balance alert limit to ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", threshold)}"
+        context?.let { AppPreferences.save(context = it, lowBalanceThreshold = threshold) }
     }
 
     fun setMonthOffset(offset: Int) {
@@ -245,7 +257,7 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         viewModelScope.launch {
             val updated = category.copy(monthlyBudgetLimit = limit)
             repository.updateCategory(updated)
-            _importStatusMessage.value = "Updated budget limit for ${category.name} to $${limit}"
+            _importStatusMessage.value = "Updated budget limit for ${category.name} to ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", limit)}"
         }
     }
 
@@ -257,7 +269,7 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 currentCats.forEach { cat ->
                     repository.updateCategory(cat.copy(monthlyBudgetLimit = perCatLimit))
                 }
-                _importStatusMessage.value = "Set overall monthly budget to $${String.format(java.util.Locale.getDefault(), "%.2f", total)} across ${currentCats.size} categories"
+                _importStatusMessage.value = "Set overall monthly budget to ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", total)} across ${currentCats.size} categories"
             }
         }
     }
@@ -314,7 +326,7 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 notes = "Recurring ${transaction.recurringFrequency ?: "MONTHLY"} payment recorded on ${java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date())}"
             )
             repository.addTransaction(paidTx)
-            _importStatusMessage.value = "Recorded payment for '${transaction.title}' ($${transaction.amount})"
+            _importStatusMessage.value = "Recorded payment for '${transaction.title}' (${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", transaction.amount)})"
         }
     }
 
@@ -387,15 +399,32 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 _importStatusMessage.value = "Failed to parse JSON backup. Check format."
                 return@launch
             }
-            var count = 0
-            for (cat in parsed.categories) {
-                repository.addCategory(cat)
-            }
+
+            // Restore accounts as brand-new rows and remember old id -> new id so imported
+            // transactions can be re-pointed at the right account, without colliding with (and
+            // silently overwriting) any account that already exists on this device.
+            val accountIdRemap = mutableMapOf<Long, Long>()
             for (acc in parsed.accounts) {
-                repository.addAccount(acc)
+                accountIdRemap[acc.id] = repository.restoreAccount(acc)
             }
+            val fallbackAccountId = accountIdRemap.values.firstOrNull()
+                ?: repository.accounts.first().firstOrNull()?.id
+
+            // Categories are matched by name, not id - skip any category that already exists
+            // locally so re-importing a backup doesn't create duplicate categories.
+            val existingCategoryNames = repository.categories.first().map { it.name.lowercase() }.toSet()
+            for (cat in parsed.categories) {
+                if (cat.name.lowercase() !in existingCategoryNames) {
+                    repository.addCategory(cat.copy(id = 0))
+                }
+            }
+
+            var count = 0
             for (tx in parsed.transactions) {
-                repository.addTransaction(tx)
+                val remappedAccountId = accountIdRemap[tx.accountId] ?: fallbackAccountId ?: continue
+                // restoreTransaction (not addTransaction) - the imported account balance already
+                // reflects this transaction, so we must not re-apply its delta on top of it.
+                repository.restoreTransaction(tx.copy(accountId = remappedAccountId))
                 count++
             }
             _importStatusMessage.value = "Restored backup! Imported $count transactions."
@@ -403,8 +432,14 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
     }
 
     fun loadPreferences(context: Context) {
-        val prefs = context.getSharedPreferences("smart_budget_prefs", Context.MODE_PRIVATE)
-        val ts = prefs.getLong("sms_sync_from_date", 0L)
+        val prefs = AppPreferences.load(context)
+        _currencySymbol.value = prefs.currencySymbol
+        _savingsGoalTarget.value = prefs.savingsGoalTarget
+        _lowBalanceThreshold.value = prefs.lowBalanceThreshold
+        _themeMode.value = prefs.themeMode
+
+        val ts = context.getSharedPreferences("smart_budget_prefs", Context.MODE_PRIVATE)
+            .getLong("sms_sync_from_date", 0L)
         _smsSyncFromDate.value = if (ts > 0L) ts else null
     }
 
@@ -446,7 +481,7 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
             if (parsed != null) {
                 val success = repository.processParsedSmsTransaction(parsed)
                 if (success) {
-                    _importStatusMessage.value = "Parsed: ${parsed.type} of $${parsed.amount} at ${parsed.merchantOrSender ?: "Merchant"}"
+                    _importStatusMessage.value = "Parsed: ${parsed.type} of ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", parsed.amount)} at ${parsed.merchantOrSender ?: "Merchant"}"
                 } else {
                     _importStatusMessage.value = "Transaction already imported."
                 }
@@ -462,7 +497,10 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         newCategory: String,
         newAccountId: Long,
         newNotes: String?,
-        newReceiptUri: String? = transaction.receiptUri
+        newReceiptUri: String? = transaction.receiptUri,
+        isRecurring: Boolean = transaction.isRecurring,
+        recurringFrequency: String? = transaction.recurringFrequency,
+        recurringDueDate: Int? = transaction.recurringDueDate
     ) {
         viewModelScope.launch {
             val updated = transaction.copy(
@@ -471,10 +509,17 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 accountId = newAccountId,
                 isPendingReview = false,
                 notes = newNotes,
-                receiptUri = newReceiptUri
+                receiptUri = newReceiptUri,
+                isRecurring = isRecurring,
+                recurringFrequency = if (isRecurring) (recurringFrequency ?: "MONTHLY") else null,
+                recurringDueDate = if (isRecurring) recurringDueDate else null
             )
             repository.updateTransaction(transaction, updated)
-            _importStatusMessage.value = "Updated transaction details & receipt."
+            _importStatusMessage.value = if (isRecurring) {
+                "Updated transaction and recurring settings."
+            } else {
+                "Updated transaction details & receipt."
+            }
         }
     }
 
@@ -502,7 +547,7 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 receiptUri = receiptUri
             )
             repository.addTransaction(tx)
-            _importStatusMessage.value = "Added $type transaction of $$amount"
+            _importStatusMessage.value = "Added $type transaction of ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", amount)}"
         }
     }
 
@@ -596,7 +641,7 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 dateTimestamp = dateTimestamp
             )
             val formattedAmount = String.format(java.util.Locale.getDefault(), "%.2f", amount)
-            _importStatusMessage.value = "Transferred $$formattedAmount from ${fromAccount.name} to ${toAccount.name}"
+            _importStatusMessage.value = "Transferred ${_currencySymbol.value}$formattedAmount from ${fromAccount.name} to ${toAccount.name}"
         }
     }
 
@@ -615,7 +660,7 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
 
                 _importStatusMessage.value = "App cache & temp files purged! Memory & Phone Storage optimized."
             } catch (e: Exception) {
-                _importStatusMessage.value = "Cache cleared successfully."
+                _importStatusMessage.value = "Failed to clear cache: ${e.message ?: "unknown error"}"
             }
         }
     }

@@ -53,7 +53,8 @@ fun ManageSubscriptionDialog(
     onDismiss: () -> Unit,
     onSaveFrequency: (frequency: String, dueDate: Int?) -> Unit,
     onRemoveSubscription: () -> Unit,
-    onOpenEditTransaction: () -> Unit
+    onOpenEditTransaction: () -> Unit,
+    currencySymbol: String = "$"
 ) {
     var selectedFrequency by remember { mutableStateOf(transaction.recurringFrequency ?: "MONTHLY") }
     var dueDate by remember { androidx.compose.runtime.mutableIntStateOf(transaction.recurringDueDate ?: 4) }
@@ -129,7 +130,7 @@ fun ManageSubscriptionDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = String.format(Locale.getDefault(), "$%,.2f / billing cycle", transaction.amount),
+                            text = String.format(Locale.getDefault(), "%s%,.2f / billing cycle", currencySymbol, transaction.amount),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary

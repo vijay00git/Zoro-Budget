@@ -52,9 +52,11 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Warning
@@ -95,6 +97,7 @@ import com.example.ui.dialogs.TotalBudgetDialog
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.IncomeGreen
 import com.example.ui.theme.PendingAmber
+import com.example.utils.AppDebugLogger
 import java.util.Calendar
 import java.util.Locale
 
@@ -134,18 +137,24 @@ fun SettingsScreen(
     var showTotalBudgetDialog by remember { mutableStateOf(false) }
     var showLowBalanceDialog by remember { mutableStateOf(false) }
     var simSmsInput by remember { mutableStateOf("") }
+    var debugLogText by remember { mutableStateOf(AppDebugLogger.getLatestLogText()) }
 
     var hasSmsPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
         )
     }
 
+    // Request READ_SMS (needed for the inbox scan) and RECEIVE_SMS (needed for the
+    // SmsReceiver to get live incoming-message broadcasts) together - both are separate
+    // dangerous permissions and granting one is not guaranteed to grant the other.
     val smsPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasSmsPermission = isGranted
-        if (isGranted) {
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val granted = results.values.all { it }
+        hasSmsPermission = granted
+        if (granted) {
             onScanInbox()
         }
     }
@@ -624,7 +633,9 @@ fun SettingsScreen(
                                 if (hasSmsPermission) {
                                     onScanInbox()
                                 } else {
-                                    smsPermissionLauncher.launch(Manifest.permission.READ_SMS)
+                                    smsPermissionLauncher.launch(
+                                        arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
+                                    )
                                 }
                             },
                             modifier = Modifier
@@ -1420,6 +1431,105 @@ fun SettingsScreen(
             }
         }
 
+        // --- DEBUG LOG CAPTURE ---
+        item {
+            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                Text(
+                    text = "Debug Log Capture",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(vertical = 6.dp)
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SaveAlt,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Capture app logs for crash reports",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text(
+                                    text = "Use this to collect recent app events and share them with support",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = debugLogText,
+                            onValueChange = { debugLogText = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp),
+                            label = { Text("Recent app log") },
+                            readOnly = true,
+                            maxLines = 15,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    AppDebugLogger.log("Manual debug log capture requested")
+                                    debugLogText = AppDebugLogger.getLatestLogText()
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Refresh Logs", style = MaterialTheme.typography.labelLarge)
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    val shareIntent = AppDebugLogger.buildShareIntent(context)
+                                    context.startActivity(shareIntent)
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Share Logs", style = MaterialTheme.typography.labelLarge)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // --- STORAGE, CACHE & RAM OPTIMIZATION ---
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
@@ -1568,6 +1678,7 @@ fun SettingsScreen(
     if (showSavingsGoalDialog) {
         EditSavingsGoalDialog(
             currentGoalTarget = savingsGoalTarget,
+            currencySymbol = currencySymbol,
             onDismiss = { showSavingsGoalDialog = false },
             onSaveGoalTarget = { target ->
                 onUpdateSavingsGoalTarget(target)
@@ -1578,6 +1689,7 @@ fun SettingsScreen(
     if (showTotalBudgetDialog) {
         TotalBudgetDialog(
             currentTotalBudget = totalBudgetLimit,
+            currencySymbol = currencySymbol,
             onDismiss = { showTotalBudgetDialog = false },
             onSaveTotalBudget = { total ->
                 onSetTotalMonthlyBudget(total)
