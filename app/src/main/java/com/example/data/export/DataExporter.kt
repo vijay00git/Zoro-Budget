@@ -11,6 +11,14 @@ import java.util.Locale
 
 object DataExporter {
 
+    /**
+     * Standard CSV escaping (RFC 4180): always quote the field and double up any embedded
+     * quote characters, rather than stripping commas/quotes and silently losing information.
+     */
+    private fun csvField(value: String): String {
+        return "\"${value.replace("\"", "\"\"")}\""
+    }
+
     fun exportToCsv(transactions: List<TransactionEntity>, accounts: List<AccountEntity>): String {
         val accountMap = accounts.associateBy { it.id }
         val sb = StringBuilder()
@@ -21,11 +29,18 @@ object DataExporter {
         for (tx in transactions) {
             val accountName = accountMap[tx.accountId]?.name ?: "Account #${tx.accountId}"
             val dateStr = dateFormat.format(Date(tx.dateTimestamp))
-            val cleanTitle = tx.title.replace(",", " ")
-            val cleanNotes = (tx.notes ?: "").replace(",", " ")
-            val cleanMerchant = (tx.merchantOrSender ?: "").replace(",", " ")
 
-            sb.append("${tx.id},\"$dateStr\",\"$cleanTitle\",${tx.amount},${tx.type},\"${tx.categoryTag}\",\"$accountName\",${tx.source},\"$cleanMerchant\",${tx.isRecurring},\"$cleanNotes\"\n")
+            sb.append(tx.id).append(',')
+            sb.append(csvField(dateStr)).append(',')
+            sb.append(csvField(tx.title)).append(',')
+            sb.append(tx.amount).append(',')
+            sb.append(csvField(tx.type)).append(',')
+            sb.append(csvField(tx.categoryTag)).append(',')
+            sb.append(csvField(accountName)).append(',')
+            sb.append(csvField(tx.source)).append(',')
+            sb.append(csvField(tx.merchantOrSender ?: "")).append(',')
+            sb.append(tx.isRecurring).append(',')
+            sb.append(csvField(tx.notes ?: "")).append('\n')
         }
 
         return sb.toString()

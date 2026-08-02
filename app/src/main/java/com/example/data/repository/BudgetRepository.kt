@@ -1,5 +1,6 @@
 package com.example.data.local
 
+import androidx.room.withTransaction
 import com.example.data.local.dao.AccountDao
 import com.example.data.local.dao.CategoryDao
 import com.example.data.local.dao.TransactionDao
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
 class BudgetRepository(
+    private val db: AppDatabase,
     private val accountDao: AccountDao,
     private val transactionDao: TransactionDao,
     private val categoryDao: CategoryDao
@@ -21,6 +23,10 @@ class BudgetRepository(
     val categories: Flow<List<CategoryEntity>> = categoryDao.getAllCategories()
 
     suspend fun initializeDefaultDataIfNeeded() {
+        db.withTransaction { initializeDefaultDataIfNeededInternal() }
+    }
+
+    private suspend fun initializeDefaultDataIfNeededInternal() {
         // Seed default categories if empty
         if (categoryDao.getCategoryCount() == 0) {
             val defaultCategories = listOf(
@@ -243,37 +249,53 @@ class BudgetRepository(
             notes = "Auto-imported from SMS"
         )
 
-        transactionDao.insertTransaction(transaction)
+        db.withTransaction {
+            transactionDao.insertTransaction(transaction)
 
-        // Update balance
-        val balanceDelta = if (parsed.type == "CREDIT") parsed.amount else -parsed.amount
-        accountDao.updateBalance(targetAccount.id, balanceDelta)
+            // Update balance
+            val balanceDelta = if (parsed.type == "CREDIT") parsed.amount else -parsed.amount
+            accountDao.updateBalance(targetAccount.id, balanceDelta)
+        }
 
         return true
     }
 
     suspend fun addTransaction(transaction: TransactionEntity) {
-        transactionDao.insertTransaction(transaction)
-        val balanceDelta = if (transaction.type == "CREDIT") transaction.amount else -transaction.amount
-        accountDao.updateBalance(transaction.accountId, balanceDelta)
+        db.withTransaction {
+            transactionDao.insertTransaction(transaction)
+            val balanceDelta = if (transaction.type == "CREDIT") transaction.amount else -transaction.amount
+            accountDao.updateBalance(transaction.accountId, balanceDelta)
+        }
     }
 
     suspend fun updateTransaction(oldTransaction: TransactionEntity, newTransaction: TransactionEntity) {
-        transactionDao.updateTransaction(newTransaction)
+        db.withTransaction {
+            transactionDao.updateTransaction(newTransaction)
 
-        // Revert old transaction effect on balance
-        val oldDelta = if (oldTransaction.type == "CREDIT") -oldTransaction.amount else oldTransaction.amount
-        accountDao.updateBalance(oldTransaction.accountId, oldDelta)
+            // Revert old transaction effect on balance
+            val oldDelta = if (oldTransaction.type == "CREDIT") -oldTransaction.amount else oldTransaction.amount
+            accountDao.updateBalance(oldTransaction.accountId, oldDelta)
 
-        // Apply new transaction effect
-        val newDelta = if (newTransaction.type == "CREDIT") newTransaction.amount else -newTransaction.amount
-        accountDao.updateBalance(newTransaction.accountId, newDelta)
+            // Apply new transaction effect
+            val newDelta = if (newTransaction.type == "CREDIT") newTransaction.amount else -newTransaction.amount
+            accountDao.updateBalance(newTransaction.accountId, newDelta)
+        }
     }
 
     suspend fun deleteTransaction(transaction: TransactionEntity) {
-        transactionDao.deleteTransaction(transaction)
-        val revertDelta = if (transaction.type == "CREDIT") -transaction.amount else transaction.amount
-        accountDao.updateBalance(transaction.accountId, revertDelta)
+        db.withTransaction {
+            // SMS-sourced transactions are dismissed (row kept, hidden from every query) rather
+            // than hard-deleted: the row's rawSmsMessage/dateTimestamp is what checkDuplicateSms
+            // matches against, so hard-deleting it would let the next inbox scan recreate the
+            // exact transaction the user just declined.
+            if (transaction.source == "SMS_AUTO" || transaction.source == "SIMULATED_SMS") {
+                transactionDao.dismissTransaction(transaction.id)
+            } else {
+                transactionDao.deleteTransaction(transaction)
+            }
+            val revertDelta = if (transaction.type == "CREDIT") -transaction.amount else transaction.amount
+            accountDao.updateBalance(transaction.accountId, revertDelta)
+        }
     }
 
     suspend fun transferBetweenAccounts(
@@ -285,33 +307,35 @@ class BudgetRepository(
         notes: String?,
         dateTimestamp: Long = System.currentTimeMillis()
     ) {
-        // 1. Create DEBIT transaction for source account
-        val debitTx = TransactionEntity(
-            title = "Transfer to $toAccountName",
-            amount = amount,
-            type = "DEBIT",
-            accountId = fromAccountId,
-            categoryTag = "Transfer",
-            dateTimestamp = dateTimestamp,
-            source = "MANUAL",
-            notes = if (!notes.isNullOrBlank()) notes else "Transfer to $toAccountName"
-        )
-        transactionDao.insertTransaction(debitTx)
-        accountDao.updateBalance(fromAccountId, -amount)
+        db.withTransaction {
+            // 1. Create DEBIT transaction for source account
+            val debitTx = TransactionEntity(
+                title = "Transfer to $toAccountName",
+                amount = amount,
+                type = "DEBIT",
+                accountId = fromAccountId,
+                categoryTag = "Transfer",
+                dateTimestamp = dateTimestamp,
+                source = "MANUAL",
+                notes = if (!notes.isNullOrBlank()) notes else "Transfer to $toAccountName"
+            )
+            transactionDao.insertTransaction(debitTx)
+            accountDao.updateBalance(fromAccountId, -amount)
 
-        // 2. Create CREDIT transaction for destination account
-        val creditTx = TransactionEntity(
-            title = "Transfer from $fromAccountName",
-            amount = amount,
-            type = "CREDIT",
-            accountId = toAccountId,
-            categoryTag = "Transfer",
-            dateTimestamp = dateTimestamp,
-            source = "MANUAL",
-            notes = if (!notes.isNullOrBlank()) notes else "Transfer from $fromAccountName"
-        )
-        transactionDao.insertTransaction(creditTx)
-        accountDao.updateBalance(toAccountId, amount)
+            // 2. Create CREDIT transaction for destination account
+            val creditTx = TransactionEntity(
+                title = "Transfer from $fromAccountName",
+                amount = amount,
+                type = "CREDIT",
+                accountId = toAccountId,
+                categoryTag = "Transfer",
+                dateTimestamp = dateTimestamp,
+                source = "MANUAL",
+                notes = if (!notes.isNullOrBlank()) notes else "Transfer from $fromAccountName"
+            )
+            transactionDao.insertTransaction(creditTx)
+            accountDao.updateBalance(toAccountId, amount)
+        }
     }
 
     suspend fun addAccount(account: AccountEntity) {
@@ -350,6 +374,15 @@ class BudgetRepository(
 
     suspend fun updateCategory(category: CategoryEntity) {
         categoryDao.updateCategory(category)
+    }
+
+    /**
+     * Runs [block] inside a single database transaction. Used by multi-step operations that
+     * span several repository calls (e.g. restoring a whole JSON backup) so a crash or error
+     * partway through can't leave accounts/categories/transactions half-restored.
+     */
+    suspend fun <T> runInTransaction(block: suspend () -> T): T {
+        return db.withTransaction { block() }
     }
 
     suspend fun deleteCategory(category: CategoryEntity) {

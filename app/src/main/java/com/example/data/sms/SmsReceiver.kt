@@ -46,7 +46,7 @@ class SmsReceiver : BroadcastReceiver() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val db = AppDatabase.getDatabase(appContext)
-                    val repository = BudgetRepository(db.accountDao(), db.transactionDao(), db.categoryDao())
+                    val repository = BudgetRepository(db, db.accountDao(), db.transactionDao(), db.categoryDao())
                     repository.processParsedSmsTransaction(parsed)
                     Log.d("SmsReceiver", "Successfully processed SMS transaction: ${parsed.amount} ${parsed.type}")
                 } catch (e: Exception) {

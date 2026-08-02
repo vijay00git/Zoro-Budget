@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.IncomeGreen
@@ -69,7 +71,7 @@ fun EditSavingsGoalDialog(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Set Monthly Savings Target",
+                    text = stringResource(R.string.edit_savings_goal_dialog_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -77,7 +79,7 @@ fun EditSavingsGoalDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Target amount you aim to save every month (Income minus Expenses):",
+                    text = stringResource(R.string.edit_savings_goal_dialog_description),
                     style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
@@ -86,8 +88,8 @@ fun EditSavingsGoalDialog(
                 OutlinedTextField(
                     value = goalInput,
                     onValueChange = { goalInput = it },
-                    label = { Text("Monthly Savings Target ($currencySymbol)") },
-                    prefix = { Text("$currencySymbol ") },
+                    label = { Text(stringResource(R.string.edit_savings_goal_dialog_target_label, currencySymbol)) },
+                    prefix = { Text(stringResource(R.string.edit_savings_goal_dialog_currency_prefix, currencySymbol)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -97,7 +99,7 @@ fun EditSavingsGoalDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Quick Presets:",
+                    text = stringResource(R.string.edit_savings_goal_dialog_quick_presets),
                     style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
@@ -110,7 +112,7 @@ fun EditSavingsGoalDialog(
                     presets.forEach { preset ->
                         SuggestionChip(
                             onClick = { goalInput = preset.toString() },
-                            label = { Text("$currencySymbol$preset") }
+                            label = { Text(stringResource(R.string.edit_savings_goal_dialog_preset_amount, currencySymbol, preset)) }
                         )
                     }
                 }
@@ -125,12 +127,12 @@ fun EditSavingsGoalDialog(
                 },
                 modifier = Modifier.testTag("save_savings_target_button")
             ) {
-                Text("Save Target")
+                Text(stringResource(R.string.edit_savings_goal_dialog_save_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.edit_savings_goal_dialog_cancel_button))
             }
         }
     )

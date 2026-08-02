@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -59,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -90,11 +92,12 @@ fun AddOrEditRecurringBillDialog(
     ) -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
+    val defaultCategoryTag = stringResource(R.string.recurring_bill_dialog_default_category)
     var title by remember { mutableStateOf(billToEdit?.title ?: "") }
     var amountText by remember { mutableStateOf(billToEdit?.amount?.toString() ?: "") }
     var selectedType by remember { mutableStateOf(billToEdit?.type ?: "DEBIT") } // "DEBIT" or "CREDIT"
     var selectedAccountId by remember { mutableStateOf(billToEdit?.accountId ?: accounts.firstOrNull()?.id ?: 1L) }
-    var selectedCategoryTag by remember { mutableStateOf(billToEdit?.categoryTag ?: "Bills & Utilities") }
+    var selectedCategoryTag by remember { mutableStateOf(billToEdit?.categoryTag ?: defaultCategoryTag) }
     var frequency by remember { mutableStateOf(billToEdit?.recurringFrequency ?: "MONTHLY") } // "MONTHLY", "WEEKLY", "YEARLY"
     var dueDate by remember { mutableIntStateOf(billToEdit?.recurringDueDate ?: 4) } // Default day 4 for EMI
     var dueDateText by remember { mutableStateOf(billToEdit?.recurringDueDate?.toString() ?: "4") }
@@ -113,13 +116,13 @@ fun AddOrEditRecurringBillDialog(
     }
 
     val daysOfWeek = listOf(
-        1 to "Monday",
-        2 to "Tuesday",
-        3 to "Wednesday",
-        4 to "Thursday",
-        5 to "Friday",
-        6 to "Saturday",
-        7 to "Sunday"
+        1 to stringResource(R.string.recurring_bill_dialog_day_monday),
+        2 to stringResource(R.string.recurring_bill_dialog_day_tuesday),
+        3 to stringResource(R.string.recurring_bill_dialog_day_wednesday),
+        4 to stringResource(R.string.recurring_bill_dialog_day_thursday),
+        5 to stringResource(R.string.recurring_bill_dialog_day_friday),
+        6 to stringResource(R.string.recurring_bill_dialog_day_saturday),
+        7 to stringResource(R.string.recurring_bill_dialog_day_sunday)
     )
 
     AlertDialog(
@@ -147,14 +150,14 @@ fun AddOrEditRecurringBillDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = if (billToEdit != null) "Edit Recurring Bill / EMI" else "Add Recurring Bill / EMI",
+                        text = if (billToEdit != null) stringResource(R.string.recurring_bill_dialog_title_edit) else stringResource(R.string.recurring_bill_dialog_title_add),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
 
                 if (billToEdit != null && onDelete != null) {
                     IconButton(onClick = onDelete) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Bill", tint = ExpenseRed)
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.recurring_bill_dialog_delete_cd), tint = ExpenseRed)
                     }
                 }
             }
@@ -170,8 +173,8 @@ fun AddOrEditRecurringBillDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Bill / EMI Name") },
-                    placeholder = { Text("e.g. Car EMI, House Rent, Netflix, Wifi") },
+                    label = { Text(stringResource(R.string.recurring_bill_dialog_name_label)) },
+                    placeholder = { Text(stringResource(R.string.recurring_bill_dialog_name_placeholder)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("recurring_bill_title_input"),
@@ -182,8 +185,8 @@ fun AddOrEditRecurringBillDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Amount ($currencySymbol)") },
-                    placeholder = { Text("e.g. 450.00") },
+                    label = { Text(stringResource(R.string.recurring_bill_dialog_amount_label, currencySymbol)) },
+                    placeholder = { Text(stringResource(R.string.recurring_bill_dialog_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -193,7 +196,7 @@ fun AddOrEditRecurringBillDialog(
 
                 // Recurring Schedule / Frequency Selector
                 Text(
-                    text = "Recurring Frequency",
+                    text = stringResource(R.string.recurring_bill_dialog_frequency_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -201,7 +204,7 @@ fun AddOrEditRecurringBillDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("MONTHLY" to "Monthly", "WEEKLY" to "Weekly", "YEARLY" to "Yearly").forEach { (freqKey, freqLabel) ->
+                    listOf("MONTHLY", "WEEKLY", "YEARLY").forEach { freqKey ->
                         FilterChip(
                             selected = frequency == freqKey,
                             onClick = {
@@ -211,7 +214,16 @@ fun AddOrEditRecurringBillDialog(
                                     dueDateText = "1"
                                 }
                             },
-                            label = { Text(freqLabel, style = MaterialTheme.typography.labelMedium) },
+                            label = {
+                                Text(
+                                    text = when (freqKey) {
+                                        "MONTHLY" -> stringResource(R.string.recurring_bill_dialog_freq_monthly)
+                                        "WEEKLY" -> stringResource(R.string.recurring_bill_dialog_freq_weekly)
+                                        else -> stringResource(R.string.recurring_bill_dialog_freq_yearly)
+                                    },
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -234,9 +246,9 @@ fun AddOrEditRecurringBillDialog(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = when (frequency) {
-                                    "WEEKLY" -> "Due Day of Week"
-                                    "YEARLY" -> "Due Day of Month"
-                                    else -> "Due Day of Month (e.g. EMI on 4th)"
+                                    "WEEKLY" -> stringResource(R.string.recurring_bill_dialog_due_label_weekly)
+                                    "YEARLY" -> stringResource(R.string.recurring_bill_dialog_due_label_yearly)
+                                    else -> stringResource(R.string.recurring_bill_dialog_due_label_monthly)
                                 },
                                 style = MaterialTheme.typography.labelLarge.copy(
                                     fontWeight = FontWeight.Bold,
@@ -293,10 +305,10 @@ fun AddOrEditRecurringBillDialog(
                                         }
                                     }
                                 },
-                                label = { Text("Day of Month (1 - 31)") },
+                                label = { Text(stringResource(R.string.recurring_bill_dialog_due_day_field_label)) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 supportingText = {
-                                    Text("Alerts (in 5d, in 4d, tomorrow, today, overdue) start automatically before Day $dueDate.")
+                                    Text(stringResource(R.string.recurring_bill_dialog_alerts_supporting_text, dueDate))
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -307,7 +319,7 @@ fun AddOrEditRecurringBillDialog(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = "Quick Date Presets:",
+                                text = stringResource(R.string.recurring_bill_dialog_quick_date_presets_label),
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold)
                             )
 
@@ -322,7 +334,7 @@ fun AddOrEditRecurringBillDialog(
                                             dueDate = day
                                             dueDateText = day.toString()
                                         },
-                                        label = { Text("Day $day", style = MaterialTheme.typography.labelSmall) }
+                                        label = { Text(stringResource(R.string.recurring_bill_dialog_day_preset, day), style = MaterialTheme.typography.labelSmall) }
                                     )
                                 }
                             }
@@ -335,12 +347,12 @@ fun AddOrEditRecurringBillDialog(
                     expanded = accountDropdownExpanded,
                     onExpandedChange = { accountDropdownExpanded = !accountDropdownExpanded }
                 ) {
-                    val currentAccountName = accounts.find { it.id == selectedAccountId }?.name ?: "Select Account"
+                    val currentAccountName = accounts.find { it.id == selectedAccountId }?.name ?: stringResource(R.string.recurring_bill_dialog_select_account)
                     OutlinedTextField(
                         value = currentAccountName,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Pay From Account") },
+                        label = { Text(stringResource(R.string.recurring_bill_dialog_pay_from_account_label)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountDropdownExpanded) },
                         modifier = Modifier
                             .menuAnchor()
@@ -353,7 +365,7 @@ fun AddOrEditRecurringBillDialog(
                     ) {
                         accounts.forEach { acc ->
                             DropdownMenuItem(
-                                text = { Text("${acc.name} (${acc.type})") },
+                                text = { Text(stringResource(R.string.recurring_bill_dialog_account_item, acc.name, acc.type)) },
                                 onClick = {
                                     selectedAccountId = acc.id
                                     accountDropdownExpanded = false
@@ -372,7 +384,7 @@ fun AddOrEditRecurringBillDialog(
                         value = selectedCategoryTag,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Category") },
+                        label = { Text(stringResource(R.string.recurring_bill_dialog_category_label)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryDropdownExpanded) },
                         modifier = Modifier
                             .menuAnchor()
@@ -399,8 +411,8 @@ fun AddOrEditRecurringBillDialog(
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes / Loan Reference (Optional)") },
-                    placeholder = { Text("e.g. Account No / Auto-debit reference") },
+                    label = { Text(stringResource(R.string.recurring_bill_dialog_notes_label)) },
+                    placeholder = { Text(stringResource(R.string.recurring_bill_dialog_notes_placeholder)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -417,7 +429,7 @@ fun AddOrEditRecurringBillDialog(
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "Capture / Attach Bill Receipt",
+                        text = stringResource(R.string.recurring_bill_dialog_receipt_section_title),
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -435,11 +447,11 @@ fun AddOrEditRecurringBillDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = "Capture / Select Image",
+                                    contentDescription = stringResource(R.string.recurring_bill_dialog_capture_image_cd),
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Attach Image", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.recurring_bill_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
                             }
 
                             OutlinedButton(
@@ -450,11 +462,11 @@ fun AddOrEditRecurringBillDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Receipt,
-                                    contentDescription = "Sample Bill",
+                                    contentDescription = stringResource(R.string.recurring_bill_dialog_sample_bill),
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Sample Bill", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.recurring_bill_dialog_sample_bill), style = MaterialTheme.typography.labelMedium)
                             }
                         }
                     } else {
@@ -479,7 +491,7 @@ fun AddOrEditRecurringBillDialog(
                                     if (uriStr.startsWith("content://") || uriStr.startsWith("file://") || uriStr.startsWith("http")) {
                                         AsyncImage(
                                             model = uriStr,
-                                            contentDescription = "Bill Receipt Preview",
+                                            contentDescription = stringResource(R.string.recurring_bill_dialog_receipt_preview_cd),
                                             modifier = Modifier
                                                 .size(44.dp)
                                                 .clip(RoundedCornerShape(8.dp)),
@@ -494,7 +506,7 @@ fun AddOrEditRecurringBillDialog(
                                             Box(contentAlignment = Alignment.Center) {
                                                 Icon(
                                                     imageVector = Icons.Default.Receipt,
-                                                    contentDescription = "Receipt Icon",
+                                                    contentDescription = stringResource(R.string.recurring_bill_dialog_receipt_icon_cd),
                                                     tint = com.example.ui.theme.IncomeGreen,
                                                     modifier = Modifier.size(24.dp)
                                                 )
@@ -504,11 +516,11 @@ fun AddOrEditRecurringBillDialog(
 
                                     Column {
                                         Text(
-                                            text = "Bill Receipt Attached",
+                                            text = stringResource(R.string.recurring_bill_dialog_receipt_attached),
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                         )
                                         Text(
-                                            text = if (uriStr == "sample_receipt_utility_bill") "Demo Bill Invoice #4812" else "Image attached",
+                                            text = if (uriStr == "sample_receipt_utility_bill") stringResource(R.string.recurring_bill_dialog_demo_invoice) else stringResource(R.string.recurring_bill_dialog_image_attached),
                                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }
@@ -520,7 +532,7 @@ fun AddOrEditRecurringBillDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Remove Receipt",
+                                        contentDescription = stringResource(R.string.recurring_bill_dialog_remove_receipt_cd),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -551,12 +563,12 @@ fun AddOrEditRecurringBillDialog(
                 },
                 modifier = Modifier.testTag("save_recurring_bill_button")
             ) {
-                Text(if (billToEdit != null) "Save Changes" else "Add Recurring Bill")
+                Text(if (billToEdit != null) stringResource(R.string.recurring_bill_dialog_save_button) else stringResource(R.string.recurring_bill_dialog_add_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.recurring_bill_dialog_cancel_button))
             }
         }
     )

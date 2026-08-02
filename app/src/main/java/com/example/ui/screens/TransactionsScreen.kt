@@ -60,6 +60,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import com.example.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entity.AccountEntity
@@ -70,7 +72,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-private fun formatDateGroupHeader(timestamp: Long): String {
+private fun formatDateGroupHeader(timestamp: Long, todayLabel: String, yesterdayLabel: String): String {
     val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
     val now = Calendar.getInstance()
 
@@ -80,8 +82,8 @@ private fun formatDateGroupHeader(timestamp: Long): String {
     val nowDay = now.get(Calendar.DAY_OF_YEAR)
 
     return when {
-        targetYear == nowYear && targetDay == nowDay -> "Today"
-        targetYear == nowYear && targetDay == nowDay - 1 -> "Yesterday"
+        targetYear == nowYear && targetDay == nowDay -> todayLabel
+        targetYear == nowYear && targetDay == nowDay - 1 -> yesterdayLabel
         targetYear == nowYear -> SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(cal.time)
         else -> SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault()).format(cal.time)
     }
@@ -119,11 +121,13 @@ fun TransactionsScreen(
 ) {
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    val groupedTransactions = remember(transactions) {
+    val todayLabel = stringResource(R.string.date_today)
+    val yesterdayLabel = stringResource(R.string.date_yesterday)
+    val groupedTransactions = remember(transactions, todayLabel, yesterdayLabel) {
         transactions.groupBy { tx ->
             val cal = Calendar.getInstance().apply { timeInMillis = tx.dateTimestamp }
             val dateKey = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.time)
-            val headerLabel = formatDateGroupHeader(tx.dateTimestamp)
+            val headerLabel = formatDateGroupHeader(tx.dateTimestamp, todayLabel, yesterdayLabel)
             dateKey to headerLabel
         }
     }
@@ -149,7 +153,7 @@ fun TransactionsScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add Transaction"
+                    contentDescription = stringResource(R.string.action_add_transaction)
                 )
             }
         }
@@ -170,18 +174,18 @@ fun TransactionsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Ledger",
+                            text = stringResource(R.string.transactions_screen_title),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                         )
 
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = onSearchQueryChange,
-                            placeholder = { Text("Search...", style = MaterialTheme.typography.bodyMedium) },
+                            placeholder = { Text(stringResource(R.string.transactions_search_placeholder), style = MaterialTheme.typography.bodyMedium) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Search,
-                                    contentDescription = "Search",
+                                    contentDescription = stringResource(R.string.action_search),
                                     modifier = Modifier.size(18.dp)
                                 )
                             },
@@ -193,7 +197,7 @@ fun TransactionsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Clear,
-                                            contentDescription = "Clear",
+                                            contentDescription = stringResource(R.string.action_clear),
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -216,7 +220,7 @@ fun TransactionsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SwapHoriz,
-                                contentDescription = "Transfer Funds",
+                                contentDescription = stringResource(R.string.action_transfer_funds),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -238,7 +242,7 @@ fun TransactionsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Filter",
+                                    contentDescription = stringResource(R.string.action_filter),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -247,17 +251,17 @@ fun TransactionsScreen(
 
                     // Quick Date Presets Row
                     Spacer(modifier = Modifier.height(10.dp))
+                    val dateOptions = listOf(
+                        "ALL" to stringResource(R.string.date_range_all_time),
+                        "TODAY" to stringResource(R.string.date_range_today),
+                        "THIS_WEEK" to stringResource(R.string.date_range_this_week),
+                        "THIS_MONTH" to stringResource(R.string.date_range_this_month),
+                        "LAST_30_DAYS" to stringResource(R.string.date_range_last_30_days)
+                    )
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val dateOptions = listOf(
-                            "ALL" to "All Time",
-                            "TODAY" to "Today",
-                            "THIS_WEEK" to "This Week",
-                            "THIS_MONTH" to "This Month",
-                            "LAST_30_DAYS" to "Last 30 Days"
-                        )
                         items(dateOptions) { (key, label) ->
                             val isSelected = selectedDateRange == key
                             FilterChip(
@@ -291,7 +295,7 @@ fun TransactionsScreen(
                                 onClick = { onSelectCategory(catName) },
                                 label = {
                                     Text(
-                                        text = catName ?: "All Categories",
+                                        text = catName ?: stringResource(R.string.category_all),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                         )
@@ -315,53 +319,55 @@ fun TransactionsScreen(
                                     InputChip(
                                         selected = true,
                                         onClick = { onSelectAccountId(null) },
-                                        label = { Text("Account: ${selectedAccount.name}") },
+                                        label = { Text(stringResource(R.string.active_filter_account, selectedAccount.name)) },
                                         trailingIcon = {
-                                            Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.height(16.dp))
+                                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_remove), modifier = Modifier.height(16.dp))
                                         }
                                     )
                                 }
                             }
 
                             if (selectedTypeFilter != "ALL") {
-                                val typeLabel = when (selectedTypeFilter) {
-                                    "DEBIT" -> "Expenses"
-                                    "CREDIT" -> "Income"
-                                    "RECURRING" -> "Subscriptions"
-                                    "PENDING" -> "Needs Review"
-                                    else -> selectedTypeFilter
-                                }
                                 item {
+                                    val typeLabel = when (selectedTypeFilter) {
+                                        "DEBIT" -> stringResource(R.string.type_expenses)
+                                        "CREDIT" -> stringResource(R.string.type_income)
+                                        "RECURRING" -> stringResource(R.string.type_subscriptions)
+                                        "PENDING" -> stringResource(R.string.type_needs_review)
+                                        else -> selectedTypeFilter
+                                    }
                                     InputChip(
                                         selected = true,
                                         onClick = { onSelectTypeFilter("ALL") },
-                                        label = { Text("Type: $typeLabel") },
+                                        label = { Text(stringResource(R.string.active_filter_type, typeLabel)) },
                                         trailingIcon = {
-                                            Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.height(16.dp))
+                                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_remove), modifier = Modifier.height(16.dp))
                                         }
                                     )
                                 }
                             }
 
                             if (selectedDateRange != "ALL") {
-                                val dateLabel = when (selectedDateRange) {
-                                    "THIS_WEEK" -> "This Week"
-                                    "THIS_MONTH" -> "This Month"
-                                    "LAST_30_DAYS" -> "Last 30 Days"
-                                    "CUSTOM" -> {
-                                        val startStr = customStartDate?.let { dateFormat.format(it) } ?: "Beginning"
-                                        val endStr = customEndDate?.let { dateFormat.format(it) } ?: "Present"
-                                        "$startStr - $endStr"
-                                    }
-                                    else -> selectedDateRange
-                                }
                                 item {
+                                    val beginningLabel = stringResource(R.string.date_range_beginning)
+                                    val presentLabel = stringResource(R.string.date_range_present)
+                                    val dateLabel = when (selectedDateRange) {
+                                        "THIS_WEEK" -> stringResource(R.string.date_range_this_week)
+                                        "THIS_MONTH" -> stringResource(R.string.date_range_this_month)
+                                        "LAST_30_DAYS" -> stringResource(R.string.date_range_last_30_days)
+                                        "CUSTOM" -> {
+                                            val startStr = customStartDate?.let { dateFormat.format(it) } ?: beginningLabel
+                                            val endStr = customEndDate?.let { dateFormat.format(it) } ?: presentLabel
+                                            stringResource(R.string.date_range_span, startStr, endStr)
+                                        }
+                                        else -> selectedDateRange
+                                    }
                                     InputChip(
                                         selected = true,
                                         onClick = { onSelectDateRange("ALL") },
-                                        label = { Text("Date: $dateLabel") },
+                                        label = { Text(stringResource(R.string.active_filter_date, dateLabel)) },
                                         trailingIcon = {
-                                            Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.height(16.dp))
+                                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_remove), modifier = Modifier.height(16.dp))
                                         }
                                     )
                                 }
@@ -372,31 +378,31 @@ fun TransactionsScreen(
                                     InputChip(
                                         selected = true,
                                         onClick = { onSelectCategory(null) },
-                                        label = { Text("Category: $selectedCategory") },
+                                        label = { Text(stringResource(R.string.active_filter_category, selectedCategory)) },
                                         trailingIcon = {
-                                            Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.height(16.dp))
+                                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_remove), modifier = Modifier.height(16.dp))
                                         }
                                     )
                                 }
                             }
 
                             if (minAmountFilter != null || maxAmountFilter != null) {
-                                val amountLabel = when {
-                                    minAmountFilter != null && maxAmountFilter != null ->
-                                        "${currencySymbol}${String.format(Locale.getDefault(), "%.0f", minAmountFilter)} - ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", maxAmountFilter)}"
-                                    minAmountFilter != null -> "Min ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", minAmountFilter)}"
-                                    else -> "Max ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", maxAmountFilter)}"
-                                }
                                 item {
+                                    val amountLabel = when {
+                                        minAmountFilter != null && maxAmountFilter != null ->
+                                            stringResource(R.string.amount_range_both, currencySymbol, minAmountFilter, currencySymbol, maxAmountFilter)
+                                        minAmountFilter != null -> stringResource(R.string.amount_range_min_only, currencySymbol, minAmountFilter)
+                                        else -> stringResource(R.string.amount_range_max_only, currencySymbol, maxAmountFilter ?: 0.0)
+                                    }
                                     InputChip(
                                         selected = true,
                                         onClick = {
                                             onSetMinAmountFilter(null)
                                             onSetMaxAmountFilter(null)
                                         },
-                                        label = { Text("Amount: $amountLabel") },
+                                        label = { Text(stringResource(R.string.active_filter_amount, amountLabel)) },
                                         trailingIcon = {
-                                            Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.height(16.dp))
+                                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_remove), modifier = Modifier.height(16.dp))
                                         }
                                     )
                                 }
@@ -404,7 +410,7 @@ fun TransactionsScreen(
 
                             item {
                                 TextButton(onClick = onClearAllFilters) {
-                                    Text("Clear All", style = MaterialTheme.typography.labelSmall)
+                                    Text(stringResource(R.string.action_clear_all), style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
@@ -426,12 +432,12 @@ fun TransactionsScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "No Transactions Match Filter",
+                                text = stringResource(R.string.transactions_empty_title),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Try clearing search or adjusting your filters.",
+                                text = stringResource(R.string.transactions_empty_subtitle),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
@@ -444,7 +450,7 @@ fun TransactionsScreen(
                                         onClearAllFilters()
                                     }
                                 ) {
-                                    Text("Reset Filters")
+                                    Text(stringResource(R.string.action_reset_filters))
                                 }
                             }
                         }
@@ -623,12 +629,12 @@ fun TransactionFilterBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Filter Transactions",
+                    text = stringResource(R.string.filter_sheet_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
                 IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                    Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.action_close))
                 }
             }
 
@@ -636,7 +642,7 @@ fun TransactionFilterBottomSheet(
 
             // 1. Account Filter
             Text(
-                text = "Account",
+                text = stringResource(R.string.filter_section_account),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -647,7 +653,7 @@ fun TransactionFilterBottomSheet(
                 FilterChip(
                     selected = selectedAccountId == null,
                     onClick = { onSelectAccountId(null) },
-                    label = { Text("All Accounts") }
+                    label = { Text(stringResource(R.string.filter_all_accounts)) }
                 )
                 accounts.forEach { acc ->
                     FilterChip(
@@ -662,7 +668,7 @@ fun TransactionFilterBottomSheet(
 
             // 2. Transaction Type Filter
             Text(
-                text = "Transaction Type",
+                text = stringResource(R.string.filter_section_transaction_type),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -673,32 +679,32 @@ fun TransactionFilterBottomSheet(
                 FilterChip(
                     selected = selectedTypeFilter == "ALL",
                     onClick = { onSelectTypeFilter("ALL") },
-                    label = { Text("All") }
+                    label = { Text(stringResource(R.string.type_all)) }
                 )
                 FilterChip(
                     selected = selectedTypeFilter == "DEBIT",
                     onClick = { onSelectTypeFilter("DEBIT") },
-                    label = { Text("Expenses") }
+                    label = { Text(stringResource(R.string.type_expenses)) }
                 )
                 FilterChip(
                     selected = selectedTypeFilter == "CREDIT",
                     onClick = { onSelectTypeFilter("CREDIT") },
-                    label = { Text("Income") }
+                    label = { Text(stringResource(R.string.type_income)) }
                 )
                 FilterChip(
                     selected = selectedTypeFilter == "TRANSFER",
                     onClick = { onSelectTypeFilter("TRANSFER") },
-                    label = { Text("Transfers") }
+                    label = { Text(stringResource(R.string.type_transfers)) }
                 )
                 FilterChip(
                     selected = selectedTypeFilter == "RECURRING",
                     onClick = { onSelectTypeFilter("RECURRING") },
-                    label = { Text("Subscriptions") }
+                    label = { Text(stringResource(R.string.type_subscriptions)) }
                 )
                 FilterChip(
                     selected = selectedTypeFilter == "PENDING",
                     onClick = { onSelectTypeFilter("PENDING") },
-                    label = { Text("Needs Review") }
+                    label = { Text(stringResource(R.string.type_needs_review)) }
                 )
             }
 
@@ -706,7 +712,7 @@ fun TransactionFilterBottomSheet(
 
             // 3. Date Range Filter & Custom Selection
             Text(
-                text = "Date Range",
+                text = stringResource(R.string.filter_section_date_range),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -717,22 +723,22 @@ fun TransactionFilterBottomSheet(
                 FilterChip(
                     selected = selectedDateRange == "ALL",
                     onClick = { onSelectDateRange("ALL") },
-                    label = { Text("All Time") }
+                    label = { Text(stringResource(R.string.date_range_all_time)) }
                 )
                 FilterChip(
                     selected = selectedDateRange == "THIS_WEEK",
                     onClick = { onSelectDateRange("THIS_WEEK") },
-                    label = { Text("This Week") }
+                    label = { Text(stringResource(R.string.date_range_this_week)) }
                 )
                 FilterChip(
                     selected = selectedDateRange == "THIS_MONTH",
                     onClick = { onSelectDateRange("THIS_MONTH") },
-                    label = { Text("This Month") }
+                    label = { Text(stringResource(R.string.date_range_this_month)) }
                 )
                 FilterChip(
                     selected = selectedDateRange == "LAST_30_DAYS",
                     onClick = { onSelectDateRange("LAST_30_DAYS") },
-                    label = { Text("Last 30 Days") }
+                    label = { Text(stringResource(R.string.date_range_last_30_days)) }
                 )
                 FilterChip(
                     selected = selectedDateRange == "CUSTOM",
@@ -740,7 +746,7 @@ fun TransactionFilterBottomSheet(
                         onSelectDateRange("CUSTOM")
                         onSetCustomDateRange(tempStartDate, tempEndDate)
                     },
-                    label = { Text("Custom Range") }
+                    label = { Text(stringResource(R.string.date_range_custom)) }
                 )
             }
 
@@ -753,7 +759,7 @@ fun TransactionFilterBottomSheet(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Custom Date Range Selection",
+                            text = stringResource(R.string.filter_custom_date_range_selection),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -764,7 +770,7 @@ fun TransactionFilterBottomSheet(
                         ) {
                             // Start Date
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("From Date", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.filter_from_date), style = MaterialTheme.typography.labelSmall)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 OutlinedButton(
                                     onClick = { startDatePicker.show() },
@@ -772,7 +778,7 @@ fun TransactionFilterBottomSheet(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = "Start Date",
+                                        contentDescription = stringResource(R.string.filter_start_date),
                                         modifier = Modifier.height(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
@@ -785,7 +791,7 @@ fun TransactionFilterBottomSheet(
 
                             // End Date
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("To Date", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.filter_to_date), style = MaterialTheme.typography.labelSmall)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 OutlinedButton(
                                     onClick = { endDatePicker.show() },
@@ -793,7 +799,7 @@ fun TransactionFilterBottomSheet(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = "End Date",
+                                        contentDescription = stringResource(R.string.filter_end_date),
                                         modifier = Modifier.height(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
@@ -812,7 +818,7 @@ fun TransactionFilterBottomSheet(
 
             // 4. Category Filter
             Text(
-                text = "Category",
+                text = stringResource(R.string.filter_section_category),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -823,7 +829,7 @@ fun TransactionFilterBottomSheet(
                 FilterChip(
                     selected = selectedCategory == null,
                     onClick = { onSelectCategory(null) },
-                    label = { Text("All Categories") }
+                    label = { Text(stringResource(R.string.category_all)) }
                 )
                 categories.forEach { cat ->
                     FilterChip(
@@ -844,7 +850,7 @@ fun TransactionFilterBottomSheet(
 
             // 5. Amount Range Filter
             Text(
-                text = "Amount Range",
+                text = stringResource(R.string.filter_section_amount_range),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -864,8 +870,8 @@ fun TransactionFilterBottomSheet(
                         minAmountText = it
                         onSetMinAmountFilter(it.toDoubleOrNull())
                     },
-                    label = { Text("Min") },
-                    placeholder = { Text("No min") },
+                    label = { Text(stringResource(R.string.filter_amount_min)) },
+                    placeholder = { Text(stringResource(R.string.filter_amount_no_min)) },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                     modifier = Modifier.weight(1f).testTag("min_amount_filter_input")
@@ -876,8 +882,8 @@ fun TransactionFilterBottomSheet(
                         maxAmountText = it
                         onSetMaxAmountFilter(it.toDoubleOrNull())
                     },
-                    label = { Text("Max") },
-                    placeholder = { Text("No max") },
+                    label = { Text(stringResource(R.string.filter_amount_max)) },
+                    placeholder = { Text(stringResource(R.string.filter_amount_no_max)) },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                     modifier = Modifier.weight(1f).testTag("max_amount_filter_input")
@@ -897,14 +903,14 @@ fun TransactionFilterBottomSheet(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Clear All")
+                    Text(stringResource(R.string.action_clear_all))
                 }
 
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Apply")
+                    Text(stringResource(R.string.action_apply))
                 }
             }
         }

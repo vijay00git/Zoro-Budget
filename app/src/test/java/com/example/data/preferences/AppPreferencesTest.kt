@@ -2,7 +2,7 @@ package com.example.data.preferences
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,9 +24,31 @@ class AppPreferencesTest {
 
         val prefs = AppPreferences.load(context)
 
-        assertThat(prefs.currencySymbol).isEqualTo("₹")
-        assertThat(prefs.savingsGoalTarget).isWithin(0.001).of(1200.0)
-        assertThat(prefs.lowBalanceThreshold).isWithin(0.001).of(300.0)
-        assertThat(prefs.themeMode).isEqualTo("DARK")
+        assertEquals("₹", prefs.currencySymbol)
+        assertEquals(1200.0, prefs.savingsGoalTarget, 0.001)
+        assertEquals(300.0, prefs.lowBalanceThreshold, 0.001)
+        assertEquals("DARK", prefs.themeMode)
+    }
+
+    @Test
+    fun loadReturnsDefaultsWhenNothingSaved() {
+        val prefs = AppPreferences.load(context)
+
+        assertEquals("$", prefs.currencySymbol)
+        assertEquals(500.0, prefs.savingsGoalTarget, 0.001)
+        assertEquals(200.0, prefs.lowBalanceThreshold, 0.001)
+        assertEquals("SYSTEM", prefs.themeMode)
+    }
+
+    @Test
+    fun savePartiallyUpdatesOnlyGivenFields() {
+        AppPreferences.save(context = context, currencySymbol = "€", themeMode = "LIGHT")
+        AppPreferences.save(context = context, savingsGoalTarget = 999.0)
+
+        val prefs = AppPreferences.load(context)
+
+        assertEquals("€", prefs.currencySymbol)
+        assertEquals("LIGHT", prefs.themeMode)
+        assertEquals(999.0, prefs.savingsGoalTarget, 0.001)
     }
 }

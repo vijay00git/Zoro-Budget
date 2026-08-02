@@ -1,0 +1,80 @@
+<resources>
+    <!-- Shared formats -->
+    <string name="currency_amount_format">%1$s%2$,.2f</string>
+    <string name="percentage_one_decimal_format">%1$.1f%%</string>
+    <string name="percentage_parenthesized_format">(%1$.1f%%)</string>
+
+    <!-- AccountCard.kt -->
+    <string name="account_card_low_balance_description">Low Balance</string>
+    <string name="account_card_low_label">Low</string>
+    <string name="account_card_number_last4_format">•%1$s</string>
+
+    <!-- Charts.kt -->
+    <string name="chart_no_expenses_title">No Expenses Recorded</string>
+    <string name="chart_no_expenses_subtitle">No debit transactions for this period.</string>
+    <string name="chart_expenses_by_category_title">Expenses by Category</string>
+    <string name="chart_total_spent_label">Total Spent</string>
+    <string name="chart_daily_spending_trend_title">Daily Spending Trend</string>
+    <string name="chart_peak_format">Peak: %1$s%2$.0f</string>
+    <string name="chart_day_label_1">Day 1</string>
+    <string name="chart_day_label_10">Day 10</string>
+    <string name="chart_day_label_20">Day 20</string>
+    <string name="chart_day_label_31">Day 31</string>
+    <string name="chart_category_spending_trend_title_format">%1$s Spending Trend</string>
+    <string name="chart_categorized_monthly_trends_title">Categorized Monthly Spending Trends</string>
+    <string name="chart_trend_subtitle">Multi-month spending history &amp; category breakdown</string>
+    <string name="chart_stacked_bar_view_description">Stacked Bar View</string>
+    <string name="chart_line_trend_view_description">Line Trend View</string>
+    <string name="chart_all_categories_label">All Categories</string>
+    <string name="chart_six_month_avg_label">6-Month Avg Spending</string>
+    <string name="chart_percent_vs_last_month_format">%1$.1f%% vs last mo</string>
+    <string name="chart_top_spending_categories_label">Top Spending Categories:</string>
+    <string name="chart_month_total_format">Total: %1$s%2$,.2f</string>
+    <string name="chart_amount_with_percentage_format">%1$s%2$,.2f (%3$.0f%%)</string>
+
+    <!-- OverviewCards.kt -->
+    <string name="overview_default_account_name">Main Account</string>
+    <string name="overview_active_badge_label">ACTIVE</string>
+    <string name="overview_week_label_1">WEEK 1</string>
+    <string name="overview_week_label_2">WEEK 2</string>
+    <string name="overview_week_label_3">WEEK 3</string>
+    <string name="overview_week_label_4">WEEK 4</string>
+    <string name="overview_income_label">Income</string>
+    <string name="overview_expenses_label">Expenses</string>
+    <string name="overview_action_required_description">Action Required</string>
+    <string name="overview_pending_action_required_format">%1$d Action Required</string>
+    <string name="overview_pending_review_subtitle">New auto-imported SMS transactions need details</string>
+    <string name="overview_review_button_label">REVIEW</string>
+    <string name="overview_health_excellent">Excellent Health</string>
+    <string name="overview_health_good">Good Control</string>
+    <string name="overview_health_caution">Caution: High Spending</string>
+    <string name="overview_health_critical">Critical Budget Warning</string>
+    <string name="overview_financial_health_gauge_title">Financial Health Gauge</string>
+    <string name="overview_score_percentage_format">%1$d%%</string>
+    <string name="overview_spent_of_budget_format">Spent %1$s%2$,.0f of %1$s%3$,.0f</string>
+    <string name="overview_monthly_expenses_format">Monthly Expenses: %1$s%2$,.2f</string>
+    <string name="overview_low_account_count_format">%1$d Low Account(s)</string>
+    <string name="overview_accounts_safe_label">Accounts Safe</string>
+    <string name="overview_category_budget_progress_title">Category Budget Progress</string>
+    <string name="overview_monthly_spending_label">Monthly Spending</string>
+    <string name="overview_spent_of_limit_format">%1$s%2$,.0f / %1$s%3$,.0f</string>
+    <string name="overview_spent_only_format">%1$s%2$,.0f</string>
+    <string name="overview_recurring_bills_label">Recurring Bills</string>
+    <string name="overview_monthly_commitment_format">%1$s%2$,.2f/mo</string>
+    <string name="overview_due_date_format">Due %1$dth</string>
+    <string name="overview_auto_pay_label">Auto-Pay</string>
+    <string name="overview_mark_as_paid_description">Mark as Paid</string>
+    <string name="overview_mark_paid_label">Mark Paid</string>
+    <string name="overview_manage_subscriptions_button">Manage All Subscriptions &amp; Bills</string>
+    <string name="overview_net_worth_trend_label">Net Worth &amp; Account Trend</string>
+    <string name="overview_accounts_count_format">%1$d Accounts</string>
+
+    <!-- TransactionItem.kt -->
+    <string name="transaction_account_tag_format">• %1$s</string>
+    <string name="transaction_receipt_attached_description">Bill Attached</string>
+    <string name="transaction_receipt_label">Receipt</string>
+    <string name="transaction_auto_sms_description">Auto SMS</string>
+    <string name="transaction_amount_credit_format">+%1$s%2$,.2f</string>
+    <string name="transaction_amount_debit_format">-%1$s%2$,.2f</string>
+    <string name="transaction_pending_label">PENDING</string>
+</resources>

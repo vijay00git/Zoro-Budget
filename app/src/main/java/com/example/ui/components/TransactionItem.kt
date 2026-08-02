@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -170,7 +172,7 @@ fun TransactionItem(
                     // Account Tag
                     if (account != null) {
                         Text(
-                            text = "• ${account.name}",
+                            text = stringResource(R.string.transaction_account_tag_format, account.name),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                             )
@@ -190,12 +192,12 @@ fun TransactionItem(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Receipt,
-                                    contentDescription = "Bill Attached",
+                                    contentDescription = stringResource(R.string.transaction_receipt_attached_description),
                                     tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(11.dp)
                                 )
                                 Text(
-                                    text = "Receipt",
+                                    text = stringResource(R.string.transaction_receipt_label),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
@@ -210,7 +212,7 @@ fun TransactionItem(
                     if (transaction.source == "SMS_AUTO") {
                         Icon(
                             imageVector = Icons.Default.Message,
-                            contentDescription = "Auto SMS",
+                            contentDescription = stringResource(R.string.transaction_auto_sms_description),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(13.dp)
                         )
@@ -225,7 +227,7 @@ fun TransactionItem(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = "${if (isCredit) "+" else "-"}${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, transaction.amount)}",
+                    text = if (isCredit) stringResource(R.string.transaction_amount_credit_format, currencySymbol, transaction.amount) else stringResource(R.string.transaction_amount_debit_format, currencySymbol, transaction.amount),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = accentColor
@@ -240,7 +242,7 @@ fun TransactionItem(
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            text = "PENDING",
+                            text = stringResource(R.string.transaction_pending_label),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = PendingAmber,

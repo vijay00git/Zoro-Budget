@@ -85,10 +85,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.R
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.ui.dialogs.EditSavingsGoalDialog
@@ -160,23 +162,35 @@ fun SettingsScreen(
     }
 
     val sampleSmsPresets = listOf(
-        "USD 89.50 debited on A/C ending 4321 at Target Superstore on 31-Jul-26." to "Target $89.50",
-        "Your A/C XX4321 credited with USD 3,200.00 from TechCorp Payroll." to "Salary $3200",
-        "USD 5.75 debited on A/C ending 4321 at Starbucks Cafe." to "Starbucks $5.75",
-        "A/C XX4321 debited for USD 115.00 to City Electric Utility on 30-Jul-26." to "Electric $115",
-        "Payment of USD 42.00 successful to Uber Rides from card ending 1122." to "Uber $42"
+        stringResource(R.string.settings_sms_sim_preset_1_sms) to stringResource(R.string.settings_sms_sim_preset_1_label),
+        stringResource(R.string.settings_sms_sim_preset_2_sms) to stringResource(R.string.settings_sms_sim_preset_2_label),
+        stringResource(R.string.settings_sms_sim_preset_3_sms) to stringResource(R.string.settings_sms_sim_preset_3_label),
+        stringResource(R.string.settings_sms_sim_preset_4_sms) to stringResource(R.string.settings_sms_sim_preset_4_label),
+        stringResource(R.string.settings_sms_sim_preset_5_sms) to stringResource(R.string.settings_sms_sim_preset_5_label)
     )
 
-    val currencies = remember {
+    val currencyNameUsd = stringResource(R.string.settings_currency_name_usd)
+    val currencyNameEur = stringResource(R.string.settings_currency_name_eur)
+    val currencyNameGbp = stringResource(R.string.settings_currency_name_gbp)
+    val currencyNameInr = stringResource(R.string.settings_currency_name_inr)
+    val currencyNameJpy = stringResource(R.string.settings_currency_name_jpy)
+    val currencyNameAud = stringResource(R.string.settings_currency_name_aud)
+    val currencyNameCad = stringResource(R.string.settings_currency_name_cad)
+    val currencyNameSgd = stringResource(R.string.settings_currency_name_sgd)
+
+    val currencies = remember(
+        currencyNameUsd, currencyNameEur, currencyNameGbp, currencyNameInr,
+        currencyNameJpy, currencyNameAud, currencyNameCad, currencyNameSgd
+    ) {
         listOf(
-            CurrencyOption("$", "USD", "US Dollar ($)"),
-            CurrencyOption("€", "EUR", "Euro (€)"),
-            CurrencyOption("£", "GBP", "British Pound (£)"),
-            CurrencyOption("₹", "INR", "Indian Rupee (₹)"),
-            CurrencyOption("¥", "JPY", "Japanese Yen (¥)"),
-            CurrencyOption("A$", "AUD", "Australian Dollar (A$)"),
-            CurrencyOption("C$", "CAD", "Canadian Dollar (C$)"),
-            CurrencyOption("S$", "SGD", "Singapore Dollar (S$)")
+            CurrencyOption("$", "USD", currencyNameUsd),
+            CurrencyOption("€", "EUR", currencyNameEur),
+            CurrencyOption("£", "GBP", currencyNameGbp),
+            CurrencyOption("₹", "INR", currencyNameInr),
+            CurrencyOption("¥", "JPY", currencyNameJpy),
+            CurrencyOption("A$", "AUD", currencyNameAud),
+            CurrencyOption("C$", "CAD", currencyNameCad),
+            CurrencyOption("S$", "SGD", currencyNameSgd)
         )
     }
 
@@ -194,11 +208,11 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Text(
-                    text = "Settings & Accounts",
+                    text = stringResource(R.string.settings_screen_title),
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Text(
-                    text = "Manage accounts, bank SMS sync, budget targets, and app preferences",
+                    text = stringResource(R.string.settings_screen_subtitle),
                     style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
@@ -223,7 +237,7 @@ fun SettingsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "Status",
+                                contentDescription = stringResource(R.string.settings_screen_status_icon_desc),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -260,7 +274,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Accounts & Payment Sources",
+                            text = stringResource(R.string.settings_accounts_section_title),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -276,9 +290,9 @@ fun SettingsScreen(
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                 modifier = Modifier.testTag("settings_transfer_btn")
                             ) {
-                                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = "Transfer", modifier = Modifier.size(16.dp))
+                                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = stringResource(R.string.settings_accounts_transfer_desc), modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Transfer", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.settings_accounts_transfer_button), style = MaterialTheme.typography.labelMedium)
                             }
                         }
 
@@ -287,9 +301,9 @@ fun SettingsScreen(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                             modifier = Modifier.testTag("settings_add_account_btn")
                         ) {
-                            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Account", modifier = Modifier.size(18.dp))
+                            Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.settings_accounts_add_account_desc), modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Account", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.settings_accounts_add_account_button), style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -307,12 +321,12 @@ fun SettingsScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "No Accounts Added",
+                                text = stringResource(R.string.settings_accounts_empty_title),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Tap 'Add Account' above to create your cash, bank, or card account.",
+                                text = stringResource(R.string.settings_accounts_empty_body),
                                 style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                             )
                         }
@@ -402,7 +416,7 @@ fun SettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.SwapHoriz,
-                                        contentDescription = "Transfer Funds",
+                                        contentDescription = stringResource(R.string.settings_accounts_transfer_funds_desc),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -415,7 +429,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Account",
+                                    contentDescription = stringResource(R.string.settings_accounts_edit_account_desc),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -428,7 +442,7 @@ fun SettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete Account",
+                                        contentDescription = stringResource(R.string.settings_accounts_delete_account_desc),
                                         tint = ExpenseRed.copy(alpha = 0.7f),
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -455,7 +469,7 @@ fun SettingsScreen(
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
-                                        text = "SMS Suffix: •${acc.accountNumberLast4}",
+                                        text = stringResource(R.string.settings_accounts_sms_suffix_format, acc.accountNumberLast4 ?: ""),
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             color = accColor,
@@ -476,13 +490,13 @@ fun SettingsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Warning,
-                                            contentDescription = "Low Balance Alert",
+                                            contentDescription = stringResource(R.string.settings_accounts_low_balance_alert_desc),
                                             tint = ExpenseRed,
                                             modifier = Modifier.size(12.dp)
                                         )
                                         Spacer(modifier = Modifier.width(3.dp))
                                         Text(
-                                            text = "Low Balance",
+                                            text = stringResource(R.string.settings_accounts_low_balance_label),
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 color = ExpenseRed,
                                                 fontWeight = FontWeight.Bold
@@ -494,7 +508,7 @@ fun SettingsScreen(
                         }
 
                         Text(
-                            text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, acc.balance),
+                            text = stringResource(R.string.settings_accounts_balance_format, currencySymbol, acc.balance),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = if (isLowBalance) ExpenseRed else MaterialTheme.colorScheme.onSurface
@@ -518,13 +532,13 @@ fun SettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.Sms,
-                                contentDescription = "SMS Auto-Reader",
+                                contentDescription = stringResource(R.string.settings_sms_sync_reader_desc),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Automated Bank SMS Sync",
+                                text = stringResource(R.string.settings_sms_sync_title),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                         }
@@ -532,7 +546,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Smart Budget reads incoming and inbox bank messages from your financial institutions to automatically record debits & credits into your accounts.",
+                            text = stringResource(R.string.settings_sms_sync_description),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -554,15 +568,15 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Sync From Date",
+                                    text = stringResource(R.string.settings_sms_sync_from_date_label),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 val dateText = if (smsSyncFromDate != null && smsSyncFromDate > 0L) {
                                     val formatted = java.text.SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(java.util.Date(smsSyncFromDate))
-                                    "Ignoring SMS before $formatted"
+                                    stringResource(R.string.settings_sms_sync_ignoring_before_format, formatted)
                                 } else {
-                                    "Reading all SMS (No date limit)"
+                                    stringResource(R.string.settings_sms_sync_no_date_limit)
                                 }
                                 Text(
                                     text = dateText,
@@ -583,7 +597,7 @@ fun SettingsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = "Clear Date Limit",
+                                            contentDescription = stringResource(R.string.settings_sms_sync_clear_date_desc),
                                             tint = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.size(20.dp)
                                         )
@@ -614,12 +628,12 @@ fun SettingsScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = "Set Date",
+                                        contentDescription = stringResource(R.string.settings_sms_sync_set_date_label),
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = if (smsSyncFromDate != null && smsSyncFromDate > 0L) "Change" else "Set Date",
+                                        text = if (smsSyncFromDate != null && smsSyncFromDate > 0L) stringResource(R.string.settings_sms_sync_change_date_label) else stringResource(R.string.settings_sms_sync_set_date_label),
                                         style = MaterialTheme.typography.labelMedium
                                     )
                                 }
@@ -644,11 +658,11 @@ fun SettingsScreen(
                         ) {
                             Icon(
                                 imageVector = if (hasSmsPermission) Icons.Default.Refresh else Icons.Default.Message,
-                                contentDescription = "Sync"
+                                contentDescription = stringResource(R.string.settings_sms_sync_button_desc)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (hasSmsPermission) "Scan & Sync SMS Inbox" else "Grant SMS Permission & Sync"
+                                text = if (hasSmsPermission) stringResource(R.string.settings_sms_sync_button_scan) else stringResource(R.string.settings_sms_sync_button_grant_permission)
                             )
                         }
                     }
@@ -690,11 +704,11 @@ fun SettingsScreen(
                                 }
                                 Column {
                                     Text(
-                                        text = "Test Message Parser",
+                                        text = stringResource(R.string.settings_sms_sim_title),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                     Text(
-                                        text = "Tap preset or test custom bank SMS",
+                                        text = stringResource(R.string.settings_sms_sim_subtitle),
                                         style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     )
                                 }
@@ -705,7 +719,7 @@ fun SettingsScreen(
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
-                                    text = "SIMULATOR",
+                                    text = stringResource(R.string.settings_sms_sim_badge),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -720,7 +734,7 @@ fun SettingsScreen(
 
                         // Presets Horizontal Scroll Carousel
                         Text(
-                            text = "Quick Presets:",
+                            text = stringResource(R.string.settings_sms_sim_quick_presets_label),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -760,14 +774,14 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = simSmsInput,
                             onValueChange = { simSmsInput = it },
-                            label = { Text("SMS Message Text") },
-                            placeholder = { Text("e.g. USD 45.00 debited on A/C ending 4321 at Starbucks") },
+                            label = { Text(stringResource(R.string.settings_sms_sim_input_label)) },
+                            placeholder = { Text(stringResource(R.string.settings_sms_sim_input_placeholder)) },
                             trailingIcon = {
                                 if (simSmsInput.isNotEmpty()) {
                                     IconButton(onClick = { simSmsInput = "" }) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = "Clear",
+                                            contentDescription = stringResource(R.string.settings_sms_sim_clear_desc),
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
@@ -792,9 +806,9 @@ fun SettingsScreen(
                                 .testTag("parse_sim_sms_btn"),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Parse", modifier = Modifier.size(18.dp))
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = stringResource(R.string.settings_sms_sim_parse_desc), modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Parse & Add SMS Transaction", style = MaterialTheme.typography.labelLarge)
+                            Text(stringResource(R.string.settings_sms_sim_parse_button), style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -805,7 +819,7 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Text(
-                    text = "App Appearance & Currency",
+                    text = stringResource(R.string.settings_appearance_section_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
@@ -835,14 +849,14 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "App Theme Mode",
+                                    text = stringResource(R.string.settings_theme_title),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Text(
                                     text = when (themeMode) {
-                                        "LIGHT" -> "Light theme active"
-                                        "DARK" -> "Dark theme active"
-                                        else -> "System Default (follows device setting)"
+                                        "LIGHT" -> stringResource(R.string.settings_theme_light_active)
+                                        "DARK" -> stringResource(R.string.settings_theme_dark_active)
+                                        else -> stringResource(R.string.settings_theme_system_active)
                                     },
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
@@ -856,9 +870,9 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             val options = listOf(
-                                Triple("SYSTEM", "System", Icons.Default.SettingsBrightness),
-                                Triple("LIGHT", "Light", Icons.Default.LightMode),
-                                Triple("DARK", "Dark", Icons.Default.DarkMode)
+                                Triple("SYSTEM", stringResource(R.string.settings_theme_option_system), Icons.Default.SettingsBrightness),
+                                Triple("LIGHT", stringResource(R.string.settings_theme_option_light), Icons.Default.LightMode),
+                                Triple("DARK", stringResource(R.string.settings_theme_option_dark), Icons.Default.DarkMode)
                             )
                             options.forEach { (mode, label, icon) ->
                                 FilterChip(
@@ -919,11 +933,11 @@ fun SettingsScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
-                                        text = "Display Currency",
+                                        text = stringResource(R.string.settings_currency_title),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                     Text(
-                                        text = "Select active app symbol",
+                                        text = stringResource(R.string.settings_currency_subtitle),
                                         style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     )
                                 }
@@ -1028,7 +1042,7 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Text(
-                    text = "Financial Goals & Budget Planning",
+                    text = stringResource(R.string.settings_goals_section_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
@@ -1068,13 +1082,13 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Monthly Savings Goal",
+                                    text = stringResource(R.string.settings_savings_goal_title),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "Target: %s%,.2f", currencySymbol, savingsGoalTarget),
+                                    text = stringResource(R.string.settings_savings_goal_target_format, currencySymbol, savingsGoalTarget),
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                             }
@@ -1089,7 +1103,7 @@ fun SettingsScreen(
                         ) {
                             Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Edit")
+                            Text(stringResource(R.string.settings_savings_goal_edit_button))
                         }
                     }
                 }
@@ -1131,16 +1145,16 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Total Monthly Budget Target",
+                                    text = stringResource(R.string.settings_total_budget_title),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = if (totalBudgetLimit > 0) {
-                                        String.format(Locale.getDefault(), "Allocated: %s%,.2f across %d categories", currencySymbol, totalBudgetLimit, categories.size)
+                                        stringResource(R.string.settings_total_budget_allocated_format, currencySymbol, totalBudgetLimit, categories.size)
                                     } else {
-                                        "No limits configured"
+                                        stringResource(R.string.settings_total_budget_no_limits)
                                     },
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
@@ -1156,7 +1170,7 @@ fun SettingsScreen(
                         ) {
                             Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Set Total")
+                            Text(stringResource(R.string.settings_total_budget_set_button))
                         }
                     }
                 }
@@ -1198,13 +1212,13 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Low Balance Alert Threshold",
+                                    text = stringResource(R.string.settings_low_balance_threshold_title),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "Warning limit: %s%,.2f per account", currencySymbol, lowBalanceThreshold),
+                                    text = stringResource(R.string.settings_low_balance_threshold_format, currencySymbol, lowBalanceThreshold),
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                             }
@@ -1219,7 +1233,7 @@ fun SettingsScreen(
                         ) {
                             Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Set Limit")
+                            Text(stringResource(R.string.settings_low_balance_threshold_button))
                         }
                     }
                 }
@@ -1235,7 +1249,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Category Budget Limits",
+                        text = stringResource(R.string.settings_category_limits_title),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.weight(1f),
                         maxLines = 1,
@@ -1251,7 +1265,7 @@ fun SettingsScreen(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("New Category")
+                        Text(stringResource(R.string.settings_category_add_button))
                     }
                 }
 
@@ -1308,9 +1322,9 @@ fun SettingsScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = if (cat.monthlyBudgetLimit > 0) {
-                                            String.format(Locale.getDefault(), "%s%,.2f/mo", currencySymbol, cat.monthlyBudgetLimit)
+                                            stringResource(R.string.settings_category_limit_format, currencySymbol, cat.monthlyBudgetLimit)
                                         } else {
-                                            "No Limit"
+                                            stringResource(R.string.settings_category_no_limit)
                                         },
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = FontWeight.Bold,
@@ -1324,7 +1338,7 @@ fun SettingsScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit Category Limit",
+                                            contentDescription = stringResource(R.string.settings_category_edit_limit_desc),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -1341,7 +1355,7 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 Text(
-                    text = "Data Backup & Export",
+                    text = stringResource(R.string.settings_backup_section_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(vertical = 6.dp)
                 )
@@ -1385,13 +1399,13 @@ fun SettingsScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Data Export & Backup Hub",
+                                        text = stringResource(R.string.settings_backup_hub_title),
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = "Instant CSV exports, JSON database backups & ledger restore",
+                                        text = stringResource(R.string.settings_backup_hub_subtitle),
                                         style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     )
                                 }
@@ -1412,7 +1426,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Assessment, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("CSV / JSON", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.settings_backup_csv_json_button), style = MaterialTheme.typography.labelMedium)
                             }
 
                             OutlinedButton(
@@ -1423,7 +1437,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Restore Data", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.settings_backup_restore_button), style = MaterialTheme.typography.labelMedium)
                             }
                         }
                     }
@@ -1435,7 +1449,7 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 Text(
-                    text = "Debug Log Capture",
+                    text = stringResource(R.string.settings_debug_log_section_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(vertical = 6.dp)
                 )
@@ -1469,11 +1483,11 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Capture app logs for crash reports",
+                                    text = stringResource(R.string.settings_debug_log_capture_title),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Text(
-                                    text = "Use this to collect recent app events and share them with support",
+                                    text = stringResource(R.string.settings_debug_log_capture_subtitle),
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                             }
@@ -1487,7 +1501,7 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(180.dp),
-                            label = { Text("Recent app log") },
+                            label = { Text(stringResource(R.string.settings_debug_log_field_label)) },
                             readOnly = true,
                             maxLines = 15,
                             shape = RoundedCornerShape(12.dp)
@@ -1495,13 +1509,15 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        val manualDebugLogCaptureMessage = stringResource(R.string.settings_debug_log_manual_capture_message)
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Button(
                                 onClick = {
-                                    AppDebugLogger.log("Manual debug log capture requested")
+                                    AppDebugLogger.log(manualDebugLogCaptureMessage)
                                     debugLogText = AppDebugLogger.getLatestLogText()
                                 },
                                 modifier = Modifier.weight(1f),
@@ -1509,7 +1525,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Refresh Logs", style = MaterialTheme.typography.labelLarge)
+                                Text(stringResource(R.string.settings_debug_log_refresh_button), style = MaterialTheme.typography.labelLarge)
                             }
 
                             OutlinedButton(
@@ -1522,7 +1538,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Share Logs", style = MaterialTheme.typography.labelLarge)
+                                Text(stringResource(R.string.settings_debug_log_share_button), style = MaterialTheme.typography.labelLarge)
                             }
                         }
                     }
@@ -1534,7 +1550,7 @@ fun SettingsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 Text(
-                    text = "Storage, Cache & Memory (RAM)",
+                    text = stringResource(R.string.settings_storage_section_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(vertical = 6.dp)
                 )
@@ -1573,11 +1589,11 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Phone Storage & RAM Efficiency",
+                                    text = stringResource(R.string.settings_storage_title),
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Text(
-                                    text = "Uses phone storage for receipts without inflating app data size",
+                                    text = stringResource(R.string.settings_storage_subtitle),
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                             }
@@ -1603,7 +1619,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Lightweight SQLite DB: Only small text records stored in app data",
+                                    text = stringResource(R.string.settings_storage_highlight_sqlite),
                                     style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface)
                                 )
                             }
@@ -1616,7 +1632,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Bill Receipts: Directly referenced from Phone Storage / Gallery URIs",
+                                    text = stringResource(R.string.settings_storage_highlight_receipts),
                                     style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface)
                                 )
                             }
@@ -1634,7 +1650,7 @@ fun SettingsScreen(
                         ) {
                             Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Clear App Cache & Free RAM", style = MaterialTheme.typography.labelLarge)
+                            Text(stringResource(R.string.settings_storage_clear_cache_button), style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -1659,13 +1675,13 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "100% Private & Local Storage",
+                                text = stringResource(R.string.settings_privacy_title),
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Smart Budget stores all financial ledgers and accounts securely on your local Android device using Room database. No remote servers required.",
+                            text = stringResource(R.string.settings_privacy_body),
                             style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }

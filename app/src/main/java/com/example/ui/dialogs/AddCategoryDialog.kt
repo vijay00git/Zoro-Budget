@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -64,12 +66,12 @@ fun AddCategoryDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Category,
-                    contentDescription = "New Category",
+                    contentDescription = stringResource(R.string.add_category_dialog_title_content_desc),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "New Category",
+                    text = stringResource(R.string.add_category_dialog_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -84,7 +86,7 @@ fun AddCategoryDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Category Name") },
+                    label = { Text(stringResource(R.string.add_category_dialog_name_label)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -94,8 +96,8 @@ fun AddCategoryDialog(
                 OutlinedTextField(
                     value = budgetInput,
                     onValueChange = { budgetInput = it.filter { char -> char.isDigit() || char == '.' } },
-                    label = { Text("Monthly Budget Limit ($)") },
-                    prefix = { Text("$ ") },
+                    label = { Text(stringResource(R.string.add_category_dialog_budget_label)) },
+                    prefix = { Text(stringResource(R.string.add_category_dialog_currency_prefix)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -103,7 +105,7 @@ fun AddCategoryDialog(
                 )
 
                 Text(
-                    text = "Choose Badge Color",
+                    text = stringResource(R.string.add_category_dialog_choose_color),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -129,7 +131,7 @@ fun AddCategoryDialog(
                             if (isSelected) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
-                                    contentDescription = "Selected",
+                                    contentDescription = stringResource(R.string.add_category_dialog_selected_content_desc),
                                     tint = Color.White,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -150,12 +152,12 @@ fun AddCategoryDialog(
                 enabled = name.isNotBlank(),
                 modifier = Modifier.testTag("submit_add_category_button")
             ) {
-                Text("Create Category")
+                Text(stringResource(R.string.add_category_dialog_create_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.add_category_dialog_cancel_button))
             }
         }
     )

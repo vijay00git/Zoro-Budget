@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.PendingAmber
@@ -70,7 +72,7 @@ fun LowBalanceThresholdDialog(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Low Balance Threshold",
+                    text = stringResource(R.string.low_balance_threshold_dialog_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -78,7 +80,7 @@ fun LowBalanceThresholdDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Get automatic warning banners when any bank or wallet account balance drops below this limit:",
+                    text = stringResource(R.string.low_balance_threshold_dialog_description),
                     style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
@@ -87,8 +89,8 @@ fun LowBalanceThresholdDialog(
                 OutlinedTextField(
                     value = thresholdInput,
                     onValueChange = { thresholdInput = it },
-                    label = { Text("Low Balance Warning Limit") },
-                    prefix = { Text("$currencySymbol ") },
+                    label = { Text(stringResource(R.string.low_balance_threshold_dialog_limit_label)) },
+                    prefix = { Text(stringResource(R.string.low_balance_threshold_dialog_currency_prefix, currencySymbol)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -98,7 +100,7 @@ fun LowBalanceThresholdDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Quick Presets:",
+                    text = stringResource(R.string.low_balance_threshold_dialog_quick_presets),
                     style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
@@ -111,7 +113,7 @@ fun LowBalanceThresholdDialog(
                     presets.forEach { preset ->
                         SuggestionChip(
                             onClick = { thresholdInput = preset.toString() },
-                            label = { Text("$currencySymbol$preset") }
+                            label = { Text(stringResource(R.string.low_balance_threshold_dialog_preset_amount, currencySymbol, preset)) }
                         )
                     }
                 }
@@ -126,12 +128,12 @@ fun LowBalanceThresholdDialog(
                 },
                 modifier = Modifier.testTag("save_low_balance_threshold_button")
             ) {
-                Text("Save Threshold")
+                Text(stringResource(R.string.low_balance_threshold_dialog_save_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.low_balance_threshold_dialog_cancel_button))
             }
         }
     )

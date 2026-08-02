@@ -1,0 +1,12 @@
+root = true
+
+[*.{kt,kts}]
+indent_size = 4
+indent_style = space
+max_line_length = 140
+insert_final_newline = true
+
+# build.gradle.kts / settings.gradle.kts in this repo are already written with
+# 2-space indentation - match that instead of the general Kotlin default.
+[*.gradle.kts]
+indent_size = 2

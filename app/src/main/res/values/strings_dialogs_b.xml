@@ -1,0 +1,81 @@
+<resources>
+    <!-- CategoryBudgetDialog -->
+    <string name="category_budget_dialog_title">Budget: %1$s</string>
+    <string name="category_budget_dialog_delete_content_desc">Delete Custom Category</string>
+    <string name="category_budget_dialog_description">Set a monthly spending limit to receive budget warnings when exceeded.</string>
+    <string name="category_budget_dialog_limit_label">Monthly Limit (%1$s)</string>
+    <string name="category_budget_dialog_currency_prefix">%1$s </string>
+    <string name="category_budget_dialog_quick_select">Quick Select:</string>
+    <string name="category_budget_dialog_preset_amount">%1$s%2$d</string>
+    <string name="category_budget_dialog_save_button">Save Limit</string>
+    <string name="category_budget_dialog_cancel_button">Cancel</string>
+
+    <!-- EditSavingsGoalDialog -->
+    <string name="edit_savings_goal_dialog_title">Set Monthly Savings Target</string>
+    <string name="edit_savings_goal_dialog_description">Target amount you aim to save every month (Income minus Expenses):</string>
+    <string name="edit_savings_goal_dialog_target_label">Monthly Savings Target (%1$s)</string>
+    <string name="edit_savings_goal_dialog_currency_prefix">%1$s </string>
+    <string name="edit_savings_goal_dialog_quick_presets">Quick Presets:</string>
+    <string name="edit_savings_goal_dialog_preset_amount">%1$s%2$d</string>
+    <string name="edit_savings_goal_dialog_save_button">Save Target</string>
+    <string name="edit_savings_goal_dialog_cancel_button">Cancel</string>
+
+    <!-- AddCategoryDialog -->
+    <string name="add_category_dialog_title_content_desc">New Category</string>
+    <string name="add_category_dialog_title">New Category</string>
+    <string name="add_category_dialog_name_label">Category Name</string>
+    <string name="add_category_dialog_budget_label">Monthly Budget Limit ($)</string>
+    <string name="add_category_dialog_currency_prefix">$ </string>
+    <string name="add_category_dialog_choose_color">Choose Badge Color</string>
+    <string name="add_category_dialog_selected_content_desc">Selected</string>
+    <string name="add_category_dialog_create_button">Create Category</string>
+    <string name="add_category_dialog_cancel_button">Cancel</string>
+
+    <!-- ManageSubscriptionDialog -->
+    <string name="manage_subscription_dialog_title">Subscription Details</string>
+    <string name="manage_subscription_dialog_edit_content_desc">Edit Transaction Details</string>
+    <string name="manage_subscription_dialog_category_label">Category: %1$s</string>
+    <string name="manage_subscription_dialog_amount_per_cycle">%1$s%2$,.2f / billing cycle</string>
+    <string name="manage_subscription_dialog_last_billed">Last billed: %1$s</string>
+    <string name="manage_subscription_dialog_current_status">CURRENT STATUS: %1$s</string>
+    <string name="manage_subscription_dialog_billing_cycle_frequency">Billing Cycle Frequency</string>
+    <string name="manage_subscription_dialog_due_day_label">Due Day of Month / Week (e.g. 4 for 4th)</string>
+    <string name="manage_subscription_dialog_stop_tracking_button">Stop Tracking as Subscription</string>
+    <string name="manage_subscription_dialog_save_button">Save Changes</string>
+    <string name="manage_subscription_dialog_close_button">Close</string>
+
+    <!-- LowBalanceThresholdDialog -->
+    <string name="low_balance_threshold_dialog_title">Low Balance Threshold</string>
+    <string name="low_balance_threshold_dialog_description">Get automatic warning banners when any bank or wallet account balance drops below this limit:</string>
+    <string name="low_balance_threshold_dialog_limit_label">Low Balance Warning Limit</string>
+    <string name="low_balance_threshold_dialog_currency_prefix">%1$s </string>
+    <string name="low_balance_threshold_dialog_quick_presets">Quick Presets:</string>
+    <string name="low_balance_threshold_dialog_preset_amount">%1$s%2$d</string>
+    <string name="low_balance_threshold_dialog_save_button">Save Threshold</string>
+    <string name="low_balance_threshold_dialog_cancel_button">Cancel</string>
+
+    <!-- TotalBudgetDialog -->
+    <string name="total_budget_dialog_title">Set Total Monthly Budget</string>
+    <string name="total_budget_dialog_description">Enter your target overall expense limit for the month. This will automatically allocate spending limits across your active categories:</string>
+    <string name="total_budget_dialog_label">Total Monthly Budget (%1$s)</string>
+    <string name="total_budget_dialog_currency_prefix">%1$s </string>
+    <string name="total_budget_dialog_quick_presets">Quick Presets:</string>
+    <string name="total_budget_dialog_preset_amount">%1$s%2$d</string>
+    <string name="total_budget_dialog_save_button">Set Total Budget</string>
+    <string name="total_budget_dialog_cancel_button">Cancel</string>
+
+    <!-- ExportImportBackupDialog -->
+    <string name="export_import_backup_dialog_title">Data Backup &amp; Export</string>
+    <string name="export_import_backup_dialog_tab_export_csv">Export CSV</string>
+    <string name="export_import_backup_dialog_tab_export_json">Export JSON</string>
+    <string name="export_import_backup_dialog_tab_restore_json">Restore JSON</string>
+    <string name="export_import_backup_dialog_csv_export_label">CSV Financial Ledger Export:</string>
+    <string name="export_import_backup_dialog_json_export_label">Complete Database JSON Backup:</string>
+    <string name="export_import_backup_dialog_copy_clip_label">Backup Export</string>
+    <string name="export_import_backup_dialog_copied_status">Copied export content to clipboard!</string>
+    <string name="export_import_backup_dialog_copy_button">Copy to Clipboard</string>
+    <string name="export_import_backup_dialog_paste_json_label">Paste JSON Backup Content:</string>
+    <string name="export_import_backup_dialog_paste_placeholder">Paste JSON backup data here...</string>
+    <string name="export_import_backup_dialog_restore_button">Restore Database Backup</string>
+    <string name="export_import_backup_dialog_close_button">Close</string>
+</resources>

@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -58,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -108,12 +110,12 @@ fun EditTransactionDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Transaction",
+                        contentDescription = stringResource(R.string.edit_transaction_dialog_edit_transaction_label),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (transaction.isPendingReview) "Set Title & Category" else "Edit Transaction",
+                        text = if (transaction.isPendingReview) stringResource(R.string.edit_transaction_dialog_title_set) else stringResource(R.string.edit_transaction_dialog_edit_transaction_label),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -124,7 +126,7 @@ fun EditTransactionDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = stringResource(R.string.edit_transaction_dialog_delete_cd),
                         tint = ExpenseRed
                     )
                 }
@@ -147,13 +149,13 @@ fun EditTransactionDialog(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.Message,
-                                    contentDescription = "SMS Source",
+                                    contentDescription = stringResource(R.string.edit_transaction_dialog_sms_source_cd),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Auto-imported SMS",
+                                    text = stringResource(R.string.edit_transaction_dialog_sms_imported_label),
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
@@ -186,7 +188,12 @@ fun EditTransactionDialog(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "Amount: ${if (transaction.type == "CREDIT") "+" else "-"}${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, transaction.amount)}",
+                            text = stringResource(
+                                R.string.edit_transaction_dialog_amount_line,
+                                if (transaction.type == "CREDIT") "+" else "-",
+                                currencySymbol,
+                                transaction.amount
+                            ),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = if (transaction.type == "CREDIT") com.example.ui.theme.IncomeGreen else MaterialTheme.colorScheme.primary
@@ -195,7 +202,7 @@ fun EditTransactionDialog(
                         if (formattedDate.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Date: $formattedDate",
+                                text = stringResource(R.string.edit_transaction_dialog_date_line, formattedDate),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -208,8 +215,8 @@ fun EditTransactionDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Transaction Title / Description") },
-                    placeholder = { Text("e.g. Starbucks Morning Coffee, Grocery Shopping") },
+                    label = { Text(stringResource(R.string.edit_transaction_dialog_title_field_label)) },
+                    placeholder = { Text(stringResource(R.string.edit_transaction_dialog_title_field_placeholder)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("transaction_title_input"),
@@ -218,7 +225,7 @@ fun EditTransactionDialog(
 
                 // Category Selection Chips
                 Text(
-                    text = "Category Tag",
+                    text = stringResource(R.string.edit_transaction_dialog_category_tag_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -273,7 +280,7 @@ fun EditTransactionDialog(
 
                 // Account Selection Dropdown
                 Text(
-                    text = "Account",
+                    text = stringResource(R.string.edit_transaction_dialog_account_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -281,7 +288,7 @@ fun EditTransactionDialog(
                     expanded = accountDropdownExpanded,
                     onExpandedChange = { accountDropdownExpanded = !accountDropdownExpanded }
                 ) {
-                    val currentAccountName = accounts.find { it.id == selectedAccountId }?.name ?: "Select Account"
+                    val currentAccountName = accounts.find { it.id == selectedAccountId }?.name ?: stringResource(R.string.edit_transaction_dialog_select_account)
                     OutlinedTextField(
                         value = currentAccountName,
                         onValueChange = {},
@@ -298,7 +305,7 @@ fun EditTransactionDialog(
                     ) {
                         accounts.forEach { acc ->
                             DropdownMenuItem(
-                                text = { Text("${acc.name} (${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, acc.balance)})") },
+                                text = { Text(stringResource(R.string.edit_transaction_dialog_account_item, acc.name, currencySymbol, acc.balance)) },
                                 onClick = {
                                     selectedAccountId = acc.id
                                     accountDropdownExpanded = false
@@ -312,7 +319,7 @@ fun EditTransactionDialog(
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes (Optional)") },
+                    label = { Text(stringResource(R.string.edit_transaction_dialog_notes_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -329,7 +336,7 @@ fun EditTransactionDialog(
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "Capture / Attach Bill Receipt Image",
+                        text = stringResource(R.string.edit_transaction_dialog_receipt_section_title),
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -347,11 +354,11 @@ fun EditTransactionDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = "Capture / Select Image",
+                                    contentDescription = stringResource(R.string.edit_transaction_dialog_capture_image_cd),
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Attach Image", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.edit_transaction_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
                             }
 
                             OutlinedButton(
@@ -362,11 +369,11 @@ fun EditTransactionDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Receipt,
-                                    contentDescription = "Sample Bill",
+                                    contentDescription = stringResource(R.string.edit_transaction_dialog_sample_bill),
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Sample Bill", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.edit_transaction_dialog_sample_bill), style = MaterialTheme.typography.labelMedium)
                             }
                         }
                     } else {
@@ -391,7 +398,7 @@ fun EditTransactionDialog(
                                     if (uriStr.startsWith("content://") || uriStr.startsWith("file://") || uriStr.startsWith("http")) {
                                         AsyncImage(
                                             model = uriStr,
-                                            contentDescription = "Bill Receipt Preview",
+                                            contentDescription = stringResource(R.string.edit_transaction_dialog_receipt_preview_cd),
                                             modifier = Modifier
                                                 .size(44.dp)
                                                 .clip(RoundedCornerShape(8.dp)),
@@ -406,7 +413,7 @@ fun EditTransactionDialog(
                                             Box(contentAlignment = Alignment.Center) {
                                                 Icon(
                                                     imageVector = Icons.Default.Receipt,
-                                                    contentDescription = "Receipt Icon",
+                                                    contentDescription = stringResource(R.string.edit_transaction_dialog_receipt_icon_cd),
                                                     tint = com.example.ui.theme.IncomeGreen,
                                                     modifier = Modifier.size(24.dp)
                                                 )
@@ -416,11 +423,11 @@ fun EditTransactionDialog(
 
                                     Column {
                                         Text(
-                                            text = "Bill Receipt Attached",
+                                            text = stringResource(R.string.edit_transaction_dialog_receipt_attached),
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                         )
                                         Text(
-                                            text = if (uriStr == "sample_receipt_utility_bill") "Demo Bill Invoice #4812" else "Image attached",
+                                            text = if (uriStr == "sample_receipt_utility_bill") stringResource(R.string.edit_transaction_dialog_demo_invoice) else stringResource(R.string.edit_transaction_dialog_image_attached),
                                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }
@@ -432,7 +439,7 @@ fun EditTransactionDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Remove Receipt",
+                                        contentDescription = stringResource(R.string.edit_transaction_dialog_remove_receipt_cd),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -456,11 +463,11 @@ fun EditTransactionDialog(
                     ) {
                         Column {
                             Text(
-                                text = "Recurring Subscription / Bill",
+                                text = stringResource(R.string.edit_transaction_dialog_recurring_toggle_title),
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Text(
-                                text = "Track fixed monthly/weekly recurring bill",
+                                text = stringResource(R.string.edit_transaction_dialog_recurring_toggle_subtitle),
                                 style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                             )
                         }
@@ -477,11 +484,20 @@ fun EditTransactionDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            listOf("MONTHLY" to "Monthly", "WEEKLY" to "Weekly", "YEARLY" to "Yearly").forEach { (fKey, fLabel) ->
+                            listOf("MONTHLY", "WEEKLY", "YEARLY").forEach { fKey ->
                                 androidx.compose.material3.FilterChip(
                                     selected = recurringFrequency == fKey,
                                     onClick = { recurringFrequency = fKey },
-                                    label = { Text(fLabel, style = MaterialTheme.typography.labelSmall) },
+                                    label = {
+                                        Text(
+                                            text = when (fKey) {
+                                                "MONTHLY" -> stringResource(R.string.edit_transaction_dialog_freq_monthly)
+                                                "WEEKLY" -> stringResource(R.string.edit_transaction_dialog_freq_weekly)
+                                                else -> stringResource(R.string.edit_transaction_dialog_freq_yearly)
+                                            },
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -502,7 +518,7 @@ fun EditTransactionDialog(
                                     }
                                 }
                             },
-                            label = { Text("Due Day (e.g. Day 4 for EMI)") },
+                            label = { Text(stringResource(R.string.edit_transaction_dialog_due_day_label)) },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
@@ -528,12 +544,12 @@ fun EditTransactionDialog(
                 },
                 modifier = Modifier.testTag("save_transaction_button")
             ) {
-                Text("Save Changes")
+                Text(stringResource(R.string.edit_transaction_dialog_save_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.edit_transaction_dialog_cancel_button))
             }
         }
     )

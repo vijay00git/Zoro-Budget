@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -69,7 +71,7 @@ fun TotalBudgetDialog(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Set Total Monthly Budget",
+                    text = stringResource(R.string.total_budget_dialog_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -77,7 +79,7 @@ fun TotalBudgetDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Enter your target overall expense limit for the month. This will automatically allocate spending limits across your active categories:",
+                    text = stringResource(R.string.total_budget_dialog_description),
                     style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
@@ -86,8 +88,8 @@ fun TotalBudgetDialog(
                 OutlinedTextField(
                     value = budgetInput,
                     onValueChange = { budgetInput = it },
-                    label = { Text("Total Monthly Budget ($currencySymbol)") },
-                    prefix = { Text("$currencySymbol ") },
+                    label = { Text(stringResource(R.string.total_budget_dialog_label, currencySymbol)) },
+                    prefix = { Text(stringResource(R.string.total_budget_dialog_currency_prefix, currencySymbol)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -97,7 +99,7 @@ fun TotalBudgetDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Quick Presets:",
+                    text = stringResource(R.string.total_budget_dialog_quick_presets),
                     style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
@@ -110,7 +112,7 @@ fun TotalBudgetDialog(
                     presets.forEach { preset ->
                         SuggestionChip(
                             onClick = { budgetInput = preset.toString() },
-                            label = { Text("$currencySymbol$preset") }
+                            label = { Text(stringResource(R.string.total_budget_dialog_preset_amount, currencySymbol, preset)) }
                         )
                     }
                 }
@@ -125,12 +127,12 @@ fun TotalBudgetDialog(
                 },
                 modifier = Modifier.testTag("save_total_budget_button")
             ) {
-                Text("Set Total Budget")
+                Text(stringResource(R.string.total_budget_dialog_save_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.total_budget_dialog_cancel_button))
             }
         }
     )

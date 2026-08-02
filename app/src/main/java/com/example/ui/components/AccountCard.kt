@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,12 +34,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entity.AccountEntity
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.PendingAmber
-import java.util.Locale
 
 @Composable
 fun AccountCard(
@@ -115,13 +116,13 @@ fun AccountCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Warning,
-                                    contentDescription = "Low Balance",
+                                    contentDescription = stringResource(R.string.account_card_low_balance_description),
                                     tint = ExpenseRed,
                                     modifier = Modifier.size(10.dp)
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(
-                                    text = "Low",
+                                    text = stringResource(R.string.account_card_low_label),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = ExpenseRed
@@ -137,7 +138,7 @@ fun AccountCard(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = "•${account.accountNumberLast4}",
+                                text = stringResource(R.string.account_card_number_last4_format, account.accountNumberLast4),
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
@@ -162,7 +163,7 @@ fun AccountCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, account.balance),
+                text = stringResource(R.string.currency_amount_format, currencySymbol, account.balance),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = if (isLowBalance) ExpenseRed else MaterialTheme.colorScheme.onSurface

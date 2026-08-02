@@ -2,6 +2,7 @@ package com.example.ui
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.data.export.DataExporter
 import com.example.data.local.BudgetRepository
@@ -20,6 +21,22 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
+
+/**
+ * Lets ExpenseViewModel take a constructor-injected BudgetRepository while still being created
+ * through androidx.activity's `by viewModels()` delegate, so the ViewModelStore retains the
+ * instance (and all its in-memory filter/UI state) across configuration changes instead of
+ * MainActivity.onCreate() rebuilding it from scratch every time.
+ */
+class ExpenseViewModelFactory(private val repository: BudgetRepository) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
+            return ExpenseViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+    }
+}
 
 class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
 
@@ -400,32 +417,38 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 return@launch
             }
 
-            // Restore accounts as brand-new rows and remember old id -> new id so imported
-            // transactions can be re-pointed at the right account, without colliding with (and
-            // silently overwriting) any account that already exists on this device.
-            val accountIdRemap = mutableMapOf<Long, Long>()
-            for (acc in parsed.accounts) {
-                accountIdRemap[acc.id] = repository.restoreAccount(acc)
-            }
-            val fallbackAccountId = accountIdRemap.values.firstOrNull()
-                ?: repository.accounts.first().firstOrNull()?.id
-
-            // Categories are matched by name, not id - skip any category that already exists
-            // locally so re-importing a backup doesn't create duplicate categories.
-            val existingCategoryNames = repository.categories.first().map { it.name.lowercase() }.toSet()
-            for (cat in parsed.categories) {
-                if (cat.name.lowercase() !in existingCategoryNames) {
-                    repository.addCategory(cat.copy(id = 0))
+            // The whole restore runs as one DB transaction: a crash or error partway through
+            // (e.g. after accounts are restored but before transactions are) would otherwise
+            // leave the database in a half-imported state.
+            val count = repository.runInTransaction {
+                // Restore accounts as brand-new rows and remember old id -> new id so imported
+                // transactions can be re-pointed at the right account, without colliding with (and
+                // silently overwriting) any account that already exists on this device.
+                val accountIdRemap = mutableMapOf<Long, Long>()
+                for (acc in parsed.accounts) {
+                    accountIdRemap[acc.id] = repository.restoreAccount(acc)
                 }
-            }
+                val fallbackAccountId = accountIdRemap.values.firstOrNull()
+                    ?: repository.accounts.first().firstOrNull()?.id
 
-            var count = 0
-            for (tx in parsed.transactions) {
-                val remappedAccountId = accountIdRemap[tx.accountId] ?: fallbackAccountId ?: continue
-                // restoreTransaction (not addTransaction) - the imported account balance already
-                // reflects this transaction, so we must not re-apply its delta on top of it.
-                repository.restoreTransaction(tx.copy(accountId = remappedAccountId))
-                count++
+                // Categories are matched by name, not id - skip any category that already exists
+                // locally so re-importing a backup doesn't create duplicate categories.
+                val existingCategoryNames = repository.categories.first().map { it.name.lowercase() }.toSet()
+                for (cat in parsed.categories) {
+                    if (cat.name.lowercase() !in existingCategoryNames) {
+                        repository.addCategory(cat.copy(id = 0))
+                    }
+                }
+
+                var imported = 0
+                for (tx in parsed.transactions) {
+                    val remappedAccountId = accountIdRemap[tx.accountId] ?: fallbackAccountId ?: continue
+                    // restoreTransaction (not addTransaction) - the imported account balance already
+                    // reflects this transaction, so we must not re-apply its delta on top of it.
+                    repository.restoreTransaction(tx.copy(accountId = remappedAccountId))
+                    imported++
+                }
+                imported
             }
             _importStatusMessage.value = "Restored backup! Imported $count transactions."
         }

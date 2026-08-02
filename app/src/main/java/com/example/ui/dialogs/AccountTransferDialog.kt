@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
@@ -48,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -69,11 +71,12 @@ fun AccountTransferDialog(
     onTransfer: (fromAccount: AccountEntity, toAccount: AccountEntity, amount: Double, notes: String?, dateTimestamp: Long) -> Unit
 ) {
     val context = LocalContext.current
+    val defaultAccountName = stringResource(R.string.account_transfer_dialog_default_account_name)
 
     // Default source account to selected or first account
     var fromAccount by remember {
         mutableStateOf(
-            accounts.find { it.id == initialFromAccountId } ?: accounts.firstOrNull() ?: AccountEntity(id = 1, name = "Account 1", type = "CHECKING", balance = 0.0)
+            accounts.find { it.id == initialFromAccountId } ?: accounts.firstOrNull() ?: AccountEntity(id = 1, name = defaultAccountName, type = "CHECKING", balance = 0.0)
         )
     }
 
@@ -91,6 +94,8 @@ fun AccountTransferDialog(
     var fromDropdownExpanded by remember { mutableStateOf(false) }
     var toDropdownExpanded by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val sameAccountErrorText = stringResource(R.string.account_transfer_dialog_error_same_account)
+    val invalidAmountErrorText = stringResource(R.string.account_transfer_dialog_error_invalid_amount)
 
     val calendar = remember { Calendar.getInstance() }
     calendar.timeInMillis = selectedDateTimestamp
@@ -150,11 +155,11 @@ fun AccountTransferDialog(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Transfer Money",
+                        text = stringResource(R.string.account_transfer_dialog_title),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                     Text(
-                        text = "Move funds between your accounts",
+                        text = stringResource(R.string.account_transfer_dialog_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
@@ -174,7 +179,7 @@ fun AccountTransferDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "ACCOUNT SELECTION",
+                        text = stringResource(R.string.account_transfer_dialog_account_selection_label),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -191,11 +196,11 @@ fun AccountTransferDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "Swap accounts",
+                            contentDescription = stringResource(R.string.account_transfer_dialog_swap_cd),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Swap Direction", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.account_transfer_dialog_swap_button), style = MaterialTheme.typography.labelSmall)
                     }
                 }
 
@@ -205,10 +210,10 @@ fun AccountTransferDialog(
                     onExpandedChange = { fromDropdownExpanded = !fromDropdownExpanded }
                 ) {
                     OutlinedTextField(
-                        value = "${fromAccount.name} (${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", fromAccount.balance)})",
+                        value = stringResource(R.string.account_transfer_dialog_account_value, fromAccount.name, currencySymbol, fromAccount.balance),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("From Account (Source)") },
+                        label = { Text(stringResource(R.string.account_transfer_dialog_from_account_label)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = fromDropdownExpanded) },
                         modifier = Modifier
                             .menuAnchor()
@@ -227,7 +232,7 @@ fun AccountTransferDialog(
                                     Column {
                                         Text(text = acc.name, fontWeight = FontWeight.Bold)
                                         Text(
-                                            text = "Balance: ${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", acc.balance)}",
+                                            text = stringResource(R.string.account_transfer_dialog_balance_line, currencySymbol, acc.balance),
                                             style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }
@@ -250,10 +255,10 @@ fun AccountTransferDialog(
                     onExpandedChange = { toDropdownExpanded = !toDropdownExpanded }
                 ) {
                     OutlinedTextField(
-                        value = "${toAccount.name} (${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", toAccount.balance)})",
+                        value = stringResource(R.string.account_transfer_dialog_account_value, toAccount.name, currencySymbol, toAccount.balance),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("To Account (Destination)") },
+                        label = { Text(stringResource(R.string.account_transfer_dialog_to_account_label)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = toDropdownExpanded) },
                         modifier = Modifier
                             .menuAnchor()
@@ -272,7 +277,7 @@ fun AccountTransferDialog(
                                     Column {
                                         Text(text = acc.name, fontWeight = FontWeight.Bold)
                                         Text(
-                                            text = "Balance: ${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", acc.balance)}",
+                                            text = stringResource(R.string.account_transfer_dialog_balance_line, currencySymbol, acc.balance),
                                             style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }
@@ -293,8 +298,8 @@ fun AccountTransferDialog(
                         amountText = it
                         errorMessage = null
                     },
-                    label = { Text("Transfer Amount ($currencySymbol)") },
-                    placeholder = { Text("e.g. 500.00") },
+                    label = { Text(stringResource(R.string.account_transfer_dialog_amount_label, currencySymbol)) },
+                    placeholder = { Text(stringResource(R.string.account_transfer_dialog_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -308,10 +313,10 @@ fun AccountTransferDialog(
                     value = dateFormat.format(calendar.time),
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Transfer Date") },
+                    label = { Text(stringResource(R.string.account_transfer_dialog_date_label)) },
                     trailingIcon = {
                         IconButton(onClick = { datePickerDialog.show() }) {
-                            Icon(imageVector = Icons.Default.CalendarToday, contentDescription = "Select Date")
+                            Icon(imageVector = Icons.Default.CalendarToday, contentDescription = stringResource(R.string.account_transfer_dialog_select_date_cd))
                         }
                     },
                     modifier = Modifier
@@ -324,8 +329,8 @@ fun AccountTransferDialog(
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes / Reason (Optional)") },
-                    placeholder = { Text("e.g. Savings allocation, Credit card payoff") },
+                    label = { Text(stringResource(R.string.account_transfer_dialog_notes_label)) },
+                    placeholder = { Text(stringResource(R.string.account_transfer_dialog_notes_placeholder)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("transfer_notes_input"),
@@ -347,7 +352,7 @@ fun AccountTransferDialog(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
-                            text = "PROJECTED BALANCE IMPACT",
+                            text = stringResource(R.string.account_transfer_dialog_impact_label),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -369,11 +374,11 @@ fun AccountTransferDialog(
                                     maxLines = 1
                                 )
                                 Text(
-                                    text = "Current: ${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", fromAccount.balance)}",
+                                    text = stringResource(R.string.account_transfer_dialog_current_balance, currencySymbol, fromAccount.balance),
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                                 Text(
-                                    text = "After: ${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", fromAccount.balance - parsedAmount)}",
+                                    text = stringResource(R.string.account_transfer_dialog_after_balance, currencySymbol, fromAccount.balance - parsedAmount),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = ExpenseRed
@@ -398,11 +403,11 @@ fun AccountTransferDialog(
                                     maxLines = 1
                                 )
                                 Text(
-                                    text = "Current: ${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", toAccount.balance)}",
+                                    text = stringResource(R.string.account_transfer_dialog_current_balance, currencySymbol, toAccount.balance),
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                                 Text(
-                                    text = "After: ${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", toAccount.balance + parsedAmount)}",
+                                    text = stringResource(R.string.account_transfer_dialog_after_balance, currencySymbol, toAccount.balance + parsedAmount),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = IncomeGreen
@@ -424,7 +429,7 @@ fun AccountTransferDialog(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "Note: Transfer amount exceeds current source balance.",
+                                    text = stringResource(R.string.account_transfer_dialog_insufficient_balance_note),
                                     style = MaterialTheme.typography.labelSmall.copy(color = ExpenseRed)
                                 )
                             }
@@ -446,11 +451,11 @@ fun AccountTransferDialog(
             Button(
                 onClick = {
                     if (fromAccount.id == toAccount.id) {
-                        errorMessage = "Please select two different accounts."
+                        errorMessage = sameAccountErrorText
                         return@Button
                     }
                     if (parsedAmount <= 0) {
-                        errorMessage = "Please enter a valid amount greater than zero."
+                        errorMessage = invalidAmountErrorText
                         return@Button
                     }
                     onTransfer(fromAccount, toAccount, parsedAmount, notes.takeIf { it.isNotBlank() }, selectedDateTimestamp)
@@ -460,14 +465,14 @@ fun AccountTransferDialog(
             ) {
                 Text(
                     text = if (parsedAmount > 0) {
-                        "Transfer ${currencySymbol}${String.format(Locale.getDefault(), "%,.2f", parsedAmount)}"
-                    } else "Confirm Transfer"
+                        stringResource(R.string.account_transfer_dialog_confirm_with_amount, currencySymbol, parsedAmount)
+                    } else stringResource(R.string.account_transfer_dialog_confirm_button)
                 )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.account_transfer_dialog_cancel_button))
             }
         }
     )

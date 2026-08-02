@@ -57,10 +57,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.components.CategoryDonutChart
@@ -162,7 +164,7 @@ fun ReportsScreen(
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Text(
-                    text = "Planning & Analytics",
+                    text = stringResource(R.string.reports_screen_title),
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -184,7 +186,7 @@ fun ReportsScreen(
                             onClick = { onMonthOffsetChange(selectedMonthOffset - 1) },
                             modifier = Modifier.testTag("prev_month_button")
                         ) {
-                            Icon(imageVector = Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                            Icon(imageVector = Icons.Default.ChevronLeft, contentDescription = stringResource(R.string.reports_screen_previous_month_desc))
                         }
 
                         Text(
@@ -197,7 +199,7 @@ fun ReportsScreen(
                             enabled = selectedMonthOffset < 0,
                             modifier = Modifier.testTag("next_month_button")
                         ) {
-                            Icon(imageVector = Icons.Default.ChevronRight, contentDescription = "Next Month")
+                            Icon(imageVector = Icons.Default.ChevronRight, contentDescription = stringResource(R.string.reports_screen_next_month_desc))
                         }
                     }
                 }
@@ -212,7 +214,12 @@ fun ReportsScreen(
                 divider = {},
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
-                listOf("All Overview", "Smart Budget", "Savings Goals", "Subscriptions").forEachIndexed { index, title ->
+                listOf(
+                    stringResource(R.string.reports_screen_tab_all_overview),
+                    stringResource(R.string.reports_screen_tab_smart_budget),
+                    stringResource(R.string.reports_screen_tab_savings_goals),
+                    stringResource(R.string.reports_screen_tab_subscriptions)
+                ).forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
@@ -248,13 +255,13 @@ fun ReportsScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = "Net Monthly Cash Flow",
+                                        text = stringResource(R.string.reports_screen_net_monthly_cash_flow),
                                         style = MaterialTheme.typography.labelMedium.copy(
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         )
                                     )
                                     Text(
-                                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, netSavings),
+                                        text = stringResource(R.string.reports_screen_currency_amount, currencySymbol, netSavings),
                                         style = MaterialTheme.typography.headlineMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = if (netSavings >= 0) IncomeGreen else ExpenseRed
@@ -267,7 +274,7 @@ fun ReportsScreen(
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
-                                        text = String.format(Locale.getDefault(), "Savings: %.1f%%", savingsRate),
+                                        text = stringResource(R.string.reports_screen_savings_rate_label, savingsRate),
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                         style = MaterialTheme.typography.labelMedium.copy(
                                             fontWeight = FontWeight.Bold,
@@ -285,11 +292,11 @@ fun ReportsScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = "Total Income",
+                                        text = stringResource(R.string.reports_screen_total_income_label),
                                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                                     )
                                     Text(
-                                        text = String.format(Locale.getDefault(), "+%s%,.2f", currencySymbol, totalIncome),
+                                        text = stringResource(R.string.reports_screen_income_amount, currencySymbol, totalIncome),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = IncomeGreen
@@ -299,11 +306,11 @@ fun ReportsScreen(
 
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = "Total Expenses",
+                                        text = stringResource(R.string.reports_screen_total_expenses_label),
                                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                                     )
                                     Text(
-                                        text = String.format(Locale.getDefault(), "-%s%,.2f", currencySymbol, totalExpense),
+                                        text = stringResource(R.string.reports_screen_expense_amount, currencySymbol, totalExpense),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = ExpenseRed
@@ -327,7 +334,7 @@ fun ReportsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Smart Budget Planning",
+                            text = stringResource(R.string.reports_screen_smart_budget_planning_title),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
@@ -343,7 +350,7 @@ fun ReportsScreen(
                         ) {
                             Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("New Category", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.reports_screen_new_category_button), style = MaterialTheme.typography.labelMedium)
                         }
                     }
 
@@ -363,23 +370,22 @@ fun ReportsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Total Monthly Budget Health",
+                                        text = stringResource(R.string.reports_screen_total_monthly_budget_health_title),
                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = if (totalBudgetLimit > 0) {
-                                            String.format(
-                                                Locale.getDefault(),
-                                                "%s%,.2f spent of %s%,.2f budget",
+                                            stringResource(
+                                                R.string.reports_screen_budget_spent_of_total,
                                                 currencySymbol,
                                                 totalSpentInBudgetedCategories,
                                                 currencySymbol,
                                                 totalBudgetLimit
                                             )
                                         } else {
-                                            "No category budget limits configured yet"
+                                            stringResource(R.string.reports_screen_no_budget_limits_message)
                                         },
                                         style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     )
@@ -394,9 +400,9 @@ fun ReportsScreen(
                                         else -> IncomeGreen
                                     }
                                     val statusText = when {
-                                        overallBudgetProgress > 1.0f -> "Over Budget"
-                                        overallBudgetProgress > 0.85f -> "Near Limit"
-                                        else -> "On Track"
+                                        overallBudgetProgress > 1.0f -> stringResource(R.string.reports_screen_status_over_budget)
+                                        overallBudgetProgress > 0.85f -> stringResource(R.string.reports_screen_status_near_limit)
+                                        else -> stringResource(R.string.reports_screen_status_on_track)
                                     }
 
                                     Surface(
@@ -435,9 +441,9 @@ fun ReportsScreen(
                                 val remaining = totalBudgetLimit - totalSpentInBudgetedCategories
                                 Text(
                                     text = if (remaining >= 0) {
-                                        String.format(Locale.getDefault(), "%s%,.2f remaining in budget", currencySymbol, remaining)
+                                        stringResource(R.string.reports_screen_budget_remaining, currencySymbol, remaining)
                                     } else {
-                                        String.format(Locale.getDefault(), "%s%,.2f OVER TOTAL BUDGET!", currencySymbol, -remaining)
+                                        stringResource(R.string.reports_screen_budget_over_total, currencySymbol, -remaining)
                                     },
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
@@ -458,7 +464,7 @@ fun ReportsScreen(
                         FilterChip(
                             selected = budgetFilterMode == "ALL",
                             onClick = { budgetFilterMode = "ALL" },
-                            label = { Text("All Categories (${categories.size})") }
+                            label = { Text(stringResource(R.string.reports_screen_filter_all_categories, categories.size)) }
                         )
                         FilterChip(
                             selected = budgetFilterMode == "OVER_BUDGET",
@@ -468,7 +474,7 @@ fun ReportsScreen(
                                     val spent = categoryExpensesMap[it.name] ?: 0.0
                                     it.monthlyBudgetLimit > 0 && spent > it.monthlyBudgetLimit
                                 }
-                                Text("Over Budget ($overCount)")
+                                Text(stringResource(R.string.reports_screen_filter_over_budget_count, overCount))
                             }
                         )
                     }
@@ -496,7 +502,7 @@ fun ReportsScreen(
 
                             if (filteredCategories.isEmpty()) {
                                 Text(
-                                    text = "No categories match the selected filter.",
+                                    text = stringResource(R.string.reports_screen_no_categories_match_filter),
                                     style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                                     modifier = Modifier.padding(vertical = 12.dp)
                                 )
@@ -557,7 +563,7 @@ fun ReportsScreen(
                                                     )
                                                     if (!cat.isPredefined) {
                                                         Text(
-                                                            text = "Custom Category",
+                                                            text = stringResource(R.string.reports_screen_custom_category_label),
                                                             style = MaterialTheme.typography.labelSmall.copy(
                                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                                 fontSize = 10.sp
@@ -570,14 +576,14 @@ fun ReportsScreen(
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Column(horizontalAlignment = Alignment.End) {
                                                     Text(
-                                                        text = String.format(Locale.getDefault(), "%s%,.2f spent", currencySymbol, spent),
+                                                        text = stringResource(R.string.reports_screen_amount_spent, currencySymbol, spent),
                                                         style = MaterialTheme.typography.bodyMedium.copy(
                                                             fontWeight = FontWeight.Bold,
                                                             color = if (hasLimit && spent > limit) ExpenseRed else MaterialTheme.colorScheme.onSurface
                                                         )
                                                     )
                                                     Text(
-                                                        text = if (hasLimit) String.format(Locale.getDefault(), "Limit: $%,.2f", limit) else "Tap to set limit",
+                                                        text = if (hasLimit) stringResource(R.string.reports_screen_limit_amount, limit) else stringResource(R.string.reports_screen_tap_to_set_limit),
                                                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     )
                                                 }
@@ -590,7 +596,7 @@ fun ReportsScreen(
                                                 ) {
                                                     Icon(
                                                         imageVector = Icons.Default.Edit,
-                                                        contentDescription = "Edit Budget Limit",
+                                                        contentDescription = stringResource(R.string.reports_screen_edit_budget_limit_desc),
                                                         tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(16.dp)
                                                     )
@@ -629,7 +635,7 @@ fun ReportsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Smart Savings Target",
+                            text = stringResource(R.string.reports_screen_smart_savings_target_title),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                         )
                     }
@@ -672,13 +678,13 @@ fun ReportsScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "Monthly Savings Goal",
+                                            text = stringResource(R.string.reports_screen_monthly_savings_goal_title),
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = String.format(Locale.getDefault(), "Target: %s%,.2f / month", currencySymbol, savingsGoalTarget),
+                                            text = stringResource(R.string.reports_screen_savings_target_label, currencySymbol, savingsGoalTarget),
                                             style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }
@@ -691,7 +697,7 @@ fun ReportsScreen(
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
-                                        text = String.format(Locale.getDefault(), "%.0f%% Achieved", goalProgress * 100),
+                                        text = stringResource(R.string.reports_screen_goal_achieved_percent, goalProgress * 100),
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                         style = MaterialTheme.typography.labelMedium.copy(
                                             fontWeight = FontWeight.Bold,
@@ -704,7 +710,7 @@ fun ReportsScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = String.format(Locale.getDefault(), "Current Savings: $%,.2f", netSavings.coerceAtLeast(0.0)),
+                                text = stringResource(R.string.reports_screen_current_savings, netSavings.coerceAtLeast(0.0)),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = if (netSavings >= 0) IncomeGreen else ExpenseRed
@@ -744,9 +750,9 @@ fun ReportsScreen(
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
                                         text = when {
-                                            goalAchieved -> "🎉 Goal Reached! You have saved ${currencySymbol}${String.format(Locale.getDefault(), "%.2f", netSavings)} this month."
-                                            netSavings > 0 -> "You need ${currencySymbol}${String.format(Locale.getDefault(), "%.2f", savingsGoalTarget - netSavings)} more to reach your target goal."
-                                            else -> "Net spending exceeds income this month. Adjust category budget limits to increase savings."
+                                            goalAchieved -> stringResource(R.string.reports_screen_goal_reached_message, currencySymbol, netSavings)
+                                            netSavings > 0 -> stringResource(R.string.reports_screen_goal_remaining_message, currencySymbol, savingsGoalTarget - netSavings)
+                                            else -> stringResource(R.string.reports_screen_net_spending_exceeds_income_message)
                                         },
                                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
                                     )
@@ -769,13 +775,13 @@ fun ReportsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Subscriptions & Recurring Bills",
+                                text = stringResource(R.string.reports_screen_subscriptions_title),
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "Custom due date alerts & schedules",
+                                text = stringResource(R.string.reports_screen_subscriptions_subtitle),
                                 style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                             )
                         }
@@ -791,7 +797,7 @@ fun ReportsScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("+ Bill", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                                Text(stringResource(R.string.reports_screen_add_bill_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                             }
 
                             Surface(
@@ -799,7 +805,7 @@ fun ReportsScreen(
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%s%,.2f/mo", currencySymbol, totalMonthlySubscriptions),
+                                    text = stringResource(R.string.reports_screen_monthly_subscriptions_amount, currencySymbol, totalMonthlySubscriptions),
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
@@ -838,7 +844,7 @@ fun ReportsScreen(
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "No active recurring bills or EMIs found.",
+                                        text = stringResource(R.string.reports_screen_no_recurring_bills_message),
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -846,7 +852,7 @@ fun ReportsScreen(
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Tap '+ Bill' above to add recurring EMI or bill due dates.",
+                                        text = stringResource(R.string.reports_screen_add_recurring_bill_hint),
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -941,7 +947,7 @@ fun ReportsScreen(
 
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Text(
-                                                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, sub.amount),
+                                                        text = stringResource(R.string.reports_screen_currency_amount, currencySymbol, sub.amount),
                                                         style = MaterialTheme.typography.titleMedium.copy(
                                                             fontWeight = FontWeight.Bold,
                                                             color = if (alert.severity == com.example.data.utils.BillAlertSeverity.URGENT) ExpenseRed else MaterialTheme.colorScheme.primary
@@ -956,7 +962,7 @@ fun ReportsScreen(
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Default.Settings,
-                                                            contentDescription = "Manage Subscription",
+                                                            contentDescription = stringResource(R.string.reports_screen_manage_subscription_desc),
                                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                             modifier = Modifier.size(16.dp)
                                                         )

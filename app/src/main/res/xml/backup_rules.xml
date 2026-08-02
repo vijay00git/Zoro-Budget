@@ -7,7 +7,10 @@
 -->
 <full-backup-content>
     <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    Pre-API 31 full backup equivalent of data_extraction_rules.xml: keep the Room database
+    (raw SMS bodies, account numbers) out of Android's automatic backup.
+    -->
+    <exclude domain="database" path="smart_budget_db" />
+    <exclude domain="database" path="smart_budget_db-wal" />
+    <exclude domain="database" path="smart_budget_db-shm" />
 </full-backup-content>

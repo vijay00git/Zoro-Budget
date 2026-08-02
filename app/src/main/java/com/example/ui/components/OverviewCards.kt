@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.example.R
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -41,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,12 +54,11 @@ import com.example.ui.theme.IncomeGreen
 import com.example.ui.theme.IncomeGreenContainer
 import com.example.ui.theme.IncomeOnGreenContainer
 import com.example.ui.theme.PendingAmber
-import java.util.Locale
 
 @Composable
 fun TotalBalanceCard(
     totalBalance: Double,
-    accountName: String = "Main Account",
+    accountName: String = stringResource(R.string.overview_default_account_name),
     currencySymbol: String = "$",
     modifier: Modifier = Modifier
 ) {
@@ -89,7 +90,7 @@ fun TotalBalanceCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, totalBalance),
+                        text = stringResource(R.string.currency_amount_format, currencySymbol, totalBalance),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold
@@ -113,7 +114,7 @@ fun TotalBalanceCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "ACTIVE",
+                            text = stringResource(R.string.overview_active_badge_label),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 fontWeight = FontWeight.Bold,
@@ -157,7 +158,7 @@ fun TotalBalanceCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "WEEK 1",
+                    text = stringResource(R.string.overview_week_label_1),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 9.sp,
@@ -165,7 +166,7 @@ fun TotalBalanceCard(
                     )
                 )
                 Text(
-                    text = "WEEK 2",
+                    text = stringResource(R.string.overview_week_label_2),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 9.sp,
@@ -173,7 +174,7 @@ fun TotalBalanceCard(
                     )
                 )
                 Text(
-                    text = "WEEK 3",
+                    text = stringResource(R.string.overview_week_label_3),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 9.sp,
@@ -181,7 +182,7 @@ fun TotalBalanceCard(
                     )
                 )
                 Text(
-                    text = "WEEK 4",
+                    text = stringResource(R.string.overview_week_label_4),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 9.sp,
@@ -227,7 +228,7 @@ fun IncomeExpenseSummaryRow(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowDownward,
-                        contentDescription = "Income",
+                        contentDescription = stringResource(R.string.overview_income_label),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -237,14 +238,14 @@ fun IncomeExpenseSummaryRow(
 
                 Column {
                     Text(
-                        text = "Income",
+                        text = stringResource(R.string.overview_income_label),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = IncomeOnGreenContainer.copy(alpha = 0.8f),
                             fontWeight = FontWeight.Medium
                         )
                     )
                     Text(
-                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, totalIncome),
+                        text = stringResource(R.string.currency_amount_format, currencySymbol, totalIncome),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = IncomeGreen
@@ -277,7 +278,7 @@ fun IncomeExpenseSummaryRow(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowUpward,
-                        contentDescription = "Expenses",
+                        contentDescription = stringResource(R.string.overview_expenses_label),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -287,14 +288,14 @@ fun IncomeExpenseSummaryRow(
 
                 Column {
                     Text(
-                        text = "Expenses",
+                        text = stringResource(R.string.overview_expenses_label),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                     )
                     Text(
-                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, totalExpense),
+                        text = stringResource(R.string.currency_amount_format, currencySymbol, totalExpense),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = ExpenseRed
@@ -341,7 +342,7 @@ fun PendingReviewBanner(
                     ) {
                         Icon(
                             imageVector = Icons.Default.NotificationsActive,
-                            contentDescription = "Action Required",
+                            contentDescription = stringResource(R.string.overview_action_required_description),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -351,14 +352,14 @@ fun PendingReviewBanner(
 
                     Column {
                         Text(
-                            text = "$pendingCount Action Required",
+                            text = stringResource(R.string.overview_pending_action_required_format, pendingCount),
                             style = MaterialTheme.typography.titleSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = ExpenseOnRedContainer
                             )
                         )
                         Text(
-                            text = "New auto-imported SMS transactions need details",
+                            text = stringResource(R.string.overview_pending_review_subtitle),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = ExpenseOnRedContainer.copy(alpha = 0.8f)
                             )
@@ -371,7 +372,7 @@ fun PendingReviewBanner(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "REVIEW",
+                        text = stringResource(R.string.overview_review_button_label),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
@@ -404,10 +405,10 @@ fun BudgetHealthGaugeCard(
     score = score.coerceIn(10, 100)
 
     val (statusLabel, statusColor) = when {
-        score >= 80 -> "Excellent Health" to IncomeGreen
-        score >= 60 -> "Good Control" to MaterialTheme.colorScheme.primary
-        score >= 40 -> "Caution: High Spending" to PendingAmber
-        else -> "Critical Budget Warning" to ExpenseRed
+        score >= 80 -> stringResource(R.string.overview_health_excellent) to IncomeGreen
+        score >= 60 -> stringResource(R.string.overview_health_good) to MaterialTheme.colorScheme.primary
+        score >= 40 -> stringResource(R.string.overview_health_caution) to PendingAmber
+        else -> stringResource(R.string.overview_health_critical) to ExpenseRed
     }
 
     Card(
@@ -447,7 +448,7 @@ fun BudgetHealthGaugeCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Financial Health Gauge",
+                            text = stringResource(R.string.overview_financial_health_gauge_title),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
@@ -462,7 +463,7 @@ fun BudgetHealthGaugeCard(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "$score%",
+                        text = stringResource(R.string.overview_score_percentage_format, score),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, color = statusColor)
                     )
@@ -489,21 +490,21 @@ fun BudgetHealthGaugeCard(
             ) {
                 Text(
                     text = if (totalBudgetLimit > 0) {
-                        "Spent ${String.format(Locale.getDefault(), "%s%,.0f", currencySymbol, totalExpense)} of ${String.format(Locale.getDefault(), "%s%,.0f", currencySymbol, totalBudgetLimit)}"
+                        stringResource(R.string.overview_spent_of_budget_format, currencySymbol, totalExpense, totalBudgetLimit)
                     } else {
-                        "Monthly Expenses: ${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, totalExpense)}"
+                        stringResource(R.string.overview_monthly_expenses_format, currencySymbol, totalExpense)
                     },
                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
                 if (lowBalanceAccountsCount > 0) {
                     Text(
-                        text = "$lowBalanceAccountsCount Low Account(s)",
+                        text = stringResource(R.string.overview_low_account_count_format, lowBalanceAccountsCount),
                         style = MaterialTheme.typography.bodySmall.copy(color = ExpenseRed, fontWeight = FontWeight.Bold)
                     )
                 } else {
                     Text(
-                        text = "Accounts Safe",
+                        text = stringResource(R.string.overview_accounts_safe_label),
                         style = MaterialTheme.typography.bodySmall.copy(color = IncomeGreen, fontWeight = FontWeight.Bold)
                     )
                 }
@@ -565,11 +566,11 @@ fun CategorySpendingProgressCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Category Budget Progress",
+                    text = stringResource(R.string.overview_category_budget_progress_title),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Text(
-                    text = "Monthly Spending",
+                    text = stringResource(R.string.overview_monthly_spending_label),
                     style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
@@ -597,9 +598,9 @@ fun CategorySpendingProgressCard(
 
                         Text(
                             text = if (item.limit > 0) {
-                                String.format(Locale.getDefault(), "%s%,.0f / %s%,.0f", currencySymbol, item.spent, currencySymbol, item.limit)
+                                stringResource(R.string.overview_spent_of_limit_format, currencySymbol, item.spent, item.limit)
                             } else {
-                                String.format(Locale.getDefault(), "%s%,.0f", currencySymbol, item.spent)
+                                stringResource(R.string.overview_spent_only_format, currencySymbol, item.spent)
                             },
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Bold,
@@ -676,13 +677,13 @@ fun UpcomingSubscriptionsWidget(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Autorenew,
-                        contentDescription = "Recurring Bills",
+                        contentDescription = stringResource(R.string.overview_recurring_bills_label),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Recurring Bills",
+                        text = stringResource(R.string.overview_recurring_bills_label),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -708,7 +709,7 @@ fun UpcomingSubscriptionsWidget(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = String.format(Locale.getDefault(), "%s%,.2f/mo", currencySymbol, totalMonthlyCommitment),
+                        text = stringResource(R.string.overview_monthly_commitment_format, currencySymbol, totalMonthlyCommitment),
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -799,7 +800,7 @@ fun UpcomingSubscriptionsWidget(
                                     }
 
                                     Text(
-                                        text = if (tx.recurringDueDate != null) "Due ${tx.recurringDueDate}th" else "Auto-Pay",
+                                        text = if (tx.recurringDueDate != null) stringResource(R.string.overview_due_date_format, tx.recurringDueDate) else stringResource(R.string.overview_auto_pay_label),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 11.sp
@@ -813,7 +814,7 @@ fun UpcomingSubscriptionsWidget(
 
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, tx.amount),
+                                text = stringResource(R.string.currency_amount_format, currencySymbol, tx.amount),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -833,13 +834,13 @@ fun UpcomingSubscriptionsWidget(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Mark as Paid",
+                                        contentDescription = stringResource(R.string.overview_mark_as_paid_description),
                                         tint = IncomeGreen,
                                         modifier = Modifier.size(12.dp)
                                     )
                                     Spacer(modifier = Modifier.width(3.dp))
                                     Text(
-                                        text = "Mark Paid",
+                                        text = stringResource(R.string.overview_mark_paid_label),
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 10.sp,
@@ -866,7 +867,7 @@ fun UpcomingSubscriptionsWidget(
                     .height(38.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Manage All Subscriptions & Bills", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold))
+                Text(stringResource(R.string.overview_manage_subscriptions_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold))
             }
         }
     }
@@ -902,11 +903,11 @@ fun NetWorthSparklineCard(
             ) {
                 Column {
                     Text(
-                        text = "Net Worth & Account Trend",
+                        text = stringResource(R.string.overview_net_worth_trend_label),
                         style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                     Text(
-                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, totalNetWorth),
+                        text = stringResource(R.string.currency_amount_format, currencySymbol, totalNetWorth),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -930,7 +931,7 @@ fun NetWorthSparklineCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "${accounts.size} Accounts",
+                            text = stringResource(R.string.overview_accounts_count_format, accounts.size),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer

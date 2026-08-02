@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -69,7 +71,7 @@ fun ExportImportBackupDialog(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Data Backup & Export",
+                    text = stringResource(R.string.export_import_backup_dialog_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -89,7 +91,12 @@ fun ExportImportBackupDialog(
                         .padding(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    listOf("Export CSV", "Export JSON", "Restore JSON").forEachIndexed { index, title ->
+                    listOf(
+                        R.string.export_import_backup_dialog_tab_export_csv,
+                        R.string.export_import_backup_dialog_tab_export_json,
+                        R.string.export_import_backup_dialog_tab_restore_json
+                    ).forEachIndexed { index, titleRes ->
+                        val title = stringResource(titleRes)
                         val isSelected = activeTab == index
                         Surface(
                             onClick = {
@@ -126,7 +133,7 @@ fun ExportImportBackupDialog(
                     }
 
                     Text(
-                        text = if (activeTab == 0) "CSV Financial Ledger Export:" else "Complete Database JSON Backup:",
+                        text = if (activeTab == 0) stringResource(R.string.export_import_backup_dialog_csv_export_label) else stringResource(R.string.export_import_backup_dialog_json_export_label),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                     )
 
@@ -141,6 +148,9 @@ fun ExportImportBackupDialog(
                             .testTag("export_text_output")
                     )
 
+                    val clipLabel = stringResource(R.string.export_import_backup_dialog_copy_clip_label)
+                    val copiedStatusText = stringResource(R.string.export_import_backup_dialog_copied_status)
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
@@ -148,15 +158,15 @@ fun ExportImportBackupDialog(
                         OutlinedButton(
                             onClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("Backup Export", exportedText)
+                                val clip = ClipData.newPlainText(clipLabel, exportedText)
                                 clipboard.setPrimaryClip(clip)
-                                copiedStatusMessage = "Copied export content to clipboard!"
+                                copiedStatusMessage = copiedStatusText
                             },
                             modifier = Modifier.testTag("copy_export_button")
                         ) {
                             Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copy to Clipboard")
+                            Text(stringResource(R.string.export_import_backup_dialog_copy_button))
                         }
                     }
 
@@ -171,14 +181,14 @@ fun ExportImportBackupDialog(
                     }
                 } else {
                     Text(
-                        text = "Paste JSON Backup Content:",
+                        text = stringResource(R.string.export_import_backup_dialog_paste_json_label),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                     )
 
                     OutlinedTextField(
                         value = importInputText,
                         onValueChange = { importInputText = it },
-                        placeholder = { Text("Paste JSON backup data here...") },
+                        placeholder = { Text(stringResource(R.string.export_import_backup_dialog_paste_placeholder)) },
                         minLines = 6,
                         maxLines = 10,
                         textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
@@ -201,14 +211,14 @@ fun ExportImportBackupDialog(
                     ) {
                         Icon(imageVector = Icons.Default.FileUpload, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Restore Database Backup")
+                        Text(stringResource(R.string.export_import_backup_dialog_restore_button))
                     }
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.export_import_backup_dialog_close_button))
             }
         }
     )

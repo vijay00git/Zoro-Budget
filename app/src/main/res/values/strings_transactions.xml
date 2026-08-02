@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="date_today">Today</string>
+    <string name="date_yesterday">Yesterday</string>
+
+    <string name="transactions_screen_title">Ledger</string>
+    <string name="transactions_search_placeholder">Search…</string>
+    <string name="action_search">Search</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_transfer_funds">Transfer Funds</string>
+    <string name="action_filter">Filter</string>
+    <string name="action_add_transaction">Add Transaction</string>
+    <string name="action_close">Close</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_clear_all">Clear All</string>
+    <string name="action_apply">Apply</string>
+    <string name="action_reset_filters">Reset Filters</string>
+
+    <string name="date_range_all_time">All Time</string>
+    <string name="date_range_today">Today</string>
+    <string name="date_range_this_week">This Week</string>
+    <string name="date_range_this_month">This Month</string>
+    <string name="date_range_last_30_days">Last 30 Days</string>
+    <string name="date_range_custom">Custom Range</string>
+
+    <string name="category_all">All Categories</string>
+
+    <string name="type_expenses">Expenses</string>
+    <string name="type_income">Income</string>
+    <string name="type_transfers">Transfers</string>
+    <string name="type_subscriptions">Subscriptions</string>
+    <string name="type_needs_review">Needs Review</string>
+    <string name="type_all">All</string>
+
+    <string name="active_filter_account">Account: %1$s</string>
+    <string name="active_filter_type">Type: %1$s</string>
+    <string name="active_filter_date">Date: %1$s</string>
+    <string name="active_filter_category">Category: %1$s</string>
+    <string name="active_filter_amount">Amount: %1$s</string>
+
+    <string name="transactions_empty_title">No Transactions Match Filter</string>
+    <string name="transactions_empty_subtitle">Try clearing search or adjusting your filters.</string>
+
+    <string name="filter_sheet_title">Filter Transactions</string>
+    <string name="filter_section_account">Account</string>
+    <string name="filter_all_accounts">All Accounts</string>
+    <string name="filter_section_transaction_type">Transaction Type</string>
+    <string name="filter_section_date_range">Date Range</string>
+    <string name="filter_section_category">Category</string>
+    <string name="filter_section_amount_range">Amount Range</string>
+    <string name="filter_custom_date_range_selection">Custom Date Range Selection</string>
+    <string name="filter_from_date">From Date</string>
+    <string name="filter_to_date">To Date</string>
+    <string name="filter_start_date">Start Date</string>
+    <string name="filter_end_date">End Date</string>
+    <string name="filter_amount_min">Min</string>
+    <string name="filter_amount_max">Max</string>
+    <string name="filter_amount_no_min">No min</string>
+    <string name="filter_amount_no_max">No max</string>
+
+    <string name="date_range_beginning">Beginning</string>
+    <string name="date_range_present">Present</string>
+    <string name="date_range_span">%1$s - %2$s</string>
+    <string name="amount_range_both">%1$s%2$.0f - %3$s%4$.0f</string>
+    <string name="amount_range_min_only">Min %1$s%2$.0f</string>
+    <string name="amount_range_max_only">Max %1$s%2$.0f</string>
+</resources>

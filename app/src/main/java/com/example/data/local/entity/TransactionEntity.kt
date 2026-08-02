@@ -1,9 +1,18 @@
 package com.example.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "transactions")
+@Entity(
+    tableName = "transactions",
+    indices = [
+        Index("accountId"),
+        Index("dateTimestamp"),
+        Index("categoryTag"),
+        Index("isPendingReview")
+    ]
+)
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String, // User defined title or auto-generated default
@@ -20,5 +29,10 @@ data class TransactionEntity(
     val isRecurring: Boolean = false,
     val recurringFrequency: String? = null, // "MONTHLY", "YEARLY", "WEEKLY"
     val recurringDueDate: Int? = null, // Day of month (e.g. 4 for 4th of month) or day of week (1..7)
-    val receiptUri: String? = null // Attachment URI or image path for bill/receipt
+    val receiptUri: String? = null, // Attachment URI or image path for bill/receipt
+    // True once the user deletes an SMS-sourced transaction they don't want. The row is kept
+    // (instead of a hard delete) so rawSmsMessage/dateTimestamp still match on the next inbox
+    // scan and checkDuplicateSms rejects it - otherwise the same still-present phone SMS gets
+    // re-parsed and the "deleted" transaction comes right back.
+    val isDismissed: Boolean = false
 )

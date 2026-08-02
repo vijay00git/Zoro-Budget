@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import android.app.DatePickerDialog
 import android.net.Uri
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -125,7 +127,7 @@ fun AddTransactionDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Add New Transaction",
+                text = stringResource(R.string.add_transaction_dialog_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
         },
@@ -144,14 +146,14 @@ fun AddTransactionDialog(
                     FilterChip(
                         selected = type == "DEBIT",
                         onClick = { type = "DEBIT" },
-                        label = { Text("Expense (Debit)") },
+                        label = { Text(stringResource(R.string.add_transaction_dialog_type_expense)) },
                         modifier = Modifier.weight(1f)
                     )
 
                     FilterChip(
                         selected = type == "CREDIT",
                         onClick = { type = "CREDIT" },
-                        label = { Text("Income (Credit)") },
+                        label = { Text(stringResource(R.string.add_transaction_dialog_type_income)) },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -160,8 +162,8 @@ fun AddTransactionDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Amount ($currencySymbol)") },
-                    placeholder = { Text("0.00") },
+                    label = { Text(stringResource(R.string.add_transaction_dialog_amount_label, currencySymbol)) },
+                    placeholder = { Text(stringResource(R.string.add_transaction_dialog_amount_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -177,7 +179,7 @@ fun AddTransactionDialog(
                 ) {
                     val presetAmounts = listOf(5, 10, 20, 50, 100, 500)
                     Text(
-                        text = "Quick:",
+                        text = stringResource(R.string.add_transaction_dialog_quick_label),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                     androidx.compose.foundation.lazy.LazyRow(
@@ -194,7 +196,7 @@ fun AddTransactionDialog(
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                                 modifier = Modifier.height(30.dp)
                             ) {
-                                Text("+$preset", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.add_transaction_dialog_quick_preset, preset), style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -204,8 +206,8 @@ fun AddTransactionDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title / Description") },
-                    placeholder = { Text("e.g. Target Groceries") },
+                    label = { Text(stringResource(R.string.add_transaction_dialog_title_label)) },
+                    placeholder = { Text(stringResource(R.string.add_transaction_dialog_title_placeholder)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("add_title_input"),
@@ -215,7 +217,7 @@ fun AddTransactionDialog(
                 // Transaction Date Picker
                 Column {
                     Text(
-                        text = "Transaction Date",
+                        text = stringResource(R.string.add_transaction_dialog_date_label),
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -252,7 +254,7 @@ fun AddTransactionDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.CalendarToday,
-                                    contentDescription = "Select Date",
+                                    contentDescription = stringResource(R.string.add_transaction_dialog_select_date_cd),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -271,7 +273,7 @@ fun AddTransactionDialog(
                         FilterChip(
                             selected = isToday,
                             onClick = { selectedDateTimestamp = System.currentTimeMillis() },
-                            label = { Text("Today", style = MaterialTheme.typography.labelSmall) }
+                            label = { Text(stringResource(R.string.add_transaction_dialog_today), style = MaterialTheme.typography.labelSmall) }
                         )
 
                         FilterChip(
@@ -281,14 +283,14 @@ fun AddTransactionDialog(
                                 cal.add(Calendar.DAY_OF_YEAR, -1)
                                 selectedDateTimestamp = cal.timeInMillis
                             },
-                            label = { Text("Yesterday", style = MaterialTheme.typography.labelSmall) }
+                            label = { Text(stringResource(R.string.add_transaction_dialog_yesterday), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
 
                 // Category Tag
                 Text(
-                    text = "Category Tag",
+                    text = stringResource(R.string.add_transaction_dialog_category_tag_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -343,7 +345,7 @@ fun AddTransactionDialog(
 
                 // Account Selection Dropdown
                 Text(
-                    text = "Account",
+                    text = stringResource(R.string.add_transaction_dialog_account_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -351,7 +353,7 @@ fun AddTransactionDialog(
                     expanded = accountDropdownExpanded,
                     onExpandedChange = { accountDropdownExpanded = !accountDropdownExpanded }
                 ) {
-                    val currentAccountName = accounts.find { it.id == selectedAccountId }?.name ?: "Select Account"
+                    val currentAccountName = accounts.find { it.id == selectedAccountId }?.name ?: stringResource(R.string.add_transaction_dialog_select_account)
                     OutlinedTextField(
                         value = currentAccountName,
                         onValueChange = {},
@@ -368,7 +370,7 @@ fun AddTransactionDialog(
                     ) {
                         accounts.forEach { acc ->
                             DropdownMenuItem(
-                                text = { Text("${acc.name} (${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, acc.balance)})") },
+                                text = { Text(stringResource(R.string.add_transaction_dialog_account_item, acc.name, currencySymbol, acc.balance)) },
                                 onClick = {
                                     selectedAccountId = acc.id
                                     accountDropdownExpanded = false
@@ -382,7 +384,7 @@ fun AddTransactionDialog(
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes (Optional)") },
+                    label = { Text(stringResource(R.string.add_transaction_dialog_notes_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -399,7 +401,7 @@ fun AddTransactionDialog(
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "Capture / Attach Bill Receipt",
+                        text = stringResource(R.string.add_transaction_dialog_receipt_section_title),
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -417,11 +419,11 @@ fun AddTransactionDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = "Capture / Select Image",
+                                    contentDescription = stringResource(R.string.add_transaction_dialog_capture_image_cd),
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Attach Image", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.add_transaction_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
                             }
 
                             OutlinedButton(
@@ -432,11 +434,11 @@ fun AddTransactionDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Receipt,
-                                    contentDescription = "Sample Bill",
+                                    contentDescription = stringResource(R.string.add_transaction_dialog_sample_bill),
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Sample Bill", style = MaterialTheme.typography.labelMedium)
+                                Text(stringResource(R.string.add_transaction_dialog_sample_bill), style = MaterialTheme.typography.labelMedium)
                             }
                         }
                     } else {
@@ -461,7 +463,7 @@ fun AddTransactionDialog(
                                     if (uriStr.startsWith("content://") || uriStr.startsWith("file://") || uriStr.startsWith("http")) {
                                         AsyncImage(
                                             model = uriStr,
-                                            contentDescription = "Bill Receipt Preview",
+                                            contentDescription = stringResource(R.string.add_transaction_dialog_receipt_preview_cd),
                                             modifier = Modifier
                                                 .size(44.dp)
                                                 .clip(RoundedCornerShape(8.dp)),
@@ -476,7 +478,7 @@ fun AddTransactionDialog(
                                             Box(contentAlignment = Alignment.Center) {
                                                 Icon(
                                                     imageVector = Icons.Default.Receipt,
-                                                    contentDescription = "Receipt Icon",
+                                                    contentDescription = stringResource(R.string.add_transaction_dialog_receipt_icon_cd),
                                                     tint = com.example.ui.theme.IncomeGreen,
                                                     modifier = Modifier.size(24.dp)
                                                 )
@@ -486,11 +488,11 @@ fun AddTransactionDialog(
 
                                     Column {
                                         Text(
-                                            text = "Bill Receipt Attached",
+                                            text = stringResource(R.string.add_transaction_dialog_receipt_attached),
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                         )
                                         Text(
-                                            text = if (uriStr == "sample_receipt_utility_bill") "Demo Bill Invoice #4812" else "Image attached successfully",
+                                            text = if (uriStr == "sample_receipt_utility_bill") stringResource(R.string.add_transaction_dialog_demo_invoice) else stringResource(R.string.add_transaction_dialog_image_attached_success),
                                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }
@@ -502,7 +504,7 @@ fun AddTransactionDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Remove Receipt",
+                                        contentDescription = stringResource(R.string.add_transaction_dialog_remove_receipt_cd),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -522,12 +524,12 @@ fun AddTransactionDialog(
                 },
                 modifier = Modifier.testTag("confirm_add_transaction_button")
             ) {
-                Text("Add Transaction")
+                Text(stringResource(R.string.add_transaction_dialog_confirm_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.add_transaction_dialog_cancel_button))
             }
         }
     )

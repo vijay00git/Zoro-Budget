@@ -11,13 +11,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
-    @Query("SELECT * FROM transactions ORDER BY dateTimestamp DESC")
+    @Query("SELECT * FROM transactions WHERE isDismissed = 0 ORDER BY dateTimestamp DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE accountId = :accountId ORDER BY dateTimestamp DESC")
+    @Query("SELECT * FROM transactions WHERE accountId = :accountId AND isDismissed = 0 ORDER BY dateTimestamp DESC")
     fun getTransactionsByAccount(accountId: Long): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE isPendingReview = 1 ORDER BY dateTimestamp DESC")
+    @Query("SELECT * FROM transactions WHERE isPendingReview = 1 AND isDismissed = 0 ORDER BY dateTimestamp DESC")
     fun getPendingReviewTransactions(): Flow<List<TransactionEntity>>
 
     @Query("SELECT * FROM transactions WHERE id = :id")
@@ -34,6 +34,9 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions WHERE id = :id")
     suspend fun deleteTransactionById(id: Long)
+
+    @Query("UPDATE transactions SET isDismissed = 1 WHERE id = :id")
+    suspend fun dismissTransaction(id: Long)
 
     @Query("SELECT COUNT(*) FROM transactions WHERE rawSmsMessage = :rawSms AND dateTimestamp = :timestamp")
     suspend fun checkDuplicateSms(rawSms: String, timestamp: Long): Int

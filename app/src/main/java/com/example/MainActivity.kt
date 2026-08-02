@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.AppDatabase
@@ -51,6 +54,7 @@ import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.ExpenseViewModel
+import com.example.ui.ExpenseViewModelFactory
 import com.example.ui.dialogs.AddAccountDialog
 import com.example.ui.dialogs.AddOrEditAccountDialog
 import com.example.ui.dialogs.AddCategoryDialog
@@ -67,24 +71,28 @@ import com.example.ui.theme.PendingAmber
 import com.example.ui.theme.SmartBudgetTheme
 import com.example.utils.AppDebugLogger
 
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Home : Screen("home", "Overview", Icons.Default.Home)
-    object Transactions : Screen("transactions", "Ledger", Icons.Default.ReceiptLong)
-    object Reports : Screen("reports", "Planning", Icons.Default.BarChart)
-    object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+sealed class Screen(val route: String, @StringRes val titleRes: Int, val icon: ImageVector) {
+    object Home : Screen("home", R.string.nav_overview, Icons.Default.Home)
+    object Transactions : Screen("transactions", R.string.nav_ledger, Icons.Default.ReceiptLong)
+    object Reports : Screen("reports", R.string.nav_planning, Icons.Default.BarChart)
+    object Settings : Screen("settings", R.string.nav_settings, Icons.Default.Settings)
 }
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: ExpenseViewModel
+    // Created via a factory (not `ExpenseViewModel(repository)` directly) so the ViewModelStore
+    // retains this instance - and every filter/selection it holds - across configuration changes
+    // (rotation, dark-mode toggle, font-scale change) instead of MainActivity.onCreate()
+    // rebuilding a fresh one from scratch each time.
+    private val viewModel: ExpenseViewModel by viewModels {
+        val db = AppDatabase.getDatabase(applicationContext)
+        val repository = BudgetRepository(db, db.accountDao(), db.transactionDao(), db.categoryDao())
+        ExpenseViewModelFactory(repository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        val db = AppDatabase.getDatabase(applicationContext)
-        val repository = BudgetRepository(db.accountDao(), db.transactionDao(), db.categoryDao())
-        viewModel = ExpenseViewModel(repository)
         AppDebugLogger.init(applicationContext)
 
         setContent {
@@ -160,7 +168,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Smart Budget",
+                        text = stringResource(R.string.app_top_bar_title),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 },
@@ -171,7 +179,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.FileDownload,
-                            contentDescription = "Export & Backup",
+                            contentDescription = stringResource(R.string.action_export_backup),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -193,7 +201,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.NotificationsActive,
-                                    contentDescription = "Needs Title/Tag",
+                                    contentDescription = stringResource(R.string.action_needs_title_tag),
                                     tint = PendingAmber
                                 )
                             }
@@ -219,13 +227,13 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                                 BadgedBox(
                                     badge = { Badge(containerColor = PendingAmber) { Text("${pendingTransactions.size}") } }
                                 ) {
-                                    Icon(imageVector = screen.icon, contentDescription = screen.title)
+                                    Icon(imageVector = screen.icon, contentDescription = stringResource(screen.titleRes))
                                 }
                             } else {
-                                Icon(imageVector = screen.icon, contentDescription = screen.title)
+                                Icon(imageVector = screen.icon, contentDescription = stringResource(screen.titleRes))
                             }
                         },
-                        label = { Text(screen.title) },
+                        label = { Text(stringResource(screen.titleRes)) },
                         modifier = Modifier.testTag("nav_item_${screen.route}")
                     )
                 }

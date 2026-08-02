@@ -4,16 +4,20 @@
    for details.
 -->
 <data-extraction-rules>
-    <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
-    </cloud-backup>
     <!--
-    <device-transfer>
-        <include .../>
-        <exclude .../>
-    </device-transfer>
+    The Room database holds raw SMS bank-message bodies and account numbers. Exclude it from
+    Android's cloud backup and device-to-device transfer so that data isn't copied to the
+    user's Google account (or a new device) without an explicit, deliberate export action via
+    the in-app JSON/CSV backup instead.
     -->
+    <cloud-backup>
+        <exclude domain="database" path="smart_budget_db" />
+        <exclude domain="database" path="smart_budget_db-wal" />
+        <exclude domain="database" path="smart_budget_db-shm" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="smart_budget_db" />
+        <exclude domain="database" path="smart_budget_db-wal" />
+        <exclude domain="database" path="smart_budget_db-shm" />
+    </device-transfer>
 </data-extraction-rules>

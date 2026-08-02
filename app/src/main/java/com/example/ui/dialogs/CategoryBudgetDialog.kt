@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entity.CategoryEntity
@@ -86,7 +88,7 @@ fun EditCategoryBudgetDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Budget: ${category.name}",
+                        text = stringResource(R.string.category_budget_dialog_title, category.name),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -98,7 +100,7 @@ fun EditCategoryBudgetDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Custom Category",
+                            contentDescription = stringResource(R.string.category_budget_dialog_delete_content_desc),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -111,15 +113,15 @@ fun EditCategoryBudgetDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Set a monthly spending limit to receive budget warnings when exceeded.",
+                    text = stringResource(R.string.category_budget_dialog_description),
                     style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
 
                 OutlinedTextField(
                     value = budgetInput,
                     onValueChange = { budgetInput = it.filter { char -> char.isDigit() || char == '.' } },
-                    label = { Text("Monthly Limit ($currencySymbol)") },
-                    prefix = { Text("$currencySymbol ") },
+                    label = { Text(stringResource(R.string.category_budget_dialog_limit_label, currencySymbol)) },
+                    prefix = { Text(stringResource(R.string.category_budget_dialog_currency_prefix, currencySymbol)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -127,7 +129,7 @@ fun EditCategoryBudgetDialog(
                 )
 
                 Text(
-                    text = "Quick Select:",
+                    text = stringResource(R.string.category_budget_dialog_quick_select),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -144,7 +146,7 @@ fun EditCategoryBudgetDialog(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = "$currencySymbol$preset",
+                                text = stringResource(R.string.category_budget_dialog_preset_amount, currencySymbol, preset),
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold,
@@ -164,12 +166,12 @@ fun EditCategoryBudgetDialog(
                 },
                 modifier = Modifier.testTag("save_category_budget_button")
             ) {
-                Text("Save Limit")
+                Text(stringResource(R.string.category_budget_dialog_save_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.category_budget_dialog_cancel_button))
             }
         }
     )

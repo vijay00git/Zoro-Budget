@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entity.TransactionEntity
@@ -90,7 +92,7 @@ fun ManageSubscriptionDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Subscription Details",
+                        text = stringResource(R.string.manage_subscription_dialog_title),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -104,7 +106,7 @@ fun ManageSubscriptionDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Transaction Details",
+                        contentDescription = stringResource(R.string.manage_subscription_dialog_edit_content_desc),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -125,19 +127,19 @@ fun ManageSubscriptionDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Category: ${transaction.categoryTag}",
+                            text = stringResource(R.string.manage_subscription_dialog_category_label, transaction.categoryTag),
                             style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = String.format(Locale.getDefault(), "%s%,.2f / billing cycle", currencySymbol, transaction.amount),
+                            text = stringResource(R.string.manage_subscription_dialog_amount_per_cycle, currencySymbol, transaction.amount),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         )
                         Text(
-                            text = "Last billed: ${dateFormat.format(transaction.dateTimestamp)}",
+                            text = stringResource(R.string.manage_subscription_dialog_last_billed, dateFormat.format(transaction.dateTimestamp)),
                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }
@@ -153,7 +155,7 @@ fun ManageSubscriptionDialog(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = "CURRENT STATUS: ${alertInfo.alertMessage.uppercase()}",
+                            text = stringResource(R.string.manage_subscription_dialog_current_status, alertInfo.alertMessage.uppercase()),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -170,7 +172,7 @@ fun ManageSubscriptionDialog(
 
                 // Billing Frequency Selector
                 Text(
-                    text = "Billing Cycle Frequency",
+                    text = stringResource(R.string.manage_subscription_dialog_billing_cycle_frequency),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -197,7 +199,7 @@ fun ManageSubscriptionDialog(
                     onValueChange = { input ->
                         input.toIntOrNull()?.let { if (it in 1..31) dueDate = it }
                     },
-                    label = { Text("Due Day of Month / Week (e.g. 4 for 4th)") },
+                    label = { Text(stringResource(R.string.manage_subscription_dialog_due_day_label)) },
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -216,7 +218,7 @@ fun ManageSubscriptionDialog(
                 ) {
                     Icon(imageVector = Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Stop Tracking as Subscription")
+                    Text(stringResource(R.string.manage_subscription_dialog_stop_tracking_button))
                 }
             }
         },
@@ -228,12 +230,12 @@ fun ManageSubscriptionDialog(
                 },
                 modifier = Modifier.testTag("save_subscription_button")
             ) {
-                Text("Save Changes")
+                Text(stringResource(R.string.manage_subscription_dialog_save_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.manage_subscription_dialog_close_button))
             }
         }
     )

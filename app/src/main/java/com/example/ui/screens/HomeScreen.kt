@@ -50,10 +50,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
@@ -160,7 +162,7 @@ fun HomeScreen(
                     FilterChip(
                         selected = selectedAccountId == null,
                         onClick = { onSelectAccount(null) },
-                        label = { Text("All Accounts", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)) },
+                        label = { Text(stringResource(R.string.home_screen_all_accounts_filter), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = Color.White
@@ -175,7 +177,7 @@ fun HomeScreen(
                         onClick = { onSelectAccount(acc.id) },
                         label = {
                             Text(
-                                text = "${acc.name} (${String.format(Locale.getDefault(), "%s%,.0f", currencySymbol, acc.balance)})",
+                                text = stringResource(R.string.home_screen_account_balance_label, acc.name, currencySymbol, acc.balance),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
@@ -203,12 +205,12 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SwapHoriz,
-                                contentDescription = "Transfer Funds",
+                                contentDescription = stringResource(R.string.home_screen_transfer_funds_desc),
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Transfer",
+                                text = stringResource(R.string.home_screen_transfer_button),
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                             )
                         }
@@ -222,7 +224,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Add Account",
+                                contentDescription = stringResource(R.string.home_screen_add_account_desc),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -237,7 +239,7 @@ fun HomeScreen(
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
                 TotalBalanceCard(
                     totalBalance = totalBalance,
-                    accountName = currentAccount?.name ?: "All Accounts Total",
+                    accountName = currentAccount?.name ?: stringResource(R.string.home_screen_all_accounts_total),
                     currencySymbol = currencySymbol
                 )
             }
@@ -259,7 +261,7 @@ fun HomeScreen(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add Transaction", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.home_screen_add_transaction_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
 
                     OutlinedButton(
@@ -270,7 +272,7 @@ fun HomeScreen(
                     ) {
                         Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Transfer", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.home_screen_transfer_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
@@ -307,7 +309,7 @@ fun HomeScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Autorenew,
-                                    contentDescription = "SMS Auto-Sync",
+                                    contentDescription = stringResource(R.string.home_screen_sms_auto_sync_desc),
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -315,14 +317,14 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Bank SMS Auto-Sync",
+                                    text = stringResource(R.string.home_screen_bank_sms_auto_sync_title),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                                 )
                                 val syncSubtext = if (smsSyncFromDate != null && smsSyncFromDate > 0L) {
                                     val formatted = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(java.util.Date(smsSyncFromDate))
-                                    "From $formatted onwards"
+                                    stringResource(R.string.home_screen_sms_sync_from_date, formatted)
                                 } else {
-                                    "All Bank Messages Enabled"
+                                    stringResource(R.string.home_screen_sms_sync_all_enabled)
                                 }
                                 Text(
                                     text = syncSubtext,
@@ -340,7 +342,7 @@ fun HomeScreen(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                             modifier = Modifier.testTag("home_scan_sms_now_btn")
                         ) {
-                            Text("Sync Now", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                            Text(stringResource(R.string.home_screen_sync_now_button), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                         }
                     }
                 }
@@ -447,7 +449,7 @@ fun HomeScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "Low Balance",
+                                            text = stringResource(R.string.home_screen_low_balance_title),
                                             style = MaterialTheme.typography.titleSmall.copy(
                                                 fontWeight = FontWeight.Bold,
                                                 color = ExpenseRed
@@ -457,9 +459,9 @@ fun HomeScreen(
                                         )
                                         Text(
                                             text = if (lowBalanceAccounts.size == 1) {
-                                                "${lowBalanceAccounts.first().name} < ${currencySymbol}${lowBalanceThreshold.toInt()}"
+                                                stringResource(R.string.home_screen_low_balance_single_account, lowBalanceAccounts.first().name, currencySymbol, lowBalanceThreshold.toInt())
                                             } else {
-                                                "${lowBalanceAccounts.size} low accounts"
+                                                stringResource(R.string.home_screen_low_balance_count, lowBalanceAccounts.size)
                                             },
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 color = MaterialTheme.colorScheme.onSurface,
@@ -503,7 +505,7 @@ fun HomeScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "${pendingTransactions.size} Action Required",
+                                            text = stringResource(R.string.home_screen_action_required_count, pendingTransactions.size),
                                             style = MaterialTheme.typography.titleSmall.copy(
                                                 fontWeight = FontWeight.Bold,
                                                 color = ExpenseOnRedContainer
@@ -512,7 +514,7 @@ fun HomeScreen(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = "Review pending SMS",
+                                            text = stringResource(R.string.home_screen_review_pending_sms),
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 color = ExpenseOnRedContainer.copy(alpha = 0.8f),
                                                 fontSize = 11.sp
@@ -555,7 +557,7 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = if (lowBalanceAccounts.size == 1) "Low Balance Warning" else "${lowBalanceAccounts.size} Accounts Below Threshold",
+                                        text = if (lowBalanceAccounts.size == 1) stringResource(R.string.home_screen_low_balance_warning_title) else stringResource(R.string.home_screen_low_balance_accounts_below_threshold, lowBalanceAccounts.size),
                                         style = MaterialTheme.typography.titleSmall.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = ExpenseRed
@@ -563,9 +565,9 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = lowBalanceAccounts.joinToString(", ") {
-                                            "${it.name} (${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, it.balance)})"
-                                        } + " below minimum threshold (${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, lowBalanceThreshold)})",
+                                        text = lowBalanceAccounts.map { acc ->
+                                            stringResource(R.string.home_screen_low_balance_account_item, acc.name, currencySymbol, acc.balance)
+                                        }.joinToString(", ") + " " + stringResource(R.string.home_screen_low_balance_threshold_suffix, currencySymbol, lowBalanceThreshold),
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
@@ -597,7 +599,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Visual Analytics & Trends",
+                        text = stringResource(R.string.home_screen_visual_analytics_title),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
 
@@ -605,19 +607,19 @@ fun HomeScreen(
                         FilterChip(
                             selected = selectedChartTab == 0,
                             onClick = { selectedChartTab = 0 },
-                            label = { Text("Trends", style = MaterialTheme.typography.labelSmall) },
+                            label = { Text(stringResource(R.string.home_screen_chart_tab_trends), style = MaterialTheme.typography.labelSmall) },
                             modifier = Modifier.height(28.dp)
                         )
                         FilterChip(
                             selected = selectedChartTab == 1,
                             onClick = { selectedChartTab = 1 },
-                            label = { Text("Categories", style = MaterialTheme.typography.labelSmall) },
+                            label = { Text(stringResource(R.string.home_screen_chart_tab_categories), style = MaterialTheme.typography.labelSmall) },
                             modifier = Modifier.height(28.dp)
                         )
                         FilterChip(
                             selected = selectedChartTab == 2,
                             onClick = { selectedChartTab = 2 },
-                            label = { Text("Daily", style = MaterialTheme.typography.labelSmall) },
+                            label = { Text(stringResource(R.string.home_screen_chart_tab_daily), style = MaterialTheme.typography.labelSmall) },
                             modifier = Modifier.height(28.dp)
                         )
                     }
@@ -653,11 +655,11 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "Upcoming Bills & EMIs",
+                        text = stringResource(R.string.home_screen_upcoming_bills_title),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                     Text(
-                        text = "Tracked recurring dues & custom alerts",
+                        text = stringResource(R.string.home_screen_upcoming_bills_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -671,9 +673,9 @@ fun HomeScreen(
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                         modifier = Modifier.height(34.dp)
                     ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = "Add Bill", modifier = Modifier.size(16.dp))
+                        Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.home_screen_add_bill_desc), modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("+ Bill", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.home_screen_add_bill_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
 
                     if (upcomingBillsWithAlerts.isNotEmpty()) {
@@ -682,7 +684,7 @@ fun HomeScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = String.format(Locale.getDefault(), "%s%,.2f/mo", currencySymbol, totalUpcomingBillsAmount),
+                                text = stringResource(R.string.home_screen_total_upcoming_bills_amount, currencySymbol, totalUpcomingBillsAmount),
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold,
@@ -725,12 +727,12 @@ fun HomeScreen(
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "No Upcoming Bills or EMIs Tracked",
+                            text = stringResource(R.string.home_screen_no_upcoming_bills_title),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Tap '+ Bill' above to add custom EMI or recurring due dates with automatic alert tracking.",
+                            text = stringResource(R.string.home_screen_no_upcoming_bills_message),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -740,7 +742,7 @@ fun HomeScreen(
                         Button(onClick = onAddRecurringBillClick) {
                             Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Add Recurring Bill / EMI")
+                            Text(stringResource(R.string.home_screen_add_recurring_bill_button))
                         }
                     }
                 }
@@ -840,7 +842,7 @@ fun HomeScreen(
 
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, bill.amount),
+                                text = stringResource(R.string.home_screen_bill_amount, currencySymbol, bill.amount),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = if (alert.severity == BillAlertSeverity.URGENT) ExpenseRed else MaterialTheme.colorScheme.primary

@@ -1,4 +1,5 @@
 package com.example.ui.components
+import com.example.R
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -94,12 +96,12 @@ fun CategoryDonutChart(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "No Expenses Recorded",
+                    text = stringResource(R.string.chart_no_expenses_title),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "No debit transactions for this period.",
+                    text = stringResource(R.string.chart_no_expenses_subtitle),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
@@ -151,7 +153,7 @@ fun CategoryDonutChart(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Expenses by Category",
+                text = stringResource(R.string.chart_expenses_by_category_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.align(Alignment.Start)
             )
@@ -228,26 +230,26 @@ fun CategoryDonutChart(
                             )
                         )
                         Text(
-                            text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, displayCat.amount),
+                            text = stringResource(R.string.currency_amount_format, currencySymbol, displayCat.amount),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             )
                         )
                         Text(
-                            text = String.format(Locale.getDefault(), "%.1f%%", displayCat.percentage),
+                            text = stringResource(R.string.percentage_one_decimal_format, displayCat.percentage),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         )
                     } else {
                         Text(
-                            text = "Total Spent",
+                            text = stringResource(R.string.chart_total_spent_label),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         )
                         Text(
-                            text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, totalExpense),
+                            text = stringResource(R.string.currency_amount_format, currencySymbol, totalExpense),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             )
@@ -291,14 +293,14 @@ fun CategoryDonutChart(
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, item.amount),
+                                text = stringResource(R.string.currency_amount_format, currencySymbol, item.amount),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Bold
                                 )
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "(${String.format(Locale.getDefault(), "%.1f%%", item.percentage)})",
+                                text = stringResource(R.string.percentage_parenthesized_format, item.percentage),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                 )
@@ -350,7 +352,7 @@ fun MonthlyBarChart(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Daily Spending Trend",
+                    text = stringResource(R.string.chart_daily_spending_trend_title),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -359,7 +361,7 @@ fun MonthlyBarChart(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "Peak: ${currencySymbol}${String.format(Locale.getDefault(), "%.0f", maxAmount)}",
+                        text = stringResource(R.string.chart_peak_format, currencySymbol, maxAmount),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = ExpenseRed,
@@ -420,10 +422,10 @@ fun MonthlyBarChart(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Day 1", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
-                Text("Day 10", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
-                Text("Day 20", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
-                Text("Day 31", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                Text(stringResource(R.string.chart_day_label_1), style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                Text(stringResource(R.string.chart_day_label_10), style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                Text(stringResource(R.string.chart_day_label_20), style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                Text(stringResource(R.string.chart_day_label_31), style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
             }
         }
     }
@@ -542,11 +544,11 @@ fun MonthlySpendingTrendChart(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (selectedCategoryFilter != null) "$selectedCategoryFilter Spending Trend" else "Categorized Monthly Spending Trends",
+                        text = if (selectedCategoryFilter != null) stringResource(R.string.chart_category_spending_trend_title_format, selectedCategoryFilter!!) else stringResource(R.string.chart_categorized_monthly_trends_title),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     Text(
-                        text = "Multi-month spending history & category breakdown",
+                        text = stringResource(R.string.chart_trend_subtitle),
                         style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     )
                 }
@@ -566,7 +568,7 @@ fun MonthlySpendingTrendChart(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.BarChart,
-                                contentDescription = "Stacked Bar View",
+                                contentDescription = stringResource(R.string.chart_stacked_bar_view_description),
                                 tint = if (chartMode == "STACKED") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -582,7 +584,7 @@ fun MonthlySpendingTrendChart(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ShowChart,
-                                contentDescription = "Line Trend View",
+                                contentDescription = stringResource(R.string.chart_line_trend_view_description),
                                 tint = if (chartMode == "TREND_LINE") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -601,7 +603,7 @@ fun MonthlySpendingTrendChart(
                 FilterChip(
                     selected = selectedCategoryFilter == null,
                     onClick = { selectedCategoryFilter = null },
-                    label = { Text("All Categories", style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(stringResource(R.string.chart_all_categories_label), style = MaterialTheme.typography.labelSmall) },
                     modifier = Modifier.height(28.dp).testTag("trend_category_all")
                 )
 
@@ -638,11 +640,11 @@ fun MonthlySpendingTrendChart(
             ) {
                 Column {
                     Text(
-                        text = "6-Month Avg Spending",
+                        text = stringResource(R.string.chart_six_month_avg_label),
                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     )
                     Text(
-                        text = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, averageExpense),
+                        text = stringResource(R.string.currency_amount_format, currencySymbol, averageExpense),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -662,7 +664,7 @@ fun MonthlySpendingTrendChart(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = String.format(Locale.getDefault(), "%.1f%% vs last mo", Math.abs(diffPct)),
+                            text = stringResource(R.string.chart_percent_vs_last_month_format, Math.abs(diffPct)),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = if (isUp) ExpenseRed else com.example.ui.theme.IncomeGreen
@@ -874,7 +876,7 @@ fun MonthlySpendingTrendChart(
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Text(
-                                    text = String.format(Locale.getDefault(), "Total: %s%,.2f", currencySymbol, monthInfo.totalExpense),
+                                    text = stringResource(R.string.chart_month_total_format, currencySymbol, monthInfo.totalExpense),
                                     style = MaterialTheme.typography.titleSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -885,7 +887,7 @@ fun MonthlySpendingTrendChart(
                             if (monthInfo.categoryBreakdown.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Top Spending Categories:",
+                                    text = stringResource(R.string.chart_top_spending_categories_label),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -922,7 +924,7 @@ fun MonthlySpendingTrendChart(
                                             }
 
                                             Text(
-                                                text = String.format(Locale.getDefault(), "%s%,.2f (%.0f%%)", currencySymbol, amount, pct),
+                                                text = stringResource(R.string.chart_amount_with_percentage_format, currencySymbol, amount, pct),
                                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
                                             )
                                         }

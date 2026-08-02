@@ -1,4 +1,5 @@
 package com.example.ui.dialogs
+import com.example.R
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -86,12 +88,12 @@ fun AddOrEditAccountDialog(
     var typeDropdownExpanded by remember { mutableStateOf(false) }
 
     val accountTypes = listOf(
-        "CHECKING" to "Checking Account",
-        "SAVINGS" to "Savings Account",
-        "CREDIT_CARD" to "Credit Card",
-        "CASH" to "Cash / Wallet",
-        "INVESTMENT" to "Investment Account",
-        "CUSTOM" to "Custom Account Type..."
+        "CHECKING" to stringResource(R.string.add_account_dialog_type_checking),
+        "SAVINGS" to stringResource(R.string.add_account_dialog_type_savings),
+        "CREDIT_CARD" to stringResource(R.string.add_account_dialog_type_credit_card),
+        "CASH" to stringResource(R.string.add_account_dialog_type_cash),
+        "INVESTMENT" to stringResource(R.string.add_account_dialog_type_investment),
+        "CUSTOM" to stringResource(R.string.add_account_dialog_type_custom)
     )
 
     val colorOptions = listOf(
@@ -107,7 +109,7 @@ fun AddOrEditAccountDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (accountToEdit != null) "Edit Account" else "Add New Account",
+                    text = if (accountToEdit != null) stringResource(R.string.add_account_dialog_title_edit) else stringResource(R.string.add_account_dialog_title_add),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -116,9 +118,9 @@ fun AddOrEditAccountDialog(
                         onClick = onDelete,
                         colors = ButtonDefaults.textButtonColors(contentColor = ExpenseRed)
                     ) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(18.dp))
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.add_account_dialog_delete_label), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete")
+                        Text(stringResource(R.string.add_account_dialog_delete_label))
                     }
                 }
             }
@@ -134,8 +136,8 @@ fun AddOrEditAccountDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Account Name") },
-                    placeholder = { Text("e.g. HDFC Bank, Chase Checking, INDBNK") },
+                    label = { Text(stringResource(R.string.add_account_dialog_name_label)) },
+                    placeholder = { Text(stringResource(R.string.add_account_dialog_name_placeholder)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("account_name_input"),
@@ -144,7 +146,7 @@ fun AddOrEditAccountDialog(
 
                 // Account Type Dropdown
                 Text(
-                    text = "Account Type",
+                    text = stringResource(R.string.add_account_dialog_type_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -152,7 +154,7 @@ fun AddOrEditAccountDialog(
                     expanded = typeDropdownExpanded,
                     onExpandedChange = { typeDropdownExpanded = !typeDropdownExpanded }
                 ) {
-                    val label = accountTypes.find { it.first == selectedType }?.second ?: "Checking Account"
+                    val label = accountTypes.find { it.first == selectedType }?.second ?: stringResource(R.string.add_account_dialog_type_checking)
                     OutlinedTextField(
                         value = label,
                         onValueChange = {},
@@ -184,8 +186,8 @@ fun AddOrEditAccountDialog(
                     OutlinedTextField(
                         value = customTypeLabel ?: "",
                         onValueChange = { customTypeLabel = it },
-                        label = { Text("Custom Account Type Name") },
-                        placeholder = { Text("e.g. Fixed Deposit, PayPal, Chit Fund, Crypto") },
+                        label = { Text(stringResource(R.string.add_account_dialog_custom_type_label)) },
+                        placeholder = { Text(stringResource(R.string.add_account_dialog_custom_type_placeholder)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("custom_account_type_input"),
@@ -197,7 +199,7 @@ fun AddOrEditAccountDialog(
                 OutlinedTextField(
                     value = initialBalanceText,
                     onValueChange = { initialBalanceText = it },
-                    label = { Text("Current Balance ($)") },
+                    label = { Text(stringResource(R.string.add_account_dialog_balance_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -213,13 +215,13 @@ fun AddOrEditAccountDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.ContactPhone,
-                                contentDescription = "Bank Contacts",
+                                contentDescription = stringResource(R.string.add_account_dialog_bank_contacts_cd),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Bank SMS Sender / Contact IDs",
+                                text = stringResource(R.string.add_account_dialog_sms_sender_section_title),
                                 style = MaterialTheme.typography.labelLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -228,7 +230,7 @@ fun AddOrEditAccountDialog(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Link contact headers (e.g. VD-HDFCBK-T, AD-HDFCBK-S, BV-INDBNK-S) so incoming debit/credit messages route directly here.",
+                            text = stringResource(R.string.add_account_dialog_sms_sender_description),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -239,9 +241,9 @@ fun AddOrEditAccountDialog(
                 OutlinedTextField(
                     value = senderKeywords,
                     onValueChange = { senderKeywords = it },
-                    label = { Text("Bank SMS Sender Contacts / Keywords") },
-                    placeholder = { Text("e.g. VD-HDFCBK-T, AD-HDFCBK-S, HDFCBK") },
-                    supportingText = { Text("Comma-separated sender IDs or contact headers") },
+                    label = { Text(stringResource(R.string.add_account_dialog_sender_keywords_label)) },
+                    placeholder = { Text(stringResource(R.string.add_account_dialog_sender_keywords_placeholder)) },
+                    supportingText = { Text(stringResource(R.string.add_account_dialog_sender_keywords_supporting)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("account_sender_keywords_input")
@@ -251,8 +253,8 @@ fun AddOrEditAccountDialog(
                 OutlinedTextField(
                     value = last4Digits,
                     onValueChange = { if (it.length <= 4) last4Digits = it },
-                    label = { Text("Account / Card Last 4 Digits") },
-                    placeholder = { Text("e.g. 4321") },
+                    label = { Text(stringResource(R.string.add_account_dialog_last4_label)) },
+                    placeholder = { Text(stringResource(R.string.add_account_dialog_last4_placeholder)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -262,7 +264,7 @@ fun AddOrEditAccountDialog(
 
                 // Color picker
                 Text(
-                    text = "Account Color Theme",
+                    text = stringResource(R.string.add_account_dialog_color_theme_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
 
@@ -306,12 +308,12 @@ fun AddOrEditAccountDialog(
                 },
                 modifier = Modifier.testTag("save_account_button")
             ) {
-                Text(if (accountToEdit != null) "Save Changes" else "Create Account")
+                Text(if (accountToEdit != null) stringResource(R.string.add_account_dialog_save_button) else stringResource(R.string.add_account_dialog_create_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.add_account_dialog_cancel_button))
             }
         }
     )
