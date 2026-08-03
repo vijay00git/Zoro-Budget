@@ -1,10 +1,15 @@
 package com.example
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -50,18 +55,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.AppDatabase
 import com.example.data.local.BudgetRepository
+import com.example.data.notifications.BillAlertScheduler
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.ExpenseViewModel
 import com.example.ui.ExpenseViewModelFactory
-import com.example.ui.dialogs.AddAccountDialog
 import com.example.ui.dialogs.AddOrEditAccountDialog
 import com.example.ui.dialogs.AddCategoryDialog
 import com.example.ui.dialogs.AddTransactionDialog
 import com.example.ui.dialogs.EditCategoryBudgetDialog
 import com.example.ui.dialogs.EditTransactionDialog
 import com.example.ui.dialogs.ExportImportBackupDialog
+import com.example.ui.dialogs.QuickReviewPendingDialog
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
@@ -89,10 +95,19 @@ class MainActivity : ComponentActivity() {
         ExpenseViewModelFactory(repository)
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         AppDebugLogger.init(applicationContext)
+
+        BillAlertScheduler.schedulePeriodic(applicationContext)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         setContent {
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -145,6 +160,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
     var showBackupDialog by remember { mutableStateOf(false) }
     var showAddRecurringBillDialog by remember { mutableStateOf(false) }
     var showAccountTransferDialog by remember { mutableStateOf(false) }
+    var showQuickReviewDialog by remember { mutableStateOf(false) }
     var transferInitialFromAccountId by remember { mutableStateOf<Long?>(null) }
 
     val context = LocalContext.current
@@ -263,8 +279,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                         showAccountTransferDialog = true
                     },
                     onPendingReviewClick = {
-                        viewModel.setTypeFilter("PENDING")
-                        selectedScreenIndex = 1
+                        showQuickReviewDialog = true
                     },
                     onTransactionClick = { editingTransaction = it },
                     onSeeAllClick = { selectedScreenIndex = 1 },
@@ -316,6 +331,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     onAddCustomCategoryClick = { showAddCategoryDialog = true },
                     onAddRecurringBillClick = { showAddRecurringBillDialog = true },
                     onToggleRecurring = { tx, isRec, freq, dueDate -> viewModel.toggleTransactionRecurring(tx, isRec, freq, dueDate) },
+                    onSkipRecurringCycle = { tx -> viewModel.skipRecurringCycle(tx) },
                     onTransactionClick = { editingTransaction = it },
                     onUpdateSavingsGoalTarget = { viewModel.setSavingsGoalTarget(it) },
                     onSetTotalMonthlyBudget = { viewModel.setTotalMonthlyBudget(it) }
@@ -440,7 +456,8 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     onAdd = { name, iconName, colorHex, budgetLimit ->
                         viewModel.addCustomCategory(name, iconName, colorHex, budgetLimit)
                         showAddCategoryDialog = false
-                    }
+                    },
+                    currencySymbol = currencySymbol
                 )
             }
 
@@ -449,7 +466,21 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     onDismiss = { showBackupDialog = false },
                     onExportCsv = { viewModel.exportDataCsv() },
                     onExportJson = { viewModel.exportDataJson() },
-                    onImportJson = { jsonStr -> viewModel.importJsonData(jsonStr) }
+                    onImportJson = { jsonStr -> viewModel.importJsonData(jsonStr) },
+                    onImportCsv = { csvStr -> viewModel.importCsvData(csvStr) }
+                )
+            }
+
+            if (showQuickReviewDialog && pendingTransactions.isNotEmpty()) {
+                QuickReviewPendingDialog(
+                    pendingTransactions = pendingTransactions,
+                    categories = categories,
+                    currencySymbol = currencySymbol,
+                    onDismiss = { showQuickReviewDialog = false },
+                    onConfirm = { tx, title, categoryTag ->
+                        viewModel.updateTransactionTitleAndTag(tx, title, categoryTag, tx.accountId, tx.notes)
+                    },
+                    onDecline = { tx -> viewModel.deleteTransaction(tx) }
                 )
             }
 
@@ -470,6 +501,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
             if (showAddAccountDialog || currentAccountToEdit != null) {
                 AddOrEditAccountDialog(
                     accountToEdit = currentAccountToEdit,
+                    currencySymbol = currencySymbol,
                     onDismiss = {
                         showAddAccountDialog = false
                         editingAccount = null

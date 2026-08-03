@@ -93,6 +93,7 @@ import androidx.core.content.ContextCompat
 import com.example.R
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
+import com.example.ui.components.ScrollEdgeFade
 import com.example.ui.dialogs.EditSavingsGoalDialog
 import com.example.ui.dialogs.LowBalanceThresholdDialog
 import com.example.ui.dialogs.TotalBudgetDialog
@@ -257,54 +258,43 @@ fun SettingsScreen(
         // --- ACCOUNTS & PAYMENT SOURCES SECTION ---
         item {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.settings_accounts_section_title),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalanceWallet,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.settings_accounts_section_title),
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (accounts.size >= 2) {
+                        OutlinedButton(
+                            onClick = { onTransferClick(null) },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                            modifier = Modifier.testTag("settings_transfer_btn")
+                        ) {
+                            Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = stringResource(R.string.settings_accounts_transfer_desc), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.settings_accounts_transfer_button), style = MaterialTheme.typography.labelMedium)
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (accounts.size >= 2) {
-                            OutlinedButton(
-                                onClick = { onTransferClick(null) },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                modifier = Modifier.testTag("settings_transfer_btn")
-                            ) {
-                                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = stringResource(R.string.settings_accounts_transfer_desc), modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(stringResource(R.string.settings_accounts_transfer_button), style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-
-                        Button(
-                            onClick = onAddAccountClick,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            modifier = Modifier.testTag("settings_add_account_btn")
-                        ) {
-                            Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.settings_accounts_add_account_desc), modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.settings_accounts_add_account_button), style = MaterialTheme.typography.labelMedium)
-                        }
+                    Button(
+                        onClick = onAddAccountClick,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("settings_add_account_btn")
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.settings_accounts_add_account_desc), modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.settings_accounts_add_account_button), style = MaterialTheme.typography.labelMedium)
                     }
                 }
 
@@ -581,7 +571,11 @@ fun SettingsScreen(
                                 Text(
                                     text = dateText,
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = if (smsSyncFromDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        // Bold-but-neutral rather than the primary accent color -
+                                        // this is plain status text, not a tappable link, and
+                                        // primary here made it look clickable when it isn't.
+                                        fontWeight = if (smsSyncFromDate != null) FontWeight.Bold else FontWeight.Normal,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 )
                             }
@@ -739,34 +733,38 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            sampleSmsPresets.forEach { (fullSms, chipLabel) ->
-                                val isSelected = simSmsInput == fullSms
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { simSmsInput = fullSms },
-                                    label = {
-                                        Text(
-                                            text = chipLabel,
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(12.dp),
-                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    shape = RoundedCornerShape(10.dp)
-                                )
+                        val smsPresetsScrollState = rememberScrollState()
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(smsPresetsScrollState),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                sampleSmsPresets.forEach { (fullSms, chipLabel) ->
+                                    val isSelected = simSmsInput == fullSms
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { simSmsInput = fullSms },
+                                        label = {
+                                            Text(
+                                                text = chipLabel,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.PlayArrow,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(12.dp),
+                                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        },
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                }
                             }
+                            ScrollEdgeFade(smsPresetsScrollState, modifier = Modifier.matchParentSize())
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))

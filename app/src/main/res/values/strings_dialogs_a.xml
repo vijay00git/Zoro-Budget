@@ -22,11 +22,9 @@
     <string name="add_transaction_dialog_receipt_section_title">Capture / Attach Bill Receipt</string>
     <string name="add_transaction_dialog_capture_image_cd">Capture / Select Image</string>
     <string name="add_transaction_dialog_attach_image_button">Attach Image</string>
-    <string name="add_transaction_dialog_sample_bill">Sample Bill</string>
     <string name="add_transaction_dialog_receipt_preview_cd">Bill Receipt Preview</string>
     <string name="add_transaction_dialog_receipt_icon_cd">Receipt Icon</string>
     <string name="add_transaction_dialog_receipt_attached">Bill Receipt Attached</string>
-    <string name="add_transaction_dialog_demo_invoice">Demo Bill Invoice #4812</string>
     <string name="add_transaction_dialog_image_attached_success">Image attached successfully</string>
     <string name="add_transaction_dialog_remove_receipt_cd">Remove Receipt</string>
     <string name="add_transaction_dialog_confirm_button">Add Transaction</string>
@@ -68,11 +66,9 @@
     <string name="recurring_bill_dialog_receipt_section_title">Capture / Attach Bill Receipt</string>
     <string name="recurring_bill_dialog_capture_image_cd">Capture / Select Image</string>
     <string name="recurring_bill_dialog_attach_image_button">Attach Image</string>
-    <string name="recurring_bill_dialog_sample_bill">Sample Bill</string>
     <string name="recurring_bill_dialog_receipt_preview_cd">Bill Receipt Preview</string>
     <string name="recurring_bill_dialog_receipt_icon_cd">Receipt Icon</string>
     <string name="recurring_bill_dialog_receipt_attached">Bill Receipt Attached</string>
-    <string name="recurring_bill_dialog_demo_invoice">Demo Bill Invoice #4812</string>
     <string name="recurring_bill_dialog_image_attached">Image attached</string>
     <string name="recurring_bill_dialog_remove_receipt_cd">Remove Receipt</string>
     <string name="recurring_bill_dialog_save_button">Save Changes</string>
@@ -124,11 +120,9 @@
     <string name="edit_transaction_dialog_receipt_section_title">Capture / Attach Bill Receipt Image</string>
     <string name="edit_transaction_dialog_capture_image_cd">Capture / Select Image</string>
     <string name="edit_transaction_dialog_attach_image_button">Attach Image</string>
-    <string name="edit_transaction_dialog_sample_bill">Sample Bill</string>
     <string name="edit_transaction_dialog_receipt_preview_cd">Bill Receipt Preview</string>
     <string name="edit_transaction_dialog_receipt_icon_cd">Receipt Icon</string>
     <string name="edit_transaction_dialog_receipt_attached">Bill Receipt Attached</string>
-    <string name="edit_transaction_dialog_demo_invoice">Demo Bill Invoice #4812</string>
     <string name="edit_transaction_dialog_image_attached">Image attached</string>
     <string name="edit_transaction_dialog_remove_receipt_cd">Remove Receipt</string>
     <string name="edit_transaction_dialog_recurring_toggle_title">Recurring Subscription / Bill</string>
@@ -155,7 +149,7 @@
     <string name="add_account_dialog_type_custom">Custom Account Type...</string>
     <string name="add_account_dialog_custom_type_label">Custom Account Type Name</string>
     <string name="add_account_dialog_custom_type_placeholder">e.g. Fixed Deposit, PayPal, Chit Fund, Crypto</string>
-    <string name="add_account_dialog_balance_label">Current Balance ($)</string>
+    <string name="add_account_dialog_balance_label">Current Balance (%1$s)</string>
     <string name="add_account_dialog_sms_sender_section_title">Bank SMS Sender / Contact IDs</string>
     <string name="add_account_dialog_bank_contacts_cd">Bank Contacts</string>
     <string name="add_account_dialog_sms_sender_description">Link contact headers (e.g. VD-HDFCBK-T, AD-HDFCBK-S, BV-INDBNK-S) so incoming debit/credit messages route directly here.</string>

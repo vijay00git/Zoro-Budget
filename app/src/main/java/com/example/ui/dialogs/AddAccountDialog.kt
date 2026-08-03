@@ -58,6 +58,7 @@ import com.example.ui.theme.ExpenseRed
 @Composable
 fun AddOrEditAccountDialog(
     accountToEdit: AccountEntity? = null,
+    currencySymbol: String = "$",
     onDismiss: () -> Unit,
     onSave: (
         name: String,
@@ -98,7 +99,7 @@ fun AddOrEditAccountDialog(
     )
 
     val colorOptions = listOf(
-        "#2563EB", "#059669", "#7C3AED", "#D97706", "#DC2626", "#0284C7", "#059669", "#4F46E5"
+        "#2563EB", "#059669", "#7C3AED", "#D97706", "#DC2626", "#0284C7", "#DB2777", "#4F46E5"
     )
 
     AlertDialog(
@@ -200,7 +201,7 @@ fun AddOrEditAccountDialog(
                 OutlinedTextField(
                     value = initialBalanceText,
                     onValueChange = { initialBalanceText = it },
-                    label = { Text(stringResource(R.string.add_account_dialog_balance_label)) },
+                    label = { Text(stringResource(R.string.add_account_dialog_balance_label, currencySymbol)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -330,19 +331,4 @@ fun AddOrEditAccountDialog(
             onDismiss = { showDeleteConfirm = false }
         )
     }
-}
-
-// Backwards compatibility wrapper for AddAccountDialog
-@Composable
-fun AddAccountDialog(
-    onDismiss: () -> Unit,
-    onAdd: (name: String, type: String, balance: Double, last4: String?, colorHex: String) -> Unit
-) {
-    AddOrEditAccountDialog(
-        accountToEdit = null,
-        onDismiss = onDismiss,
-        onSave = { name, type, balance, last4, colorHex, _, _ ->
-            onAdd(name, type, balance, last4, colorHex)
-        }
-    )
 }

@@ -300,6 +300,7 @@ fun AccountTransferDialog(
                     },
                     label = { Text(stringResource(R.string.account_transfer_dialog_amount_label, currencySymbol)) },
                     placeholder = { Text(stringResource(R.string.account_transfer_dialog_amount_placeholder)) },
+                    leadingIcon = { Text(currencySymbol, style = MaterialTheme.typography.bodyLarge) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()

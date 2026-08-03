@@ -49,7 +49,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AddCategoryDialog(
     onDismiss: () -> Unit,
-    onAdd: (name: String, iconName: String, colorHex: String, budgetLimit: Double) -> Unit
+    onAdd: (name: String, iconName: String, colorHex: String, budgetLimit: Double) -> Unit,
+    currencySymbol: String = "$"
 ) {
     var name by remember { mutableStateOf("") }
     var budgetInput by remember { mutableStateOf("") }
@@ -96,7 +97,7 @@ fun AddCategoryDialog(
                 OutlinedTextField(
                     value = budgetInput,
                     onValueChange = { budgetInput = it.filter { char -> char.isDigit() || char == '.' } },
-                    label = { Text(stringResource(R.string.add_category_dialog_budget_label)) },
+                    label = { Text(stringResource(R.string.add_category_dialog_budget_label, currencySymbol)) },
                     prefix = { Text(stringResource(R.string.add_category_dialog_currency_prefix)) },
                     singleLine = true,
                     modifier = Modifier

@@ -24,7 +24,7 @@
     <string name="add_category_dialog_title_content_desc">New Category</string>
     <string name="add_category_dialog_title">New Category</string>
     <string name="add_category_dialog_name_label">Category Name</string>
-    <string name="add_category_dialog_budget_label">Monthly Budget Limit ($)</string>
+    <string name="add_category_dialog_budget_label">Monthly Budget Limit (%1$s)</string>
     <string name="add_category_dialog_currency_prefix">$ </string>
     <string name="add_category_dialog_choose_color">Choose Badge Color</string>
     <string name="add_category_dialog_selected_content_desc">Selected</string>
@@ -40,6 +40,7 @@
     <string name="manage_subscription_dialog_current_status">CURRENT STATUS: %1$s</string>
     <string name="manage_subscription_dialog_billing_cycle_frequency">Billing Cycle Frequency</string>
     <string name="manage_subscription_dialog_due_day_label">Due Day of Month / Week (e.g. 4 for 4th)</string>
+    <string name="manage_subscription_dialog_skip_cycle_button">Skip This Cycle</string>
     <string name="manage_subscription_dialog_stop_tracking_button">Stop Tracking as Subscription</string>
     <string name="manage_subscription_dialog_save_button">Save Changes</string>
     <string name="manage_subscription_dialog_close_button">Close</string>
@@ -69,13 +70,29 @@
     <string name="export_import_backup_dialog_tab_export_csv">Export CSV</string>
     <string name="export_import_backup_dialog_tab_export_json">Export JSON</string>
     <string name="export_import_backup_dialog_tab_restore_json">Restore JSON</string>
+    <string name="export_import_backup_dialog_tab_restore_csv">Restore CSV</string>
     <string name="export_import_backup_dialog_csv_export_label">CSV Financial Ledger Export:</string>
     <string name="export_import_backup_dialog_json_export_label">Complete Database JSON Backup:</string>
     <string name="export_import_backup_dialog_copy_clip_label">Backup Export</string>
     <string name="export_import_backup_dialog_copied_status">Copied export content to clipboard!</string>
-    <string name="export_import_backup_dialog_copy_button">Copy to Clipboard</string>
+    <string name="export_import_backup_dialog_copy_button">Copy</string>
+    <string name="export_import_backup_dialog_share_file_button">Share File</string>
     <string name="export_import_backup_dialog_paste_json_label">Paste JSON Backup Content:</string>
     <string name="export_import_backup_dialog_paste_placeholder">Paste JSON backup data here...</string>
     <string name="export_import_backup_dialog_restore_button">Restore Database Backup</string>
+    <string name="export_import_backup_dialog_paste_csv_label">Paste CSV Transaction Data:</string>
+    <string name="export_import_backup_dialog_paste_csv_placeholder">Paste CSV data here (header: ID,Date,Title,Amount,Type,Category,Account,Source,Merchant,IsRecurring,Notes)...</string>
+    <string name="export_import_backup_dialog_restore_csv_button">Import CSV Transactions</string>
     <string name="export_import_backup_dialog_close_button">Close</string>
+
+    <!-- QuickReviewPendingDialog -->
+    <string name="quick_review_dialog_title">Quick Review</string>
+    <string name="quick_review_dialog_progress">%1$d of %2$d</string>
+    <string name="quick_review_dialog_amount">%1$s%2$s%3$,.2f</string>
+    <string name="quick_review_dialog_title_field_label">Transaction Title</string>
+    <string name="quick_review_dialog_category_label">Category</string>
+    <string name="quick_review_dialog_decline_button">Not a Transaction / Decline</string>
+    <string name="quick_review_dialog_confirm_button">Confirm &amp; Next</string>
+    <string name="quick_review_dialog_skip_button">Skip</string>
+    <string name="quick_review_dialog_close_button">Close</string>
 </resources>

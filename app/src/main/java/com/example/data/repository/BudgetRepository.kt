@@ -202,7 +202,7 @@ class BudgetRepository(
 
     suspend fun processParsedSmsTransaction(parsed: ParsedSmsTransaction): Boolean {
         // Check duplicate
-        val existingCount = transactionDao.checkDuplicateSms(parsed.rawMessage, parsed.timestamp)
+        val existingCount = transactionDao.checkDuplicateSms(parsed.rawMessage)
         if (existingCount > 0) return false
 
         val allAccounts = accountDao.getAllAccountsList()
@@ -235,12 +235,19 @@ class BudgetRepository(
             "New SMS ${if (parsed.type == "CREDIT") "Credit" else "Debit"}"
         }
 
+        // If this exact merchant/sender has been categorized before, reuse that category instead
+        // of the generic keyword-based guess - a user-confirmed choice for "Mr K Ghouse Sheriff"
+        // is far more useful than a category derived from message text alone.
+        val learnedCategory = parsed.merchantOrSender
+            ?.takeIf { it.isNotBlank() }
+            ?.let { transactionDao.getLastCategoryForMerchant(it) }
+
         val transaction = TransactionEntity(
             title = defaultTitle,
             amount = parsed.amount,
             type = parsed.type,
             accountId = targetAccount.id,
-            categoryTag = parsed.suggestedCategory,
+            categoryTag = learnedCategory ?: parsed.suggestedCategory,
             dateTimestamp = parsed.timestamp,
             source = "SMS_AUTO",
             rawSmsMessage = parsed.rawMessage,
@@ -285,9 +292,9 @@ class BudgetRepository(
     suspend fun deleteTransaction(transaction: TransactionEntity) {
         db.withTransaction {
             // SMS-sourced transactions are dismissed (row kept, hidden from every query) rather
-            // than hard-deleted: the row's rawSmsMessage/dateTimestamp is what checkDuplicateSms
-            // matches against, so hard-deleting it would let the next inbox scan recreate the
-            // exact transaction the user just declined.
+            // than hard-deleted: the row's rawSmsMessage is what checkDuplicateSms matches
+            // against, so hard-deleting it would let the next inbox scan recreate the exact
+            // transaction the user just declined.
             if (transaction.source == "SMS_AUTO" || transaction.source == "SIMULATED_SMS") {
                 transactionDao.dismissTransaction(transaction.id)
             } else {
@@ -358,6 +365,43 @@ class BudgetRepository(
      */
     suspend fun restoreTransaction(transaction: TransactionEntity) {
         transactionDao.insertTransaction(transaction.copy(id = 0))
+    }
+
+    /**
+     * Imports CSV rows (see DataExporter.parseCsvImport) by matching each row's account name
+     * (case-insensitive) to an existing account, creating a new one if none matches. Unlike JSON
+     * restore, CSV carries no per-account balance, so a new account starts at 0 and each imported
+     * transaction's normal balance delta (via addTransaction) builds up the correct final balance.
+     */
+    suspend fun restoreCsvTransactions(rows: List<com.example.data.export.DataExporter.CsvTransactionRow>): Int {
+        val accountIdByName = accountDao.getAllAccountsList()
+            .associateTo(mutableMapOf()) { it.name.lowercase() to it.id }
+
+        var imported = 0
+        for (row in rows) {
+            val accountId = accountIdByName.getOrPut(row.accountName.lowercase()) {
+                accountDao.insertAccount(
+                    AccountEntity(name = row.accountName, type = "CHECKING", balance = 0.0, colorHex = "#2563EB")
+                )
+            }
+            addTransaction(
+                TransactionEntity(
+                    title = row.title,
+                    amount = row.amount,
+                    type = row.type,
+                    accountId = accountId,
+                    categoryTag = row.category,
+                    dateTimestamp = row.dateTimestamp,
+                    source = row.source,
+                    merchantOrSender = row.merchantOrSender,
+                    isPendingReview = false,
+                    notes = row.notes,
+                    isRecurring = row.isRecurring
+                )
+            )
+            imported++
+        }
+        return imported
     }
 
     suspend fun updateAccount(account: AccountEntity) {

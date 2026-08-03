@@ -8,4 +8,14 @@
     <string name="nav_ledger">Ledger</string>
     <string name="nav_planning">Planning</string>
     <string name="nav_settings">Settings</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_bill_reminders_name">Bill Reminders</string>
+    <string name="notification_channel_bill_reminders_desc">Alerts for recurring bills that are due soon or overdue</string>
+    <string name="notification_channel_low_balance_name">Low Balance Warnings</string>
+    <string name="notification_channel_low_balance_desc">Alerts when an account balance drops below your threshold</string>
+    <string name="notification_bill_reminder_title">%1$s</string>
+    <string name="notification_bill_reminder_text">%1$s — %2$s</string>
+    <string name="notification_low_balance_title">Low Balance: %1$s</string>
+    <string name="notification_low_balance_text">Balance is %1$s, below your %2$s threshold</string>
 </resources>

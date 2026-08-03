@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,6 +57,7 @@ fun ManageSubscriptionDialog(
     onSaveFrequency: (frequency: String, dueDate: Int?) -> Unit,
     onRemoveSubscription: () -> Unit,
     onOpenEditTransaction: () -> Unit,
+    onSkipCycle: () -> Unit = {},
     currencySymbol: String = "$"
 ) {
     var selectedFrequency by remember { mutableStateOf(transaction.recurringFrequency ?: "MONTHLY") }
@@ -205,7 +207,24 @@ fun ManageSubscriptionDialog(
                     singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Skip this cycle: suppresses the due/overdue alert without recording a
+                // payment or touching any account balance - for a bill you're not paying this
+                // time around but still want tracked as recurring afterwards.
+                OutlinedButton(
+                    onClick = {
+                        onSkipCycle()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth().testTag("skip_subscription_cycle_button")
+                ) {
+                    Icon(imageVector = Icons.Default.SkipNext, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.manage_subscription_dialog_skip_cycle_button))
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Danger zone: Stop Tracking Subscription
                 OutlinedButton(

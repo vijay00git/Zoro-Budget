@@ -356,6 +356,19 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         }
     }
 
+    /**
+     * Suppresses this cycle's due/overdue alert WITHOUT recording a payment or touching the
+     * account balance - for a bill you're deliberately not paying this cycle (e.g. a
+     * subscription paused this month) but still want tracked as recurring going forward.
+     */
+    fun skipRecurringCycle(transaction: TransactionEntity) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            repository.updateTransaction(transaction, transaction.copy(lastPaidTimestamp = now))
+            _importStatusMessage.value = "Skipped this cycle for '${transaction.title}'"
+        }
+    }
+
     fun addOrUpdateRecurringBill(
         existingBill: TransactionEntity? = null,
         title: String,
@@ -463,6 +476,24 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         }
     }
 
+    fun importCsvData(csvString: String) {
+        viewModelScope.launch {
+            val rows = DataExporter.parseCsvImport(csvString)
+            if (rows == null) {
+                _importStatusMessage.value = "Failed to parse CSV. Check the header/column format."
+                return@launch
+            }
+            if (rows.isEmpty()) {
+                _importStatusMessage.value = "No transaction rows found in CSV."
+                return@launch
+            }
+            val count = repository.runInTransaction {
+                repository.restoreCsvTransactions(rows)
+            }
+            _importStatusMessage.value = "Imported $count transactions from CSV."
+        }
+    }
+
     fun loadPreferences(context: Context) {
         val prefs = AppPreferences.load(context)
         _currencySymbol.value = prefs.currencySymbol
@@ -499,6 +530,9 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 "Successfully imported $count new transactions from SMS!"
             } else {
                 "No new financial SMS messages found."
+            }
+            if (count > 0) {
+                com.example.data.notifications.BillAlertScheduler.enqueueImmediateCheck(context)
             }
         }
     }

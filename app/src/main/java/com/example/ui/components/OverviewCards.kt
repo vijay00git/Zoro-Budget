@@ -124,72 +124,6 @@ fun TotalBalanceCard(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Mini visual weekly spending indicator bars
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(32.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                val barHeights = listOf(0.4f, 0.65f, 0.5f, 0.9f, 0.3f, 0.55f, 0.45f)
-                barHeights.forEachIndexed { idx, heightFraction ->
-                    val isPeak = idx == 3
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height((32 * heightFraction).dp)
-                            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            .background(
-                                if (isPeak) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.primaryContainer
-                            )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = stringResource(R.string.overview_week_label_1),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = stringResource(R.string.overview_week_label_2),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = stringResource(R.string.overview_week_label_3),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = stringResource(R.string.overview_week_label_4),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
         }
     }
 }
@@ -517,7 +451,9 @@ data class CategoryProgressData(
     val name: String,
     val spent: Double,
     val limit: Double,
-    val ratio: Double
+    val ratio: Double,
+    val colorHex: String,
+    val iconName: String
 )
 
 @Composable
@@ -540,7 +476,9 @@ fun CategorySpendingProgressCard(
                 name = cat.name,
                 spent = spent,
                 limit = limit,
-                ratio = ratio
+                ratio = ratio,
+                colorHex = cat.colorHex,
+                iconName = cat.iconName
             )
         }.filter { it.spent > 0 }.sortedByDescending { it.spent }
     }
@@ -585,16 +523,39 @@ fun CategorySpendingProgressCard(
                     else -> IncomeGreen
                 }
 
+                val itemColor = try {
+                    Color(android.graphics.Color.parseColor(item.colorHex))
+                } catch (e: Exception) {
+                    MaterialTheme.colorScheme.primary
+                }
+
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape)
+                                    .background(itemColor.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = categoryIconFor(item.iconName),
+                                    contentDescription = null,
+                                    tint = itemColor,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                        }
 
                         Text(
                             text = if (item.limit > 0) {
@@ -622,6 +583,21 @@ fun CategorySpendingProgressCard(
                         color = progressColor,
                         trackColor = progressColor.copy(alpha = 0.15f)
                     )
+
+                    // The bar caps visually at 100%, so spell out how far over budget this
+                    // category actually is instead of just showing an undifferentiated full bar.
+                    // (item.ratio is coerced to 1.5 for progress-bar/color purposes, so the real
+                    // overage is recomputed here rather than reusing that capped value.)
+                    if (item.limit > 0 && item.spent > item.limit) {
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = stringResource(R.string.reports_screen_over_budget_by_percent, ((item.spent / item.limit) - 1.0) * 100f),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = ExpenseRed
+                            )
+                        )
+                    }
 
                     if (index < displayList.lastIndex) {
                         Spacer(modifier = Modifier.height(10.dp))
@@ -964,28 +940,6 @@ fun NetWorthSparklineCard(
                             .weight(weight)
                             .fillMaxHeight()
                             .background(colors[idx % colors.size])
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Sparkline / Bar Graph Visualizer
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(36.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                val dummyTrend = listOf(0.4f, 0.55f, 0.48f, 0.7f, 0.65f, 0.82f, 0.78f, 0.95f, 0.88f, 1.0f)
-                dummyTrend.forEach { heightRatio ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(heightRatio)
-                            .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
                     )
                 }
             }

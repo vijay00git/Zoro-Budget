@@ -188,6 +188,7 @@ fun AddOrEditRecurringBillDialog(
                     onValueChange = { amountText = it },
                     label = { Text(stringResource(R.string.recurring_bill_dialog_amount_label, currencySymbol)) },
                     placeholder = { Text(stringResource(R.string.recurring_bill_dialog_amount_placeholder)) },
+                    leadingIcon = { Text(currencySymbol, style = MaterialTheme.typography.bodyLarge) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -436,39 +437,19 @@ fun AddOrEditRecurringBillDialog(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     if (receiptUri == null) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        OutlinedButton(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("attach_recurring_bill_image_button")
                         ) {
-                            OutlinedButton(
-                                onClick = { imagePickerLauncher.launch("image/*") },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("attach_recurring_bill_image_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = stringResource(R.string.recurring_bill_dialog_capture_image_cd),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(R.string.recurring_bill_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
-                            }
-
-                            OutlinedButton(
-                                onClick = { receiptUri = "sample_receipt_utility_bill" },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("attach_recurring_sample_bill_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Receipt,
-                                    contentDescription = stringResource(R.string.recurring_bill_dialog_sample_bill),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(R.string.recurring_bill_dialog_sample_bill), style = MaterialTheme.typography.labelMedium)
-                            }
+                            Icon(
+                                imageVector = Icons.Default.PhotoCamera,
+                                contentDescription = stringResource(R.string.recurring_bill_dialog_capture_image_cd),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.recurring_bill_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
                         }
                     } else {
                         Card(
@@ -521,7 +502,7 @@ fun AddOrEditRecurringBillDialog(
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                         )
                                         Text(
-                                            text = if (uriStr == "sample_receipt_utility_bill") stringResource(R.string.recurring_bill_dialog_demo_invoice) else stringResource(R.string.recurring_bill_dialog_image_attached),
+                                            text = stringResource(R.string.recurring_bill_dialog_image_attached),
                                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }

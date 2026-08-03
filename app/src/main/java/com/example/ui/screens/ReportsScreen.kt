@@ -68,6 +68,7 @@ import com.example.data.local.entity.TransactionEntity
 import com.example.ui.components.CategoryDonutChart
 import com.example.ui.components.MonthlyBarChart
 import com.example.ui.components.MonthlySpendingTrendChart
+import com.example.ui.components.categoryIconFor
 import com.example.ui.dialogs.EditSavingsGoalDialog
 import com.example.ui.dialogs.ManageSubscriptionDialog
 import com.example.ui.dialogs.TotalBudgetDialog
@@ -90,6 +91,7 @@ fun ReportsScreen(
     onEditCategoryBudget: (CategoryEntity) -> Unit,
     onAddCustomCategoryClick: () -> Unit,
     onToggleRecurring: (TransactionEntity, Boolean, String?, Int?) -> Unit,
+    onSkipRecurringCycle: (TransactionEntity) -> Unit = {},
     onAddRecurringBillClick: () -> Unit = {},
     onTransactionClick: (TransactionEntity) -> Unit,
     onUpdateSavingsGoalTarget: (Double) -> Unit,
@@ -547,11 +549,11 @@ fun ReportsScreen(
                                                         .background(catColor.copy(alpha = 0.2f)),
                                                     contentAlignment = Alignment.Center
                                                 ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(14.dp)
-                                                            .clip(CircleShape)
-                                                            .background(catColor)
+                                                    Icon(
+                                                        imageVector = categoryIconFor(cat.iconName),
+                                                        contentDescription = null,
+                                                        tint = catColor,
+                                                        modifier = Modifier.size(18.dp)
                                                     )
                                                 }
 
@@ -584,7 +586,7 @@ fun ReportsScreen(
                                                         )
                                                     )
                                                     Text(
-                                                        text = if (hasLimit) stringResource(R.string.reports_screen_limit_amount, limit) else stringResource(R.string.reports_screen_tap_to_set_limit),
+                                                        text = if (hasLimit) stringResource(R.string.reports_screen_limit_amount, currencySymbol, limit) else stringResource(R.string.reports_screen_tap_to_set_limit),
                                                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                     )
                                                 }
@@ -616,6 +618,19 @@ fun ReportsScreen(
                                                 color = progressColor,
                                                 trackColor = MaterialTheme.colorScheme.surfaceVariant
                                             )
+                                            // The bar itself always caps at 100% width, so being
+                                            // 45% over budget looks identical to being 300% over -
+                                            // spell out the actual overage instead.
+                                            if (progress > 1.0f) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = stringResource(R.string.reports_screen_over_budget_by_percent, ((spent / limit).toFloat() - 1.0f) * 100f),
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = ExpenseRed
+                                                    )
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -711,7 +726,7 @@ fun ReportsScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = stringResource(R.string.reports_screen_current_savings, netSavings.coerceAtLeast(0.0)),
+                                text = stringResource(R.string.reports_screen_current_savings, currencySymbol, netSavings.coerceAtLeast(0.0)),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = if (netSavings >= 0) IncomeGreen else ExpenseRed
@@ -769,52 +784,42 @@ fun ReportsScreen(
         if (selectedTabIndex == 0 || selectedTabIndex == 3) {
             item {
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.reports_screen_subscriptions_title),
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = stringResource(R.string.reports_screen_subscriptions_subtitle),
-                                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            )
+                    Text(
+                        text = stringResource(R.string.reports_screen_subscriptions_title),
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Text(
+                        text = stringResource(R.string.reports_screen_subscriptions_subtitle),
+                        style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Button(
+                            onClick = onAddRecurringBillClick,
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.reports_screen_add_bill_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                         }
 
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Button(
-                                onClick = onAddRecurringBillClick,
-                                shape = RoundedCornerShape(12.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(stringResource(R.string.reports_screen_add_bill_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-                            }
-
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.reports_screen_monthly_subscriptions_amount, currencySymbol, totalMonthlySubscriptions),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    ),
-                                    maxLines = 1
-                                )
-                            }
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.reports_screen_monthly_subscriptions_amount, currencySymbol, totalMonthlySubscriptions),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                ),
+                                maxLines = 1
+                            )
                         }
                     }
 
@@ -1031,6 +1036,9 @@ fun ReportsScreen(
             },
             onOpenEditTransaction = {
                 onTransactionClick(sub)
+            },
+            onSkipCycle = {
+                onSkipRecurringCycle(sub)
             }
         )
     }

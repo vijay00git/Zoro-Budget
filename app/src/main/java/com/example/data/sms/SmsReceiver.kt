@@ -7,6 +7,7 @@ import android.provider.Telephony
 import android.util.Log
 import com.example.data.local.AppDatabase
 import com.example.data.local.BudgetRepository
+import com.example.data.notifications.BillAlertScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,6 +50,7 @@ class SmsReceiver : BroadcastReceiver() {
                     val repository = BudgetRepository(db, db.accountDao(), db.transactionDao(), db.categoryDao())
                     repository.processParsedSmsTransaction(parsed)
                     Log.d("SmsReceiver", "Successfully processed SMS transaction: ${parsed.amount} ${parsed.type}")
+                    BillAlertScheduler.enqueueImmediateCheck(appContext)
                 } catch (e: Exception) {
                     Log.e("SmsReceiver", "Error saving SMS transaction", e)
                 } finally {

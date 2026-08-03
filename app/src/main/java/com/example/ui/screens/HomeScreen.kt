@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -67,6 +68,7 @@ import com.example.ui.components.IncomeExpenseSummaryRow
 import com.example.ui.components.MonthlyBarChart
 import com.example.ui.components.MonthlySpendingTrendChart
 import com.example.ui.components.PendingReviewBanner
+import com.example.ui.components.ScrollEdgeFade
 import com.example.ui.components.TotalBalanceCard
 import com.example.ui.components.TransactionItem
 import com.example.ui.theme.ExpenseOnRedContainer
@@ -152,7 +154,10 @@ fun HomeScreen(
     ) {
         // Account Switcher Filter Bar
         item {
+            val accountFilterListState = rememberLazyListState()
+            Box(modifier = Modifier.fillMaxWidth()) {
             LazyRow(
+                state = accountFilterListState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp, bottom = 2.dp),
@@ -233,6 +238,8 @@ fun HomeScreen(
                         }
                     }
                 }
+            }
+            ScrollEdgeFade(accountFilterListState, modifier = Modifier.matchParentSize())
             }
         }
 
@@ -593,38 +600,37 @@ fun HomeScreen(
             var selectedChartTab by remember { mutableStateOf(0) } // 0: Trends, 1: Categories, 2: Daily Bars
 
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
+                Text(
+                    text = stringResource(R.string.home_screen_visual_analytics_title),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.home_screen_visual_analytics_title),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    FilterChip(
+                        selected = selectedChartTab == 0,
+                        onClick = { selectedChartTab = 0 },
+                        label = { Text(stringResource(R.string.home_screen_chart_tab_trends), style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.height(28.dp)
                     )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        FilterChip(
-                            selected = selectedChartTab == 0,
-                            onClick = { selectedChartTab = 0 },
-                            label = { Text(stringResource(R.string.home_screen_chart_tab_trends), style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.height(28.dp)
-                        )
-                        FilterChip(
-                            selected = selectedChartTab == 1,
-                            onClick = { selectedChartTab = 1 },
-                            label = { Text(stringResource(R.string.home_screen_chart_tab_categories), style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.height(28.dp)
-                        )
-                        FilterChip(
-                            selected = selectedChartTab == 2,
-                            onClick = { selectedChartTab = 2 },
-                            label = { Text(stringResource(R.string.home_screen_chart_tab_daily), style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.height(28.dp)
-                        )
-                    }
+                    FilterChip(
+                        selected = selectedChartTab == 1,
+                        onClick = { selectedChartTab = 1 },
+                        label = { Text(stringResource(R.string.home_screen_chart_tab_categories), style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.height(28.dp)
+                    )
+                    FilterChip(
+                        selected = selectedChartTab == 2,
+                        onClick = { selectedChartTab = 2 },
+                        label = { Text(stringResource(R.string.home_screen_chart_tab_daily), style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.height(28.dp)
+                    )
                 }
 
                 when (selectedChartTab) {

@@ -35,10 +35,6 @@
     <!-- OverviewCards.kt -->
     <string name="overview_default_account_name">Main Account</string>
     <string name="overview_active_badge_label">ACTIVE</string>
-    <string name="overview_week_label_1">WEEK 1</string>
-    <string name="overview_week_label_2">WEEK 2</string>
-    <string name="overview_week_label_3">WEEK 3</string>
-    <string name="overview_week_label_4">WEEK 4</string>
     <string name="overview_income_label">Income</string>
     <string name="overview_expenses_label">Expenses</string>
     <string name="overview_action_required_description">Action Required</string>

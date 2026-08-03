@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
@@ -37,6 +39,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -67,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
+import com.example.ui.components.ScrollEdgeFade
 import com.example.ui.components.TransactionItem
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -147,9 +151,14 @@ fun TransactionsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("transactions_screen"),
         floatingActionButton = {
+            // Sized down from the 56dp default: still comfortably above the 48dp minimum touch
+            // target, but a smaller footprint means it's less likely to fully cover a list row's
+            // amount text when a transaction happens to be scrolled to rest right behind it.
             FloatingActionButton(
                 onClick = onAddClick,
-                modifier = Modifier.testTag("add_transaction_fab")
+                modifier = Modifier
+                    .size(48.dp)
+                    .testTag("add_transaction_fab")
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -258,53 +267,63 @@ fun TransactionsScreen(
                         "THIS_MONTH" to stringResource(R.string.date_range_this_month),
                         "LAST_30_DAYS" to stringResource(R.string.date_range_last_30_days)
                     )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        items(dateOptions) { (key, label) ->
-                            val isSelected = selectedDateRange == key
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onSelectDateRange(key) },
-                                label = {
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    val dateOptionsListState = rememberLazyListState()
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        LazyRow(
+                            state = dateOptionsListState,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            items(dateOptions) { (key, label) ->
+                                val isSelected = selectedDateRange == key
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onSelectDateRange(key) },
+                                    label = {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                            )
                                         )
-                                    )
-                                },
-                                shape = CircleShape,
-                                modifier = Modifier.height(30.dp)
-                            )
+                                    },
+                                    shape = CircleShape,
+                                    modifier = Modifier.height(30.dp)
+                                )
+                            }
                         }
+                        ScrollEdgeFade(dateOptionsListState, modifier = Modifier.matchParentSize())
                     }
 
                     // Quick Category Tag Pills Bar
                     Spacer(modifier = Modifier.height(6.dp))
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val allCategoryPills = listOf(null) + categories.map { it.name }
-                        items(allCategoryPills) { catName ->
-                            val isSelected = (selectedCategory == catName) || (selectedCategory == null && catName == null)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onSelectCategory(catName) },
-                                label = {
-                                    Text(
-                                        text = catName ?: stringResource(R.string.category_all),
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    val categoryPillsListState = rememberLazyListState()
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        LazyRow(
+                            state = categoryPillsListState,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val allCategoryPills = listOf(null) + categories.map { it.name }
+                            items(allCategoryPills) { catName ->
+                                val isSelected = (selectedCategory == catName) || (selectedCategory == null && catName == null)
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { onSelectCategory(catName) },
+                                    label = {
+                                        Text(
+                                            text = catName ?: stringResource(R.string.category_all),
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                            )
                                         )
-                                    )
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.height(28.dp)
-                            )
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.height(28.dp)
+                                )
+                            }
                         }
+                        ScrollEdgeFade(categoryPillsListState, modifier = Modifier.matchParentSize())
                     }
 
                     // Active Filter Summary Bar
@@ -501,6 +520,7 @@ fun TransactionsScreen(
                             TransactionItem(
                                 transaction = tx,
                                 account = acc,
+                                categories = categories,
                                 onClick = { onTransactionClick(tx) },
                                 currencySymbol = currencySymbol
                             )
@@ -516,6 +536,7 @@ fun TransactionsScreen(
         TransactionFilterBottomSheet(
             accounts = accounts,
             categories = categories,
+            currencySymbol = currencySymbol,
             selectedAccountId = selectedAccountId,
             selectedTypeFilter = selectedTypeFilter,
             selectedDateRange = selectedDateRange,
@@ -542,6 +563,7 @@ fun TransactionsScreen(
 fun TransactionFilterBottomSheet(
     accounts: List<AccountEntity>,
     categories: List<CategoryEntity>,
+    currencySymbol: String = "$",
     selectedAccountId: Long?,
     selectedTypeFilter: String,
     selectedDateRange: String,
@@ -832,16 +854,28 @@ fun TransactionFilterBottomSheet(
                     label = { Text(stringResource(R.string.category_all)) }
                 )
                 categories.forEach { cat ->
+                    val isCatSelected = selectedCategory.equals(cat.name, ignoreCase = true)
+                    val catColor = try {
+                        Color(android.graphics.Color.parseColor(cat.colorHex))
+                    } catch (e: Exception) {
+                        MaterialTheme.colorScheme.primary
+                    }
                     FilterChip(
-                        selected = selectedCategory.equals(cat.name, ignoreCase = true),
+                        selected = isCatSelected,
                         onClick = {
-                            if (selectedCategory.equals(cat.name, ignoreCase = true)) {
+                            if (isCatSelected) {
                                 onSelectCategory(null)
                             } else {
                                 onSelectCategory(cat.name)
                             }
                         },
-                        label = { Text(cat.name) }
+                        label = { Text(cat.name) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = catColor.copy(alpha = 0.15f),
+                            labelColor = catColor,
+                            selectedContainerColor = catColor,
+                            selectedLabelColor = Color.White
+                        )
                     )
                 }
             }
@@ -872,6 +906,7 @@ fun TransactionFilterBottomSheet(
                     },
                     label = { Text(stringResource(R.string.filter_amount_min)) },
                     placeholder = { Text(stringResource(R.string.filter_amount_no_min)) },
+                    leadingIcon = { Text(currencySymbol, style = MaterialTheme.typography.bodyLarge) },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                     modifier = Modifier.weight(1f).testTag("min_amount_filter_input")
@@ -884,6 +919,7 @@ fun TransactionFilterBottomSheet(
                     },
                     label = { Text(stringResource(R.string.filter_amount_max)) },
                     placeholder = { Text(stringResource(R.string.filter_amount_no_max)) },
+                    leadingIcon = { Text(currencySymbol, style = MaterialTheme.typography.bodyLarge) },
                     singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                     modifier = Modifier.weight(1f).testTag("max_amount_filter_input")

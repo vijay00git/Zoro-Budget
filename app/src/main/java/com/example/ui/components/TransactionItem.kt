@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.AccountEntity
+import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.IncomeGreen
@@ -54,6 +55,7 @@ import java.util.Locale
 fun TransactionItem(
     transaction: TransactionEntity,
     account: AccountEntity?,
+    categories: List<CategoryEntity> = emptyList(),
     onClick: () -> Unit,
     currencySymbol: String = "$",
     modifier: Modifier = Modifier
@@ -143,20 +145,16 @@ fun TransactionItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Category Tag Badge Chip with custom category colors
-                    val categoryColorPair = when (transaction.categoryTag.lowercase()) {
-                        "food", "dining", "restaurants", "groceries" -> Color(0xFFFF9800) to Color(0xFFFFF3E0)
-                        "shopping", "clothing", "electronics" -> Color(0xFF9C27B0) to Color(0xFFF3E5F5)
-                        "bills", "utilities", "rent" -> Color(0xFFE53935) to Color(0xFFFFEBEE)
-                        "salary", "income", "freelance" -> Color(0xFF4CAF50) to Color(0xE8E8F5E9)
-                        "transfer" -> Color(0xFF1E88E5) to Color(0xFFE3F2FD)
-                        "health", "medical", "pharmacy" -> Color(0xFF009688) to Color(0xFFE0F2F1)
-                        "entertainment", "movies", "games" -> Color(0xFFE91E63) to Color(0xFFFCE4EC)
-                        "transport", "fuel", "cab", "travel" -> Color(0xFF3F51B5) to Color(0xFFE8EAF6)
-                        else -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.primaryContainer
-                    }
+                    // Category Tag Badge Chip - color sourced from the category's own colorHex
+                    // (same lookup Charts.kt uses) instead of a separate keyword table, so a
+                    // category is the same color everywhere in the app.
+                    val categoryColor = categories.find { it.name.equals(transaction.categoryTag, ignoreCase = true) }
+                        ?.colorHex
+                        ?.let { hex -> try { Color(android.graphics.Color.parseColor(hex)) } catch (e: Exception) { null } }
+                        ?: MaterialTheme.colorScheme.primary
+                    val categoryContainerColor = categoryColor.copy(alpha = 0.16f)
                     Surface(
-                        color = if (transaction.isPendingReview) MaterialTheme.colorScheme.outline.copy(alpha = 0.2f) else categoryColorPair.second,
+                        color = if (transaction.isPendingReview) MaterialTheme.colorScheme.outline.copy(alpha = 0.2f) else categoryContainerColor,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
@@ -164,7 +162,7 @@ fun TransactionItem(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = if (transaction.isPendingReview) MaterialTheme.colorScheme.onSurfaceVariant else categoryColorPair.first
+                                color = if (transaction.isPendingReview) MaterialTheme.colorScheme.onSurfaceVariant else categoryColor
                             )
                         )
                     }

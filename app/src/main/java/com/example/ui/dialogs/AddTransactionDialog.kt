@@ -164,6 +164,7 @@ fun AddTransactionDialog(
                     onValueChange = { amountText = it },
                     label = { Text(stringResource(R.string.add_transaction_dialog_amount_label, currencySymbol)) },
                     placeholder = { Text(stringResource(R.string.add_transaction_dialog_amount_placeholder)) },
+                    leadingIcon = { Text(currencySymbol, style = MaterialTheme.typography.bodyLarge) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -182,23 +183,34 @@ fun AddTransactionDialog(
                         text = stringResource(R.string.add_transaction_dialog_quick_label),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
-                    androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        items(presetAmounts.size) { index ->
-                            val preset = presetAmounts[index]
-                            OutlinedButton(
-                                onClick = {
-                                    val current = amountText.toDoubleOrNull() ?: 0.0
-                                    val updated = if (current == 0.0) preset.toDouble() else current + preset
-                                    amountText = String.format(Locale.US, "%.2f", updated)
-                                },
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                modifier = Modifier.height(30.dp)
-                            ) {
-                                Text(stringResource(R.string.add_transaction_dialog_quick_preset, preset), style = MaterialTheme.typography.labelSmall)
+                    val quickAmountListState = androidx.compose.foundation.lazy.rememberLazyListState()
+                    Box(modifier = Modifier.weight(1f)) {
+                        androidx.compose.foundation.lazy.LazyRow(
+                            state = quickAmountListState,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(presetAmounts.size) { index ->
+                                val preset = presetAmounts[index]
+                                OutlinedButton(
+                                    onClick = {
+                                        val current = amountText.toDoubleOrNull() ?: 0.0
+                                        val updated = if (current == 0.0) preset.toDouble() else current + preset
+                                        amountText = String.format(Locale.US, "%.2f", updated)
+                                    },
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text(stringResource(R.string.add_transaction_dialog_quick_preset, preset), style = MaterialTheme.typography.labelSmall)
+                                }
                             }
                         }
+                        com.example.ui.components.ScrollEdgeFade(
+                            quickAmountListState,
+                            modifier = Modifier.matchParentSize(),
+                            // AlertDialog's surface is surfaceContainerHigh, not the default
+                            // colorScheme.background this component fades to elsewhere.
+                            edgeColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
                     }
                 }
 
@@ -228,48 +240,53 @@ fun AddTransactionDialog(
                         isSameDay(selectedDateTimestamp, yest.timeInMillis)
                     }
 
+                    // The formatted date ("EEE, MMM d, yyyy") needs the full dialog width to
+                    // avoid truncating - putting it on its own row instead of sharing space with
+                    // the Today/Yesterday chips guarantees that room.
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { datePickerDialog.show() }
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .testTag("select_transaction_date_button"),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = stringResource(R.string.add_transaction_dialog_select_date_cd),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = dateFormat.format(selectedDateTimestamp),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { datePickerDialog.show() }
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                                .testTag("select_transaction_date_button"),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarToday,
-                                    contentDescription = stringResource(R.string.add_transaction_dialog_select_date_cd),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = dateFormat.format(selectedDateTimestamp),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
                         FilterChip(
                             selected = isToday,
                             onClick = { selectedDateTimestamp = System.currentTimeMillis() },
@@ -407,39 +424,19 @@ fun AddTransactionDialog(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     if (receiptUri == null) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        OutlinedButton(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("attach_bill_image_button")
                         ) {
-                            OutlinedButton(
-                                onClick = { imagePickerLauncher.launch("image/*") },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("attach_bill_image_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = stringResource(R.string.add_transaction_dialog_capture_image_cd),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(R.string.add_transaction_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
-                            }
-
-                            OutlinedButton(
-                                onClick = { receiptUri = "sample_receipt_utility_bill" },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("attach_sample_bill_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Receipt,
-                                    contentDescription = stringResource(R.string.add_transaction_dialog_sample_bill),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(stringResource(R.string.add_transaction_dialog_sample_bill), style = MaterialTheme.typography.labelMedium)
-                            }
+                            Icon(
+                                imageVector = Icons.Default.PhotoCamera,
+                                contentDescription = stringResource(R.string.add_transaction_dialog_capture_image_cd),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.add_transaction_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
                         }
                     } else {
                         Card(
@@ -492,7 +489,7 @@ fun AddTransactionDialog(
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                         )
                                         Text(
-                                            text = if (uriStr == "sample_receipt_utility_bill") stringResource(R.string.add_transaction_dialog_demo_invoice) else stringResource(R.string.add_transaction_dialog_image_attached_success),
+                                            text = stringResource(R.string.add_transaction_dialog_image_attached_success),
                                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
                                     }

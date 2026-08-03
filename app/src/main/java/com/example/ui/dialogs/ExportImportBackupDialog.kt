@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -50,11 +52,13 @@ fun ExportImportBackupDialog(
     onDismiss: () -> Unit,
     onExportCsv: suspend () -> String,
     onExportJson: suspend () -> String,
-    onImportJson: (jsonString: String) -> Unit
+    onImportJson: (jsonString: String) -> Unit,
+    onImportCsv: (csvString: String) -> Unit = {}
 ) {
-    var activeTab by remember { mutableStateOf(0) } // 0 = Export CSV, 1 = Export JSON, 2 = Restore Backup
+    var activeTab by remember { mutableStateOf(0) } // 0 = Export CSV, 1 = Export JSON, 2 = Restore JSON, 3 = Restore CSV
     var exportedText by remember { mutableStateOf("") }
     var importInputText by remember { mutableStateOf("") }
+    var importCsvInputText by remember { mutableStateOf("") }
     var copiedStatusMessage by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
@@ -94,7 +98,8 @@ fun ExportImportBackupDialog(
                     listOf(
                         R.string.export_import_backup_dialog_tab_export_csv,
                         R.string.export_import_backup_dialog_tab_export_json,
-                        R.string.export_import_backup_dialog_tab_restore_json
+                        R.string.export_import_backup_dialog_tab_restore_json,
+                        R.string.export_import_backup_dialog_tab_restore_csv
                     ).forEachIndexed { index, titleRes ->
                         val title = stringResource(titleRes)
                         val isSelected = activeTab == index
@@ -153,7 +158,7 @@ fun ExportImportBackupDialog(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
                             onClick = {
@@ -162,11 +167,27 @@ fun ExportImportBackupDialog(
                                 clipboard.setPrimaryClip(clip)
                                 copiedStatusMessage = copiedStatusText
                             },
-                            modifier = Modifier.testTag("copy_export_button")
+                            modifier = Modifier.weight(1f).testTag("copy_export_button")
                         ) {
-                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null)
+                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.export_import_backup_dialog_copy_button))
+                            Text(stringResource(R.string.export_import_backup_dialog_copy_button), style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                        }
+
+                        Button(
+                            onClick = {
+                                val shareIntent = com.example.data.export.DataExporter.buildExportShareIntent(
+                                    context = context,
+                                    content = exportedText,
+                                    isJson = activeTab == 1
+                                )
+                                context.startActivity(shareIntent)
+                            },
+                            modifier = Modifier.weight(1f).testTag("share_export_file_button")
+                        ) {
+                            Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.export_import_backup_dialog_share_file_button), style = MaterialTheme.typography.labelMedium, maxLines = 1)
                         }
                     }
 
@@ -179,7 +200,7 @@ fun ExportImportBackupDialog(
                             )
                         )
                     }
-                } else {
+                } else if (activeTab == 2) {
                     Text(
                         text = stringResource(R.string.export_import_backup_dialog_paste_json_label),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
@@ -212,6 +233,40 @@ fun ExportImportBackupDialog(
                         Icon(imageVector = Icons.Default.FileUpload, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(stringResource(R.string.export_import_backup_dialog_restore_button))
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.export_import_backup_dialog_paste_csv_label),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+
+                    OutlinedTextField(
+                        value = importCsvInputText,
+                        onValueChange = { importCsvInputText = it },
+                        placeholder = { Text(stringResource(R.string.export_import_backup_dialog_paste_csv_placeholder)) },
+                        minLines = 6,
+                        maxLines = 10,
+                        textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("import_csv_text_input")
+                    )
+
+                    Button(
+                        onClick = {
+                            if (importCsvInputText.isNotBlank()) {
+                                onImportCsv(importCsvInputText)
+                                onDismiss()
+                            }
+                        },
+                        enabled = importCsvInputText.isNotBlank(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("submit_restore_csv_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.FileUpload, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.export_import_backup_dialog_restore_csv_button))
                     }
                 }
             }
