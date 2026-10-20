@@ -351,4 +351,24 @@
     <string name="savings_detail_making">Making charges</string>
     <string name="savings_detail_gst">GST</string>
     <string name="savings_detail_yearly_contribution">Yearly contribution</string>
+    <string name="savings_start_tracking">Start tracking</string>
+    <!-- Optional details for gold, silver and land -->
+    <string name="savings_optional_hint">Everything below is optional. Add the weight to value it at today\'s rate, or just the number of pieces.</string>
+    <string name="savings_optional_hint_land">Size, price and value are optional. Gold, silver and land are kept as a record and are not added to the total value.</string>
+    <string name="savings_field_quantity_pieces">Pieces</string>
+    <string name="savings_field_quantity_pieces_optional">Number of pieces (optional)</string>
+    <string name="savings_field_grams_optional">Weight in grams (optional)</string>
+    <string name="savings_field_purchase_amount_optional">Amount paid (optional)</string>
+    <string name="savings_field_area_optional">Size (optional)</string>
+    <string name="savings_field_land_price_optional">Purchase price (optional)</string>
+    <string name="savings_field_land_value_optional">Value today (optional)</string>
+    <string name="savings_calc_quantity">Pieces</string>
+    <string name="savings_calc_weight">Weight</string>
+    <plurals name="savings_pieces">
+        <item quantity="one">%1$d piece</item>
+        <item quantity="other">%1$d pieces</item>
+    </plurals>
+    <string name="savings_not_counted_note">Gold, silver and land are listed below but not counted in this total.</string>
+    <string name="savings_not_valued">Not valued</string>
+    <string name="savings_estimated">≈ %1$s</string>
 </resources>

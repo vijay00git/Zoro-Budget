@@ -20,6 +20,12 @@ import com.example.data.local.entity.SavingsItemEntity
 import com.example.data.local.entity.SavingsSnapshotEntity
 import com.example.data.local.entity.TransactionEntity
 
+/** File name of the app's Room database (also used by backups). */
+const val DATABASE_NAME = "smart_budget_db"
+
+/** Current schema version; a backup from a higher version cannot be restored. */
+const val DATABASE_VERSION = 10
+
 @Database(
     entities = [
         AccountEntity::class,
@@ -31,7 +37,7 @@ import com.example.data.local.entity.TransactionEntity
         SavingsAttachmentEntity::class,
         SavingsSnapshotEntity::class
     ],
-    version = 10,
+    version = DATABASE_VERSION,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -140,12 +146,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Closes the open database so a restore can replace its file; the next getDatabase reopens it. */
+        fun closeInstance() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "smart_budget_db"
+                    DATABASE_NAME
                 )
                     .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     // Versions 1-3 predate this app's first real release and have no schema

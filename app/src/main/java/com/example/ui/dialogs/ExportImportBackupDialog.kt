@@ -87,6 +87,13 @@ fun ExportImportBackupDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                FullBackupSection()
+
+                Text(
+                    text = stringResource(R.string.full_backup_other_formats),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                )
+
                 // Tab Selection Buttons
                 Row(
                     modifier = Modifier

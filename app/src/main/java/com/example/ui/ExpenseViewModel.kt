@@ -107,6 +107,21 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
     private val _maxAmountFilter = MutableStateFlow<Double?>(null)
     val maxAmountFilter = _maxAmountFilter.asStateFlow()
 
+    // Overview privacy: balances start hidden and the account tiles start collapsed every time
+    // the app starts; both stay as the user left them while switching tabs.
+    private val _balancesHidden = MutableStateFlow(true)
+    val balancesHidden = _balancesHidden.asStateFlow()
+    private val _accountsExpanded = MutableStateFlow(false)
+    val accountsExpanded = _accountsExpanded.asStateFlow()
+
+    fun toggleBalancesHidden() {
+        _balancesHidden.value = !_balancesHidden.value
+    }
+
+    fun toggleAccountsExpanded() {
+        _accountsExpanded.value = !_accountsExpanded.value
+    }
+
     private val _importStatusMessage = MutableStateFlow<String?>(null)
     val importStatusMessage = _importStatusMessage.asStateFlow()
 
@@ -301,6 +316,14 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
 
     fun clearStatusMessage() {
         _importStatusMessage.value = null
+    }
+
+    /** Saves a category's budget limit, icon and colour from its edit dialog. */
+    fun updateCategory(category: CategoryEntity, limit: Double, iconName: String, colorHex: String) {
+        viewModelScope.launch {
+            repository.updateCategory(category.copy(monthlyBudgetLimit = limit, iconName = iconName, colorHex = colorHex))
+            _importStatusMessage.value = "Saved ${category.name}"
+        }
     }
 
     fun updateCategoryBudget(category: CategoryEntity, limit: Double) {

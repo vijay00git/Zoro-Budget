@@ -31,6 +31,18 @@ class AppPreferencesTest {
     }
 
     @Test
+    fun aThemeSavedByAnOlderVersionSwitchesToSystemOnceThenChoicesStick() {
+        // What an install from before the redesign has on disk: LIGHT, and no migration flag.
+        context.getSharedPreferences("smart_budget_prefs", Context.MODE_PRIVATE).edit().clear().putString("theme_mode", "LIGHT").commit()
+
+        assertEquals("SYSTEM", AppPreferences.load(context).themeMode)
+
+        AppPreferences.save(context, themeMode = "LIGHT")
+        assertEquals("LIGHT", AppPreferences.load(context).themeMode)
+        assertEquals("LIGHT", AppPreferences.load(context).themeMode)
+    }
+
+    @Test
     fun loadReturnsDefaultsWhenNothingSaved() {
         val prefs = AppPreferences.load(context)
 

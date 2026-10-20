@@ -400,6 +400,21 @@ Without this, a phone reinstall (the only update path, since there is no keystor
   - the 5-cent plot matches every figure in the Land example above.
 - **Tests:** 81 unit tests pass, and ktlint is clean.
 
+**Done (2026-10-20): step 6, done before steps 4 and 5 at the user's request.**
+- **Full backup:** `data/backup/BackupManager.kt` writes one ZIP containing:
+  - `manifest.json`: format, date, schema version, counts, and both settings files with their value types;
+  - `database/smart_budget_db`: a `VACUUM INTO` copy of the live database, so every table and field is included;
+  - `files/savings_attachments/`.
+- **Restore:**
+  - unpacks to a staging folder, refusing any entry whose path would land outside it;
+  - checks the database (integrity check, and a schema version from 4 up to the current one) before touching anything;
+  - saves a safety copy of the current data in `files/backups/` (newest 2 kept);
+  - replaces the database, settings and attachments, then restarts the app.
+- **UI:** a "Full backup" card at the top of the Backup dialog (`FullBackupSection.kt`), using the system file picker to save or open the file. The old CSV and JSON tabs stay below it.
+- **Privacy:** `savings_attachments/` and `backups/` are excluded from Android cloud backup and device transfer.
+- **Tests:** `BackupManagerTest` covers a full round trip (dismissed SMS, bill, savings and its history, an attachment, every settings type), the safety copies, and refusal of bad files (not a ZIP, no manifest, no database, a corrupt database, a path that escapes the folder, a newer schema). 84 unit tests pass.
+- **On the Elo:** saved a backup to Downloads, deleted a record, restored, and the app restarted with the record back. The safety copy was written.
+
 1. Database v10 (items, entries, attachments, snapshots) and its migration test; `SavingsCalculator` with unit tests for every worked example above (FD, RD, SIP XIRR, gold, silver, land).
 2. Savings tab (5th tab), summary card, a collapsible section list, holder filter chips and group-by-holder; the investment history editor; the add/edit form for FD and RD; the detail screen with the Calculation card.
 3. Stocks, SIP, gold and silver (with shared rates); Land & Property; Other schemes.

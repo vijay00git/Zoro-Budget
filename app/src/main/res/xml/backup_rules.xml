@@ -13,4 +13,6 @@
     <exclude domain="database" path="smart_budget_db" />
     <exclude domain="database" path="smart_budget_db-wal" />
     <exclude domain="database" path="smart_budget_db-shm" />
+    <exclude domain="file" path="savings_attachments/" />
+    <exclude domain="file" path="backups/" />
 </full-backup-content>

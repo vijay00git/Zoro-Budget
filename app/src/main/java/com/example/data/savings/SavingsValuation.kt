@@ -44,15 +44,18 @@ object SavingsValuation {
             }
             is SavingsDetails.Stock -> Value(invested, details.quantity * details.currentPrice)
             is SavingsDetails.MutualFund -> Value(invested, details.units * details.nav)
+            // Without a weight there is nothing to value at today's rate; fall back to what was paid, if known.
             is SavingsDetails.Gold -> {
-                val rate24 = rates.gold24PerGram ?: return Value(invested, details.purchaseAmount, missingRate = true)
-                Value(invested, c.gold(details.grams, details.purity, rate24, rates.gold22PerGram, details.purchaseAmount).value)
+                val grams = details.grams ?: return Value(invested, details.purchaseAmount ?: 0.0)
+                val rate24 = rates.gold24PerGram ?: return Value(invested, details.purchaseAmount ?: 0.0, missingRate = true)
+                Value(invested, c.gold(grams, details.purity, rate24, rates.gold22PerGram, details.purchaseAmount ?: 0.0).value)
             }
             is SavingsDetails.Silver -> {
-                val rate = rates.silverPerKg ?: return Value(invested, details.purchaseAmount, missingRate = true)
-                Value(invested, c.silver(details.grams, details.purityPct, rate, details.purchaseAmount).value)
+                val grams = details.grams ?: return Value(invested, details.purchaseAmount ?: 0.0)
+                val rate = rates.silverPerKg ?: return Value(invested, details.purchaseAmount ?: 0.0, missingRate = true)
+                Value(invested, c.silver(grams, details.purityPct, rate, details.purchaseAmount ?: 0.0).value)
             }
-            is SavingsDetails.Land -> Value(invested, details.currentValue)
+            is SavingsDetails.Land -> Value(invested, details.currentValue ?: 0.0)
             is SavingsDetails.Scheme -> Value(invested, details.balance)
             is SavingsDetails.Insurance -> {
                 val paid = c.insurance(details.premium, details.premiumFrequency, item.startDate, details.termYears, today).amountPaid
@@ -71,9 +74,9 @@ object SavingsValuation {
     private fun fallbackInvested(details: SavingsDetails?): Double = when (details) {
         is SavingsDetails.Fd -> details.principal
         is SavingsDetails.Stock -> details.quantity * details.avgPrice
-        is SavingsDetails.Gold -> details.purchaseAmount
-        is SavingsDetails.Silver -> details.purchaseAmount
-        is SavingsDetails.Land -> details.purchasePrice + details.stampDutyAndRegistration + details.brokerage + details.otherCosts
+        is SavingsDetails.Gold -> details.purchaseAmount ?: 0.0
+        is SavingsDetails.Silver -> details.purchaseAmount ?: 0.0
+        is SavingsDetails.Land -> (details.purchasePrice ?: 0.0) + details.stampDutyAndRegistration + details.brokerage + details.otherCosts
         is SavingsDetails.Bond -> details.faceValue
         is SavingsDetails.LoanGiven -> details.amount
         is SavingsDetails.Chit -> details.monthlyInstallment * details.monthsPaid
@@ -110,9 +113,9 @@ object SavingsValuation {
                 one(details.lumpSum ?: 0.0) + sip
             }
             is SavingsDetails.Stock -> one(details.quantity * details.avgPrice, details.quantity, details.avgPrice)
-            is SavingsDetails.Gold -> one(details.purchaseAmount, details.grams)
-            is SavingsDetails.Silver -> one(details.purchaseAmount, details.grams)
-            is SavingsDetails.Land -> one(details.purchasePrice + details.stampDutyAndRegistration + details.brokerage + details.otherCosts)
+            is SavingsDetails.Gold -> one(details.purchaseAmount ?: 0.0, details.grams)
+            is SavingsDetails.Silver -> one(details.purchaseAmount ?: 0.0, details.grams)
+            is SavingsDetails.Land -> one((details.purchasePrice ?: 0.0) + details.stampDutyAndRegistration + details.brokerage + details.otherCosts)
             is SavingsDetails.Bond -> one(details.faceValue)
             is SavingsDetails.LoanGiven -> one(details.amount)
             is SavingsDetails.Generic -> one(details.invested)

@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -45,6 +47,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -57,6 +60,7 @@ import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.utils.CategoryTotals
 import com.example.data.utils.FinancialHealth
+import com.example.ui.theme.accentOf
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.IncomeGreen
 import com.example.ui.theme.PendingAmber
@@ -194,7 +198,8 @@ fun LowBalanceCard(
     currencySymbol: String,
     onAddMoney: (AccountEntity) -> Unit,
     onChangeAlertLevel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hideAmounts: Boolean = false
 ) {
     Card(
         modifier = modifier.fillMaxWidth().testTag("low_balance_card"),
@@ -224,11 +229,15 @@ fun LowBalanceCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(account.name, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
                         Text(
-                            stringResource(
-                                R.string.overview_low_balance_below,
-                                formatMoney(currencySymbol, account.balance),
-                                formatMoney(currencySymbol, threshold - account.balance)
-                            ),
+                            if (hideAmounts) {
+                                stringResource(R.string.overview_low_balance_below_hidden)
+                            } else {
+                                stringResource(
+                                    R.string.overview_low_balance_below,
+                                    formatMoney(currencySymbol, account.balance),
+                                    formatMoney(currencySymbol, threshold - account.balance)
+                                )
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -237,7 +246,8 @@ fun LowBalanceCard(
                         Text(stringResource(R.string.overview_low_balance_add_money))
                     }
                 }
-                LinearProgressIndicator(
+                // The bar would hint at the balance, so it is left out while balances are hidden.
+                if (!hideAmounts) LinearProgressIndicator(
                     progress = { if (threshold > 0) (account.balance / threshold).toFloat().coerceIn(0f, 1f) else 0f },
                     color = MaterialTheme.colorScheme.error,
                     trackColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
@@ -330,174 +340,68 @@ fun CategorySpendingCard(
     }
     val visible = if (expanded) rows else rows.take(5)
 
-    Card(
-        modifier = modifier.fillMaxWidth().testTag("category_spending_progress_card"),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column(modifier = Modifier.padding(vertical = 14.dp)) {
-            Text(
-                stringResource(R.string.overview_categories_title),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Text(
-                stringResource(R.string.overview_categories_subtitle),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            BudgetSummary(categories = categories, totals = totals, currencySymbol = currencySymbol)
-            if (rows.isEmpty()) {
+    // One bento tile holding every category as a full-width row with its progress bar.
+    BentoTile(modifier = modifier.fillMaxWidth().testTag("category_spending_progress_card"), contentPadding = 16) {
+        Text(stringResource(R.string.overview_categories_title), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+        Text(
+            stringResource(R.string.overview_categories_subtitle),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (rows.isEmpty()) {
+            Text(stringResource(R.string.overview_categories_empty), style = MaterialTheme.typography.bodyMedium)
+        }
+        visible.forEachIndexed { index, row ->
+            if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            CategoryBarRow(row, currencySymbol, onClick = { onCategoryClick(row.name) })
+        }
+        if (rows.size > 5) {
+            TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("category_show_all")) {
                 Text(
-                    stringResource(R.string.overview_categories_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp)
+                    if (expanded) {
+                        stringResource(R.string.overview_categories_show_less)
+                    } else {
+                        stringResource(R.string.overview_categories_show_all, rows.size)
+                    }
                 )
-            }
-            visible.forEach { row -> CategoryProgressRow(row, currencySymbol, onClick = { onCategoryClick(row.name) }) }
-            if (rows.size > 5) {
-                TextButton(
-                    onClick = { expanded = !expanded },
-                    modifier = Modifier.padding(horizontal = 8.dp).testTag("category_show_all")
-                ) {
-                    Text(
-                        if (expanded) {
-                            stringResource(R.string.overview_categories_show_less)
-                        } else {
-                            stringResource(R.string.overview_categories_show_all, rows.size)
-                        }
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * Planned vs actual for the month: the total of all category budgets, what was spent in budgeted
- * categories and what's left, plus "unplanned" spending in categories that have no budget.
+ * One category as a row: its icon in its colour, name, spent against budget, then the
+ * horizontal progress bar (green, amber near the limit, red past it) and what is left or over.
  */
 @Composable
-private fun BudgetSummary(categories: List<CategoryEntity>, totals: CategoryTotals, currencySymbol: String) {
-    val budgeted = categories.filter { !it.isIncomeCategory && it.monthlyBudgetLimit > 0 }
-    val planned = budgeted.sumOf { it.monthlyBudgetLimit }
-    val spentInBudget = budgeted.sumOf { totals.spentIn(it.name) }
-    val unplanned = (totals.expense - spentInBudget).coerceAtLeast(0.0)
-    val left = planned - spentInBudget
-    val ratio = if (planned > 0) (spentInBudget / planned).toFloat() else 0f
-    val barColor = when {
-        ratio > 1f -> ExpenseRed
-        ratio > 0.8f -> PendingAmber
-        else -> IncomeGreen
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
-            .padding(12.dp)
-            .testTag("budget_summary")
-    ) {
-        if (planned <= 0) {
-            Text(stringResource(R.string.budget_summary_none), style = MaterialTheme.typography.bodySmall)
-        } else {
-            Row {
-                SummaryFigure(stringResource(R.string.budget_summary_planned), formatMoney(currencySymbol, planned).substringBefore('.'), MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
-                SummaryFigure(stringResource(R.string.budget_summary_spent), formatMoney(currencySymbol, spentInBudget).substringBefore('.'), barColor, Modifier.weight(1f))
-                SummaryFigure(
-                    stringResource(if (left >= 0) R.string.budget_summary_left else R.string.budget_summary_over),
-                    formatMoney(currencySymbol, kotlin.math.abs(left)).substringBefore('.'),
-                    if (left >= 0) IncomeGreen else ExpenseRed,
-                    Modifier.weight(1f)
-                )
-            }
-            LinearProgressIndicator(
-                progress = { ratio.coerceIn(0f, 1f) },
-                color = barColor,
-                trackColor = barColor.copy(alpha = 0.15f),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(8.dp)
-            )
-            Text(
-                stringResource(R.string.budget_summary_used, (ratio * 100).roundToInt()),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-        Row(modifier = Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.budget_summary_unplanned), style = MaterialTheme.typography.labelLarge)
-                Text(
-                    stringResource(R.string.budget_summary_unplanned_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Text(
-                formatMoney(currencySymbol, unplanned).substringBefore('.'),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (unplanned > 0) PendingAmber else MaterialTheme.colorScheme.onSurface
-            )
-        }
-        Text(
-            stringResource(R.string.budget_summary_total, formatMoney(currencySymbol, totals.expense).substringBefore('.')),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp)
-        )
-    }
-}
-
-@Composable
-private fun CategoryProgressRow(row: CategoryRowData, currencySymbol: String, onClick: () -> Unit) {
-    val color = row.category?.colorHex?.let { hex -> runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrNull() }
-        ?: MaterialTheme.colorScheme.primary
+private fun CategoryBarRow(row: CategoryRowData, currencySymbol: String, onClick: () -> Unit) {
     val hasLimit = row.limit > 0
     val ratio = if (hasLimit) row.spent / row.limit else 0.0
     val barColor = when {
-        !hasLimit -> color
-        ratio > 1.0 -> ExpenseRed
-        ratio > 0.8 -> PendingAmber
-        else -> IncomeGreen
+        ratio > 1.0 -> accentOf("#991B1B").ink
+        ratio > 0.8 -> accentOf("#854D0E").ink
+        else -> accentOf("#166534").ink
     }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(vertical = 8.dp)
             .testTag("category_row_${row.name}")
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(32.dp).background(color.copy(alpha = 0.15f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    categoryIconFor(row.category?.iconName ?: "Label"),
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(Modifier.width(10.dp))
+            CategoryAvatar(row.category?.iconName, row.name, row.category?.colorHex, size = 36.dp)
+            Spacer(Modifier.width(12.dp))
+            Text(row.name, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             Text(
-                row.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = if (hasLimit) {
+                if (hasLimit) {
                     "${formatMoney(currencySymbol, row.spent).substringBefore('.')} / ${formatMoney(currencySymbol, row.limit).substringBefore('.')}"
                 } else {
                     formatMoney(currencySymbol, row.spent).substringBefore('.')
                 },
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = if (hasLimit && ratio > 1.0) ExpenseRed else MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = if (hasLimit && ratio > 1.0) barColor else MaterialTheme.colorScheme.onSurface
             )
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -510,20 +414,25 @@ private fun CategoryProgressRow(row: CategoryRowData, currencySymbol: String, on
                 progress = { ratio.toFloat().coerceIn(0f, 1f) },
                 color = barColor,
                 trackColor = barColor.copy(alpha = 0.15f),
-                modifier = Modifier.fillMaxWidth().padding(start = 42.dp, top = 6.dp).height(6.dp)
+                modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 8.dp).height(6.dp)
             )
-            when {
-                ratio > 1.0 -> stringResource(R.string.overview_category_over_by, formatMoney(currencySymbol, row.spent - row.limit).substringBefore('.'))
-                ratio > 0.8 -> stringResource(R.string.overview_category_left, formatMoney(currencySymbol, row.limit - row.spent).substringBefore('.'))
-                else -> null
-            }?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = barColor,
-                    modifier = Modifier.padding(start = 42.dp, top = 2.dp)
-                )
-            }
+            Text(
+                if (ratio > 1.0) {
+                    stringResource(R.string.overview_category_over_by, formatMoney(currencySymbol, row.spent - row.limit).substringBefore('.'))
+                } else {
+                    stringResource(R.string.overview_category_left, formatMoney(currencySymbol, row.limit - row.spent).substringBefore('.'))
+                },
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = if (ratio > 0.8) barColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 48.dp, top = 4.dp)
+            )
+        } else {
+            Text(
+                stringResource(R.string.overview_category_no_budget),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 48.dp, top = 2.dp)
+            )
         }
     }
 }

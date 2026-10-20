@@ -4,6 +4,8 @@ import com.example.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,19 +46,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entity.CategoryEntity
+import com.example.ui.components.AppearancePicker
+import com.example.ui.components.CategoryAvatar
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EditCategoryBudgetDialog(
     category: CategoryEntity,
     onDismiss: () -> Unit,
-    onSaveLimit: (limit: Double) -> Unit,
+    onSave: (limit: Double, iconName: String, colorHex: String) -> Unit,
     onDeleteCategory: (() -> Unit)? = null,
     currencySymbol: String = "$"
 ) {
     var budgetInput by remember { mutableStateOf(if (category.monthlyBudgetLimit > 0) category.monthlyBudgetLimit.toString() else "") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val presets = listOf(100, 250, 500, 750, 1000)
+    var iconName by remember { mutableStateOf(category.iconName) }
+    var colorHex by remember { mutableStateOf(category.colorHex) }
+    var showAppearance by remember { mutableStateOf(false) }
 
     val catColor = try {
         Color(android.graphics.Color.parseColor(category.colorHex))
@@ -73,20 +80,7 @@ fun EditCategoryBudgetDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(catColor),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    CategoryAvatar(iconName = iconName, categoryName = category.name, colorHex = colorHex, size = 36.dp)
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.category_budget_dialog_title, category.name),
@@ -110,7 +104,7 @@ fun EditCategoryBudgetDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
@@ -157,13 +151,26 @@ fun EditCategoryBudgetDialog(
                         }
                     }
                 }
+
+                TextButton(onClick = { showAppearance = !showAppearance }, modifier = Modifier.testTag("category_appearance_toggle")) {
+                    Text(stringResource(if (showAppearance) R.string.appearance_hide else R.string.appearance_change))
+                }
+                if (showAppearance) {
+                    AppearancePicker(
+                        name = category.name,
+                        iconName = iconName,
+                        colorHex = colorHex,
+                        onIconChange = { iconName = it },
+                        onColorChange = { colorHex = it }
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     val limit = budgetInput.toDoubleOrNull() ?: 0.0
-                    onSaveLimit(limit)
+                    onSave(limit, iconName, colorHex)
                 },
                 modifier = Modifier.testTag("save_category_budget_button")
             ) {

@@ -14,10 +14,15 @@
         <exclude domain="database" path="smart_budget_db" />
         <exclude domain="database" path="smart_budget_db-wal" />
         <exclude domain="database" path="smart_budget_db-shm" />
+        <!-- Savings documents (deeds, bills) and pre-restore copies stay out of cloud backup too. -->
+        <exclude domain="file" path="savings_attachments/" />
+        <exclude domain="file" path="backups/" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="database" path="smart_budget_db" />
         <exclude domain="database" path="smart_budget_db-wal" />
         <exclude domain="database" path="smart_budget_db-shm" />
+        <exclude domain="file" path="savings_attachments/" />
+        <exclude domain="file" path="backups/" />
     </device-transfer>
 </data-extraction-rules>

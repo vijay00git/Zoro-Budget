@@ -45,15 +45,6 @@
     <string name="health_explain_levels">80+ Excellent · 60–79 Good · 40–59 Caution · below 40 Critical</string>
     <string name="health_explain_improve">To raise it, keep spending inside your budget and top up accounts that are below the alert level. Set budgets in Planning.</string>
 
-    <string name="budget_summary_none">No category budgets set. Set them in Planning to see planned vs actual here.</string>
-    <string name="budget_summary_planned">Planned</string>
-    <string name="budget_summary_spent">Spent</string>
-    <string name="budget_summary_left">Left</string>
-    <string name="budget_summary_over">Over</string>
-    <string name="budget_summary_used">Budgeted categories have used %1$d%% of the plan</string>
-    <string name="budget_summary_unplanned">Unplanned spending</string>
-    <string name="budget_summary_unplanned_hint">In categories with no budget</string>
-    <string name="budget_summary_total">Total spent this month: %1$s</string>
 
     <string name="heatmap_title">Daily spending</string>
     <string name="heatmap_subtitle">Darker days cost more. Tap a day to see its transactions.</string>
@@ -63,4 +54,38 @@
     <string name="heatmap_day_summary">%1$s · %2$s spent</string>
     <string name="heatmap_day_empty">No spending on this day.</string>
     <string name="heatmap_day_cd">%1$s, %2$s spent</string>
+    <!-- Bento tiles -->
+    <plurals name="bento_account_count">
+        <item quantity="one">%1$d account</item>
+        <item quantity="other">%1$d accounts</item>
+    </plurals>
+    <string name="bento_add">Add</string>
+    <string name="bento_add_account">Add account</string>
+    <string name="bento_spent">Spent</string>
+    <string name="bento_income">Income</string>
+    <string name="bento_left">Left</string>
+    <string name="bento_over">Over by</string>
+    <string name="bento_sms_to_review">SMS to review</string>
+    <string name="bento_all_reviewed">All reviewed</string>
+    <string name="bento_no_sms_waiting">No SMS waiting</string>
+    <string name="bento_no_bills">No bills yet</string>
+    <string name="bento_add_bill">Add a bill</string>
+    <string name="bento_show_balances">Show balances</string>
+    <string name="bento_hide_balances">Hide balances</string>
+    <string name="bento_show_accounts">Show accounts</string>
+    <string name="bento_hide_accounts">Hide accounts</string>
+    <string name="overview_low_balance_below_hidden">Below the alert level</string>
+    <string name="bento_low_balance">Low balance</string>
+    <string name="bento_balances_ok">Balances OK</string>
+    <string name="bento_all_above_alert">All above your alert level</string>
+    <string name="bento_health">Health score</string>
+    <string name="bento_bills">Bills</string>
+    <string name="bento_paid_this_month">Paid this month: %1$d · %2$s</string>
+    <plurals name="bento_days_to_go">
+        <item quantity="one">day to go</item>
+        <item quantity="other">days to go</item>
+    </plurals>
+    <string name="bento_today">Today</string>
+    <string name="bento_overdue">Overdue</string>
+    <string name="overview_category_no_budget">No budget set</string>
 </resources>

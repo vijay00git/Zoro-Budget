@@ -35,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -50,6 +51,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -73,6 +75,7 @@ import com.example.ui.dialogs.EditCategoryBudgetDialog
 import com.example.ui.dialogs.EditTransactionDialog
 import com.example.ui.dialogs.ExportImportBackupDialog
 import com.example.ui.dialogs.QuickReviewPendingDialog
+import com.example.ui.components.heroColor
 import com.example.ui.savings.SavingsScreen
 import com.example.ui.savings.SavingsViewModel
 import com.example.ui.savings.SavingsViewModelFactory
@@ -170,6 +173,8 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
     val lowBalanceThreshold by viewModel.lowBalanceThreshold.collectAsStateWithLifecycle()
     val importStatusMessage by viewModel.importStatusMessage.collectAsStateWithLifecycle()
     val smsSyncFromDate by viewModel.smsSyncFromDate.collectAsStateWithLifecycle()
+    val balancesHidden by viewModel.balancesHidden.collectAsStateWithLifecycle()
+    val accountsExpanded by viewModel.accountsExpanded.collectAsStateWithLifecycle()
 
     // Dialog state holders
     var editingTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
@@ -273,6 +278,12 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
                     NavigationBarItem(
                         selected = selectedScreenIndex == index,
                         onClick = { selectedScreenIndex = index },
+                        // The selected tab is an indigo pill, matching the Overview's hero tile.
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = heroColor(),
+                            selectedIconColor = Color.White,
+                            selectedTextColor = MaterialTheme.colorScheme.onSurface
+                        ),
                         icon = {
                             if (screen == Screen.Transactions && pendingTransactions.isNotEmpty()) {
                                 BadgedBox(
@@ -335,7 +346,11 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
                     bills = bills,
                     onBillClick = { viewingBillId = it.id },
                     onMarkBillPaid = { payingBill = it },
-                    onSeeAllBills = { selectedScreenIndex = 2 }
+                    onSeeAllBills = { selectedScreenIndex = 2 },
+                    balancesHidden = balancesHidden,
+                    onToggleBalances = { viewModel.toggleBalancesHidden() },
+                    accountsExpanded = accountsExpanded,
+                    onToggleAccounts = { viewModel.toggleAccountsExpanded() }
                 )
 
                 1 -> TransactionsScreen(
@@ -538,8 +553,8 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
                     category = cat,
                     currencySymbol = currencySymbol,
                     onDismiss = { editingCategoryBudget = null },
-                    onSaveLimit = { limit ->
-                        viewModel.updateCategoryBudget(cat, limit)
+                    onSave = { limit, iconName, colorHex ->
+                        viewModel.updateCategory(cat, limit, iconName, colorHex)
                         editingCategoryBudget = null
                     },
                     onDeleteCategory = if (!cat.isPredefined) {

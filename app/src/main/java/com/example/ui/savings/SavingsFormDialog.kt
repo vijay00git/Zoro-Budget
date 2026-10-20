@@ -121,6 +121,7 @@ fun SavingsFormDialog(
     var gst by remember { mutableStateOf(oldGold?.gst?.takeIf { it > 0 }?.let { formatPlain(it) } ?: "") }
     var billNo by remember { mutableStateOf(oldGold?.billNo ?: "") }
     var sgbIssuePrice by remember { mutableStateOf(oldGold?.sgbIssuePrice?.let { formatPlain(it) } ?: "") }
+    var pieces by remember { mutableStateOf(((old as? SavingsDetails.Gold)?.quantity ?: (old as? SavingsDetails.Silver)?.quantity)?.toString() ?: "") }
     val isSgb = section == SavingsSection.GOLD && goldForm == GoldForm.SGB
 
     // Stocks
@@ -211,18 +212,16 @@ fun SavingsFormDialog(
                 null
             }
         }
-        SavingsSection.GOLD -> {
-            val g = parseAmount(grams)
-            val paid = parseAmount(purchaseAmount)
-            if (g != null && g > 0 && paid != null && paid > 0) {
-                SavingsDetails.Gold(
-                    form = goldForm, grams = g, purity = if (isSgb) GoldPurity.K24 else goldPurity, purchaseAmount = paid,
-                    makingCharges = parseAmount(makingCharges) ?: 0.0, gst = parseAmount(gst) ?: 0.0,
-                    billNo = billNo.trim().ifBlank { null }, sgbIssuePrice = if (isSgb) parseAmount(sgbIssuePrice) else null
-                )
-            } else {
-                null
-            }
+        // Weight, price and pieces are all optional; only a value typed in but unreadable blocks saving.
+        SavingsSection.GOLD -> if (listOf(grams, purchaseAmount, makingCharges, gst, sgbIssuePrice).any { unreadable(it) } || unreadableCount(pieces)) {
+            null
+        } else {
+            SavingsDetails.Gold(
+                form = goldForm, grams = positive(grams), purity = if (isSgb) GoldPurity.K24 else goldPurity, purchaseAmount = positive(purchaseAmount),
+                makingCharges = parseAmount(makingCharges) ?: 0.0, gst = parseAmount(gst) ?: 0.0,
+                billNo = billNo.trim().ifBlank { null }, sgbIssuePrice = if (isSgb) positive(sgbIssuePrice) else null,
+                quantity = pieces.toIntOrNull()?.takeIf { it > 0 }
+            )
         }
         SavingsSection.STOCK -> {
             val q = parseAmount(quantity)
@@ -252,19 +251,15 @@ fun SavingsFormDialog(
                 null
             }
         }
-        SavingsSection.LAND -> {
-            val a = parseAmount(area)
-            val price = parseAmount(landPrice)
-            val value = parseAmount(landValue)
-            if (a != null && a > 0 && price != null && price > 0 && value != null && value >= 0) {
-                SavingsDetails.Land(
-                    propertyType, address.trim().ifBlank { null }, surveyNo.trim().ifBlank { null }, pattaNo.trim().ifBlank { null },
-                    a, areaUnit, price, parseAmount(stampDuty) ?: 0.0, parseAmount(brokerage) ?: 0.0, parseAmount(otherCosts) ?: 0.0,
-                    value, valueDate, valueSource, parseAmount(monthlyRent) ?: 0.0, parseAmount(loanOutstanding) ?: 0.0
-                )
-            } else {
-                null
-            }
+        // Size, price and value are all optional for land.
+        SavingsSection.LAND -> if (listOf(area, landPrice, landValue, stampDuty, brokerage, otherCosts, monthlyRent, loanOutstanding).any { unreadable(it) }) {
+            null
+        } else {
+            SavingsDetails.Land(
+                propertyType, address.trim().ifBlank { null }, surveyNo.trim().ifBlank { null }, pattaNo.trim().ifBlank { null },
+                positive(area), areaUnit, positive(landPrice), parseAmount(stampDuty) ?: 0.0, parseAmount(brokerage) ?: 0.0, parseAmount(otherCosts) ?: 0.0,
+                parseAmount(landValue)?.takeIf { it >= 0 }, valueDate, valueSource, parseAmount(monthlyRent) ?: 0.0, parseAmount(loanOutstanding) ?: 0.0
+            )
         }
         SavingsSection.OTHER -> when {
             isSchemeKind -> parseAmount(balance)?.takeIf { it >= 0 }?.let {
@@ -305,13 +300,11 @@ fun SavingsFormDialog(
             else -> parseAmount(genericValue)?.takeIf { it >= 0 }?.let { SavingsDetails.Generic(parseAmount(genericInvested) ?: 0.0, it) }
         }
         SavingsSection.SILVER -> {
-            val g = parseAmount(grams)
-            val paid = parseAmount(purchaseAmount)
-            val purity = parseAmount(silverPurity)
-            if (g != null && g > 0 && paid != null && paid > 0 && purity != null && purity > 0 && purity <= 100) {
-                SavingsDetails.Silver(silverForm, g, purity, paid)
-            } else {
+            val purity = parseAmount(silverPurity) ?: 99.9
+            if (listOf(grams, purchaseAmount, silverPurity).any { unreadable(it) } || unreadableCount(pieces) || purity <= 0 || purity > 100) {
                 null
+            } else {
+                SavingsDetails.Silver(silverForm, positive(grams), purity, positive(purchaseAmount), pieces.toIntOrNull()?.takeIf { it > 0 })
             }
         }
         else -> null
@@ -335,7 +328,7 @@ fun SavingsFormDialog(
     // Back or a tap outside must not silently throw away what was typed.
     val fields = listOf(
         name, holder, institution, refNo, nominee, startDate, maturityDate, status, notes, principal, compounding, payout, autoRenew, installment, tenureMonths, installmentDay, rate,
-        goldForm, goldPurity, silverForm, silverPurity, grams, purchaseAmount, makingCharges, gst, billNo, sgbIssuePrice,
+        goldForm, goldPurity, silverForm, silverPurity, grams, purchaseAmount, makingCharges, gst, billNo, sgbIssuePrice, pieces,
         symbol, exchange, quantity, avgPrice, currentPrice, priceDate, dividends, sector,
         mfPlan, mfType, sipAmount, sipDay, sipStopped, lumpSum, units, nav, navDate,
         propertyType, address, surveyNo, pattaNo, area, areaUnit, landPrice, stampDuty, brokerage, otherCosts, landValue, valueDate,
@@ -464,7 +457,9 @@ fun SavingsFormDialog(
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 GoldForm.entries.forEach { f -> FilterChip(selected = goldForm == f, onClick = { goldForm = f }, label = { Text(stringResource(f.label())) }) }
                             }
-                            NumberField(grams, { grams = it }, if (isSgb) R.string.savings_field_sgb_units else R.string.savings_field_grams, suffix = if (isSgb) null else "g")
+                            Text(stringResource(R.string.savings_optional_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (!isSgb) NumberField(pieces, { pieces = it }, R.string.savings_field_quantity_pieces_optional, decimal = false, isError = unreadableCount(pieces))
+                            NumberField(grams, { grams = it }, if (isSgb) R.string.savings_field_sgb_units else R.string.savings_field_grams_optional, suffix = if (isSgb) null else "g", isError = unreadable(grams))
                             if (!isSgb) {
                                 Text(stringResource(R.string.savings_field_purity), style = MaterialTheme.typography.labelMedium)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -473,7 +468,7 @@ fun SavingsFormDialog(
                             } else {
                                 NumberField(sgbIssuePrice, { sgbIssuePrice = it }, R.string.savings_field_sgb_issue_price)
                             }
-                            NumberField(purchaseAmount, { purchaseAmount = it }, R.string.savings_field_purchase_amount)
+                            NumberField(purchaseAmount, { purchaseAmount = it }, R.string.savings_field_purchase_amount_optional, isError = unreadable(purchaseAmount))
                             if (!isSgb) {
                                 NumberField(makingCharges, { makingCharges = it }, R.string.savings_field_making_charges)
                                 NumberField(gst, { gst = it }, R.string.savings_field_gst)
@@ -517,14 +512,15 @@ fun SavingsFormDialog(
                         }
                         SavingsSection.LAND -> {
                             ChipRow(PropertyType.entries, propertyType, { propertyType = it }) { stringResource(it.label()) }
-                            NumberField(area, { area = it }, R.string.savings_field_area)
+                            Text(stringResource(R.string.savings_optional_hint_land), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            NumberField(area, { area = it }, R.string.savings_field_area_optional, isError = unreadable(area))
                             ChipRow(AreaUnit.entries, areaUnit, { areaUnit = it }) { stringResource(it.label()) }
                             DateField(R.string.savings_field_purchase_date, startDate, { startDate = it })
-                            NumberField(landPrice, { landPrice = it }, R.string.savings_field_land_price)
+                            NumberField(landPrice, { landPrice = it }, R.string.savings_field_land_price_optional, isError = unreadable(landPrice))
                             NumberField(stampDuty, { stampDuty = it }, R.string.savings_field_stamp_duty)
                             NumberField(brokerage, { brokerage = it }, R.string.savings_field_brokerage)
                             NumberField(otherCosts, { otherCosts = it }, R.string.savings_field_other_costs)
-                            NumberField(landValue, { landValue = it }, R.string.savings_field_land_value)
+                            NumberField(landValue, { landValue = it }, R.string.savings_field_land_value_optional, isError = unreadable(landValue))
                             DateField(R.string.savings_field_value_date, valueDate, { valueDate = it })
                             ChipRow(listOf("OWN_ESTIMATE", "GUIDELINE", "VALUER"), valueSource, { valueSource = it }) { stringResource(valueSourceLabel(it)) }
                             OutlinedTextField(address, { address = it }, label = { Text(stringResource(R.string.savings_field_address)) }, modifier = Modifier.fillMaxWidth())
@@ -600,13 +596,15 @@ fun SavingsFormDialog(
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 SilverForm.entries.forEach { f -> FilterChip(selected = silverForm == f, onClick = { silverForm = f }, label = { Text(stringResource(f.label())) }) }
                             }
-                            NumberField(grams, { grams = it }, R.string.savings_field_grams, suffix = "g")
+                            Text(stringResource(R.string.savings_optional_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            NumberField(pieces, { pieces = it }, R.string.savings_field_quantity_pieces_optional, decimal = false, isError = unreadableCount(pieces))
+                            NumberField(grams, { grams = it }, R.string.savings_field_grams_optional, suffix = "g", isError = unreadable(grams))
                             Text(stringResource(R.string.savings_field_purity), style = MaterialTheme.typography.labelMedium)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf("99.9", "92.5").forEach { p -> FilterChip(selected = silverPurity == p, onClick = { silverPurity = p }, label = { Text("$p%") }) }
                             }
                             NumberField(silverPurity, { silverPurity = it }, R.string.savings_field_purity_pct, suffix = "%")
-                            NumberField(purchaseAmount, { purchaseAmount = it }, R.string.savings_field_purchase_amount)
+                            NumberField(purchaseAmount, { purchaseAmount = it }, R.string.savings_field_purchase_amount_optional, isError = unreadable(purchaseAmount))
                             DateField(R.string.savings_field_purchase_date, startDate, { startDate = it })
                         }
                         else -> Unit
@@ -655,6 +653,14 @@ private fun SectionHeading(label: Int) {
         modifier = Modifier.padding(top = 8.dp)
     )
 }
+
+/** True when something was typed that is not a number (blank is fine: the field is optional). */
+private fun unreadable(text: String): Boolean = text.isNotBlank() && parseAmount(text) == null
+
+private fun unreadableCount(text: String): Boolean = text.isNotBlank() && text.trim().toIntOrNull() == null
+
+/** The typed number when it is above zero, otherwise null ("not entered"). */
+private fun positive(text: String): Double? = parseAmount(text)?.takeIf { it > 0 }
 
 /** Single-choice chips for a small set of options. */
 @OptIn(ExperimentalLayoutApi::class)

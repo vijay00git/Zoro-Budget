@@ -5,6 +5,12 @@ import org.json.JSONObject
 enum class SavingsSection {
     FD, RD, STOCK, MUTUAL_FUND, GOLD, SILVER, LAND, OTHER;
 
+    /**
+     * Gold, silver and land are kept as a record (often without a weight or price) and are
+     * left out of the Savings page's total value, invested, gain and net worth.
+     */
+    val countsInTotal: Boolean get() = this != GOLD && this != SILVER && this != LAND
+
     companion object {
         fun from(value: String?): SavingsSection = entries.firstOrNull { it.name == value } ?: OTHER
     }
@@ -127,22 +133,25 @@ sealed class SavingsDetails {
         val navDate: Long? = null
     ) : SavingsDetails()
 
+    /** Weight, price and quantity are all optional: a piece can be recorded by name alone. */
     data class Gold(
         val form: GoldForm = GoldForm.JEWELLERY,
-        val grams: Double, // for SGB: units, 1 unit = 1 g
+        val grams: Double? = null, // for SGB: units, 1 unit = 1 g
         val purity: GoldPurity = GoldPurity.K22,
-        val purchaseAmount: Double,
+        val purchaseAmount: Double? = null,
         val makingCharges: Double = 0.0,
         val gst: Double = 0.0,
         val billNo: String? = null,
-        val sgbIssuePrice: Double? = null
+        val sgbIssuePrice: Double? = null,
+        val quantity: Int? = null // pieces, e.g. 2 chains
     ) : SavingsDetails()
 
     data class Silver(
         val form: SilverForm = SilverForm.ARTICLE,
-        val grams: Double,
+        val grams: Double? = null,
         val purityPct: Double = 99.9,
-        val purchaseAmount: Double
+        val purchaseAmount: Double? = null,
+        val quantity: Int? = null
     ) : SavingsDetails()
 
     data class Land(
@@ -150,13 +159,13 @@ sealed class SavingsDetails {
         val address: String? = null,
         val surveyNo: String? = null,
         val pattaNo: String? = null,
-        val area: Double,
+        val area: Double? = null,
         val areaUnit: AreaUnit = AreaUnit.SQFT,
-        val purchasePrice: Double,
+        val purchasePrice: Double? = null,
         val stampDutyAndRegistration: Double = 0.0,
         val brokerage: Double = 0.0,
         val otherCosts: Double = 0.0,
-        val currentValue: Double,
+        val currentValue: Double? = null,
         val valueDate: Long? = null,
         val valueSource: String? = null, // OWN_ESTIMATE / GUIDELINE / VALUER
         val monthlyRent: Double = 0.0,
@@ -220,15 +229,15 @@ sealed class SavingsDetails {
             is MutualFund -> o.put("kind", "MUTUAL_FUND").putOpt("amc", amc).putOpt("plan", plan)
                 .putOpt("fundType", fundType).putOpt("sipAmount", sipAmount).putOpt("sipDay", sipDay)
                 .putOpt("sipStoppedDate", sipStoppedDate).putOpt("lumpSum", lumpSum).put("units", units).put("nav", nav).putOpt("navDate", navDate)
-            is Gold -> o.put("kind", "GOLD").put("form", form.name).put("grams", grams).put("purity", purity.name)
-                .put("purchaseAmount", purchaseAmount).put("makingCharges", makingCharges).put("gst", gst)
-                .putOpt("billNo", billNo).putOpt("sgbIssuePrice", sgbIssuePrice)
-            is Silver -> o.put("kind", "SILVER").put("form", form.name).put("grams", grams)
-                .put("purityPct", purityPct).put("purchaseAmount", purchaseAmount)
+            is Gold -> o.put("kind", "GOLD").put("form", form.name).putOpt("grams", grams).put("purity", purity.name)
+                .putOpt("purchaseAmount", purchaseAmount).put("makingCharges", makingCharges).put("gst", gst)
+                .putOpt("billNo", billNo).putOpt("sgbIssuePrice", sgbIssuePrice).putOpt("quantity", quantity)
+            is Silver -> o.put("kind", "SILVER").put("form", form.name).putOpt("grams", grams)
+                .put("purityPct", purityPct).putOpt("purchaseAmount", purchaseAmount).putOpt("quantity", quantity)
             is Land -> o.put("kind", "LAND").put("propertyType", propertyType.name).putOpt("address", address)
-                .putOpt("surveyNo", surveyNo).putOpt("pattaNo", pattaNo).put("area", area).put("areaUnit", areaUnit.name)
-                .put("purchasePrice", purchasePrice).put("stampDutyAndRegistration", stampDutyAndRegistration)
-                .put("brokerage", brokerage).put("otherCosts", otherCosts).put("currentValue", currentValue)
+                .putOpt("surveyNo", surveyNo).putOpt("pattaNo", pattaNo).putOpt("area", area).put("areaUnit", areaUnit.name)
+                .putOpt("purchasePrice", purchasePrice).put("stampDutyAndRegistration", stampDutyAndRegistration)
+                .put("brokerage", brokerage).put("otherCosts", otherCosts).putOpt("currentValue", currentValue)
                 .putOpt("valueDate", valueDate).putOpt("valueSource", valueSource).put("monthlyRent", monthlyRent)
                 .put("loanOutstanding", loanOutstanding)
             is Scheme -> o.put("kind", "SCHEME").put("balance", balance).putOpt("balanceDate", balanceDate)
@@ -275,23 +284,25 @@ sealed class SavingsDetails {
                         lumpSum = o.optDoubleOrNull("lumpSum"), units = o.getDouble("units"), nav = o.getDouble("nav"), navDate = o.optLongOrNull("navDate")
                     )
                     "GOLD" -> Gold(
-                        form = enumOr(o.optStringOrNull("form"), GoldForm.JEWELLERY), grams = o.getDouble("grams"),
-                        purity = GoldPurity.from(o.optStringOrNull("purity")), purchaseAmount = o.getDouble("purchaseAmount"),
+                        form = enumOr(o.optStringOrNull("form"), GoldForm.JEWELLERY), grams = o.optDoubleOrNull("grams"),
+                        purity = GoldPurity.from(o.optStringOrNull("purity")), purchaseAmount = o.optDoubleOrNull("purchaseAmount"),
                         makingCharges = o.optDouble("makingCharges", 0.0), gst = o.optDouble("gst", 0.0),
-                        billNo = o.optStringOrNull("billNo"), sgbIssuePrice = o.optDoubleOrNull("sgbIssuePrice")
+                        billNo = o.optStringOrNull("billNo"), sgbIssuePrice = o.optDoubleOrNull("sgbIssuePrice"),
+                        quantity = o.optIntOrNull("quantity")
                     )
                     "SILVER" -> Silver(
-                        form = enumOr(o.optStringOrNull("form"), SilverForm.ARTICLE), grams = o.getDouble("grams"),
-                        purityPct = o.optDouble("purityPct", 99.9), purchaseAmount = o.getDouble("purchaseAmount")
+                        form = enumOr(o.optStringOrNull("form"), SilverForm.ARTICLE), grams = o.optDoubleOrNull("grams"),
+                        purityPct = o.optDouble("purityPct", 99.9), purchaseAmount = o.optDoubleOrNull("purchaseAmount"),
+                        quantity = o.optIntOrNull("quantity")
                     )
                     "LAND" -> Land(
                         propertyType = enumOr(o.optStringOrNull("propertyType"), PropertyType.PLOT),
                         address = o.optStringOrNull("address"), surveyNo = o.optStringOrNull("surveyNo"),
-                        pattaNo = o.optStringOrNull("pattaNo"), area = o.getDouble("area"),
-                        areaUnit = AreaUnit.from(o.optStringOrNull("areaUnit")), purchasePrice = o.getDouble("purchasePrice"),
+                        pattaNo = o.optStringOrNull("pattaNo"), area = o.optDoubleOrNull("area"),
+                        areaUnit = AreaUnit.from(o.optStringOrNull("areaUnit")), purchasePrice = o.optDoubleOrNull("purchasePrice"),
                         stampDutyAndRegistration = o.optDouble("stampDutyAndRegistration", 0.0),
                         brokerage = o.optDouble("brokerage", 0.0), otherCosts = o.optDouble("otherCosts", 0.0),
-                        currentValue = o.getDouble("currentValue"), valueDate = o.optLongOrNull("valueDate"),
+                        currentValue = o.optDoubleOrNull("currentValue"), valueDate = o.optLongOrNull("valueDate"),
                         valueSource = o.optStringOrNull("valueSource"), monthlyRent = o.optDouble("monthlyRent", 0.0),
                         loanOutstanding = o.optDouble("loanOutstanding", 0.0)
                     )

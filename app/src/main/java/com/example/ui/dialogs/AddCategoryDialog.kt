@@ -1,5 +1,8 @@
 package com.example.ui.dialogs
 import com.example.R
+import com.example.ui.components.AppearancePicker
+import com.example.ui.components.suggestedIconName
+import com.example.ui.theme.AccentPalette
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,12 +57,8 @@ fun AddCategoryDialog(
 ) {
     var name by remember { mutableStateOf("") }
     var budgetInput by remember { mutableStateOf("") }
-    var selectedColorHex by remember { mutableStateOf("#3B82F6") }
-
-    val colorOptions = listOf(
-        "#3B82F6", "#10B981", "#EF4444", "#F59E0B",
-        "#8B5CF6", "#EC4899", "#14B8A6", "#6366F1", "#64748B"
-    )
+    var selectedColorHex by remember { mutableStateOf(AccentPalette.first()) }
+    var iconName by remember { mutableStateOf("Label") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -105,41 +104,13 @@ fun AddCategoryDialog(
                         .testTag("category_budget_input")
                 )
 
-                Text(
-                    text = stringResource(R.string.add_category_dialog_choose_color),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                AppearancePicker(
+                    name = name,
+                    iconName = iconName,
+                    colorHex = selectedColorHex,
+                    onIconChange = { iconName = it },
+                    onColorChange = { selectedColorHex = it }
                 )
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    colorOptions.forEach { hex ->
-                        val color = try { Color(android.graphics.Color.parseColor(hex)) } catch (e: Exception) { Color.Gray }
-                        val isSelected = selectedColorHex.equals(hex, ignoreCase = true)
-
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                                .clickable { selectedColorHex = hex }
-                                .then(
-                                    if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape) else Modifier
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = stringResource(R.string.add_category_dialog_selected_content_desc),
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                }
             }
         },
         confirmButton = {
@@ -147,7 +118,9 @@ fun AddCategoryDialog(
                 onClick = {
                     if (name.isNotBlank()) {
                         val limit = budgetInput.toDoubleOrNull() ?: 0.0
-                        onAdd(name.trim(), "Label", selectedColorHex, limit)
+                        // Not picked: use the icon the name suggests, so the category is never a bare tag.
+                        val icon = if (iconName == "Label") suggestedIconName(name) ?: "Label" else iconName
+                        onAdd(name.trim(), icon, selectedColorHex, limit)
                     }
                 },
                 enabled = name.isNotBlank(),

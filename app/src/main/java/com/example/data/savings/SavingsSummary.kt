@@ -14,6 +14,10 @@ data class SavingsTotals(val invested: Double, val current: Double) {
 
 object SavingsSummary {
 
+    /** The records that count in the page total: everything except gold, silver and land. */
+    fun counted(items: List<SavingsItemEntity>): List<SavingsItemEntity> =
+        items.filter { SavingsSection.from(it.section).countsInTotal }
+
     /** Records that pass the page filters: a holder (null = everyone) and the chosen statuses. */
     fun filter(items: List<SavingsItemEntity>, holder: String?, statuses: Set<SavingsStatus>): List<SavingsItemEntity> =
         items.filter { item ->
@@ -22,7 +26,7 @@ object SavingsSummary {
 
     /** Current value per section, largest first, for the allocation chart. Empty sections are left out. */
     fun allocation(items: List<SavingsItemEntity>): List<Pair<SavingsSection, Double>> =
-        items.groupBy { SavingsSection.from(it.section) }
+        counted(items).groupBy { SavingsSection.from(it.section) }
             .map { (section, list) -> section to list.sumOf { it.currentValue } }
             .filter { it.second > 0 }
             .sortedByDescending { it.second }
@@ -36,11 +40,9 @@ object SavingsSummary {
     }
 
     /**
-     * Bank, cash and card balances plus the savings' current value, less loans against property.
+     * Bank, cash and card balances plus the counted savings (gold, silver and land are left out).
      * Credit-card balances are stored negative (money owed), so they are simply added.
      */
-    fun netWorth(accountBalances: List<Double>, items: List<SavingsItemEntity>): Double {
-        val loans = items.sumOf { (SavingsDetails.fromJson(it.detailsJson) as? SavingsDetails.Land)?.loanOutstanding ?: 0.0 }
-        return accountBalances.sum() + items.sumOf { it.currentValue } - loans
-    }
+    fun netWorth(accountBalances: List<Double>, items: List<SavingsItemEntity>): Double =
+        accountBalances.sum() + counted(items).sumOf { it.currentValue }
 }

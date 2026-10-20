@@ -16,12 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,9 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
-import com.example.ui.theme.ExpenseRed
-import com.example.ui.theme.IncomeGreen
-import com.example.ui.theme.IncomeGreenContainer
+import com.example.ui.theme.accentOf
 import com.example.ui.theme.PendingAmber
 import com.example.ui.theme.PendingAmberContainer
 import java.text.SimpleDateFormat
@@ -61,7 +56,7 @@ fun TransactionItem(
     modifier: Modifier = Modifier
 ) {
     val isCredit = transaction.type == "CREDIT"
-    val accentColor = if (isCredit) IncomeGreen else ExpenseRed
+    val accentColor = accentOf("#166534").ink
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     val formattedDate = dateFormat.format(Date(transaction.dateTimestamp))
 
@@ -89,39 +84,15 @@ fun TransactionItem(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Transaction Icon Container
-            val isTransfer = transaction.categoryTag == "Transfer" || transaction.title.startsWith("Transfer", ignoreCase = true)
-            val iconBg = when {
-                transaction.isPendingReview -> MaterialTheme.colorScheme.surface
-                isTransfer -> MaterialTheme.colorScheme.tertiaryContainer
-                isCredit -> IncomeGreenContainer
-                else -> MaterialTheme.colorScheme.primaryContainer
-            }
-            val iconTint = when {
-                transaction.isPendingReview -> MaterialTheme.colorScheme.onSurfaceVariant
-                isTransfer -> MaterialTheme.colorScheme.onTertiaryContainer
-                isCredit -> IncomeGreen
-                else -> MaterialTheme.colorScheme.onPrimaryContainer
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(iconBg),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = when {
-                        isTransfer -> Icons.Default.SwapHoriz
-                        isCredit -> Icons.Default.Add
-                        else -> Icons.Default.Remove
-                    },
-                    contentDescription = transaction.type,
-                    tint = iconTint,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+            // Category icon in the category's colour, with a dot in the account's colour.
+            val category = categories.find { it.name.equals(transaction.categoryTag, ignoreCase = true) }
+            CategoryAvatar(
+                iconName = category?.iconName,
+                categoryName = transaction.categoryTag,
+                colorHex = category?.colorHex,
+                accountColorHex = account?.colorHex,
+                muted = transaction.isPendingReview
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -228,7 +199,8 @@ fun TransactionItem(
                     text = if (isCredit) stringResource(R.string.transaction_amount_credit_format, currencySymbol, transaction.amount) else stringResource(R.string.transaction_amount_debit_format, currencySymbol, transaction.amount),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = accentColor
+                        // Money in is green; money out stays the normal text colour, since red is kept for warnings.
+                        color = if (isCredit) accentColor else MaterialTheme.colorScheme.onSurface
                     )
                 )
 

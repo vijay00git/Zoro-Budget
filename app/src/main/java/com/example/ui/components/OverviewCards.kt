@@ -544,7 +544,7 @@ fun CategorySpendingProgressCard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = categoryIconFor(item.iconName),
+                                    imageVector = categoryIconFor(item.iconName, item.name),
                                     contentDescription = null,
                                     tint = itemColor,
                                     modifier = Modifier.size(13.dp)

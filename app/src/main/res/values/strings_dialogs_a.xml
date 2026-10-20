@@ -162,4 +162,19 @@
     <string name="add_account_dialog_save_button">Save Changes</string>
     <string name="add_account_dialog_create_button">Create Account</string>
     <string name="add_account_dialog_cancel_button">Cancel</string>
+    <!-- Full backup -->
+    <string name="full_backup_title">Full backup</string>
+    <string name="full_backup_description">One file with everything: transactions, bills, savings, attachments and settings. Save it before reinstalling the app or changing phones, and keep it somewhere safe such as Google Drive.</string>
+    <string name="full_backup_save">Save backup file</string>
+    <string name="full_backup_restore">Restore from backup file</string>
+    <string name="full_backup_working">Working…</string>
+    <string name="full_backup_saved">Backup saved: %1$d transactions, %2$d savings records, %3$d attachments.</string>
+    <string name="full_backup_failed">Something went wrong. Your data has not been changed.</string>
+    <string name="full_backup_confirm_title">Replace all data with this backup?</string>
+    <string name="full_backup_confirm_date">Backup made on %1$s.</string>
+    <string name="full_backup_confirm_compare">In the backup → on this phone now:\nTransactions %1$d → %2$d\nAccounts %3$d → %4$d\nBills %5$d → %6$d\nSavings records %7$d → %8$d\nAttachments %9$d → %10$d</string>
+    <string name="full_backup_confirm_warning">Everything on this phone is replaced by the backup. A copy of the current data is kept inside the app first. The app restarts when it is done.</string>
+    <string name="full_backup_confirm_button">Replace and restart</string>
+    <string name="full_backup_cancel">Cancel</string>
+    <string name="full_backup_other_formats">Other formats (spreadsheets and the older JSON backup)</string>
 </resources>

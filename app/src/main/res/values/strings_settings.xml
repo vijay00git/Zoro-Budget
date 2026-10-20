@@ -1,57 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Header -->
-    <string name="settings_screen_title">Settings &amp; Accounts</string>
-    <string name="settings_screen_subtitle">Manage accounts, bank SMS sync, budget targets, and app preferences</string>
 
     <!-- Status banner -->
     <string name="settings_screen_status_icon_desc">Status</string>
 
     <!-- Accounts & Payment Sources section -->
-    <string name="settings_accounts_section_title">Accounts &amp; Payment Sources</string>
-    <string name="settings_accounts_transfer_desc">Transfer</string>
     <string name="settings_accounts_transfer_button">Transfer</string>
-    <string name="settings_accounts_add_account_desc">Add Account</string>
     <string name="settings_accounts_add_account_button">Add Account</string>
-    <string name="settings_accounts_empty_title">No Accounts Added</string>
-    <string name="settings_accounts_empty_body">Tap \'Add Account\' above to create your cash, bank, or card account.</string>
     <string name="settings_accounts_transfer_funds_desc">Transfer Funds</string>
-    <string name="settings_accounts_edit_account_desc">Edit Account</string>
     <string name="settings_accounts_delete_account_desc">Delete Account</string>
-    <string name="settings_accounts_sms_suffix_format">SMS Suffix: •%1$s</string>
-    <string name="settings_accounts_low_balance_alert_desc">Low Balance Alert</string>
     <string name="settings_accounts_low_balance_label">Low Balance</string>
-    <string name="settings_accounts_balance_format">%1$s%2$,.2f</string>
 
     <!-- Automated Bank SMS Sync section -->
-    <string name="settings_sms_sync_reader_desc">SMS Auto-Reader</string>
-    <string name="settings_sms_sync_title">Automated Bank SMS Sync</string>
-    <string name="settings_sms_sync_description">Smart Budget reads incoming and inbox bank messages from your financial institutions to automatically record debits &amp; credits into your accounts.</string>
     <string name="settings_sms_sync_from_date_label">Sync From Date</string>
     <string name="settings_sms_sync_ignoring_before_format">Ignoring SMS before %1$s</string>
     <string name="settings_sms_sync_no_date_limit">Reading all SMS (No date limit)</string>
     <string name="settings_sms_sync_clear_date_desc">Clear Date Limit</string>
     <string name="settings_sms_sync_set_date_label">Set Date</string>
     <string name="settings_sms_sync_change_date_label">Change</string>
-    <string name="settings_sms_sync_button_desc">Sync</string>
     <string name="settings_sms_sync_button_scan">Scan &amp; Sync SMS Inbox</string>
     <string name="settings_sms_sync_button_grant_permission">Grant SMS Permission &amp; Sync</string>
 
     <!-- SMS Simulator / Parser section -->
 
     <!-- App Appearance & Theme section -->
-    <string name="settings_appearance_section_title">App Appearance &amp; Currency</string>
-    <string name="settings_theme_title">App Theme Mode</string>
-    <string name="settings_theme_light_active">Light theme active</string>
-    <string name="settings_theme_dark_active">Dark theme active</string>
-    <string name="settings_theme_system_active">System Default (follows device setting)</string>
     <string name="settings_theme_option_system">System</string>
     <string name="settings_theme_option_light">Light</string>
     <string name="settings_theme_option_dark">Dark</string>
 
     <!-- Currency preference section -->
-    <string name="settings_currency_title">Display Currency</string>
-    <string name="settings_currency_subtitle">Select active app symbol</string>
     <string name="settings_currency_name_usd">US Dollar ($)</string>
     <string name="settings_currency_name_eur">Euro (€)</string>
     <string name="settings_currency_name_gbp">British Pound (£)</string>
@@ -62,43 +40,44 @@
     <string name="settings_currency_name_sgd">Singapore Dollar (S$)</string>
 
     <!-- Financial Goals & Budget Planning section -->
-    <string name="settings_goals_section_title">Financial Goals &amp; Budget Planning</string>
-    <string name="settings_savings_goal_title">Monthly Savings Goal</string>
-    <string name="settings_savings_goal_target_format">Target: %1$s%2$,.2f</string>
-    <string name="settings_savings_goal_edit_button">Edit</string>
-    <string name="settings_total_budget_title">Total Monthly Budget Target</string>
-    <string name="settings_total_budget_allocated_format">Allocated: %1$s%2$,.2f across %3$d categories</string>
-    <string name="settings_total_budget_no_limits">No limits configured</string>
-    <string name="settings_total_budget_set_button">Set Total</string>
-    <string name="settings_low_balance_threshold_title">Low Balance Alert Threshold</string>
-    <string name="settings_low_balance_threshold_format">Warning limit: %1$s%2$,.2f per account</string>
-    <string name="settings_low_balance_threshold_button">Set Limit</string>
 
     <!-- Category Budget Limits section -->
-    <string name="settings_category_limits_title">Category Budget Limits</string>
-    <string name="settings_category_add_button">New Category</string>
-    <string name="settings_category_limit_format">%1$s%2$,.2f/mo</string>
-    <string name="settings_category_no_limit">No Limit</string>
-    <string name="settings_category_edit_limit_desc">Edit Category Limit</string>
 
     <!-- Data Backup & Export section -->
-    <string name="settings_backup_section_title">Data Backup &amp; Export</string>
-    <string name="settings_backup_hub_title">Data Export &amp; Backup Hub</string>
-    <string name="settings_backup_hub_subtitle">Instant CSV exports, JSON database backups &amp; ledger restore</string>
-    <string name="settings_backup_csv_json_button">CSV / JSON</string>
-    <string name="settings_backup_restore_button">Restore Data</string>
 
     <!-- Debug Log Capture section -->
 
     <!-- Storage, Cache & RAM section -->
-    <string name="settings_storage_section_title">Storage, Cache &amp; Memory (RAM)</string>
-    <string name="settings_storage_title">Phone Storage &amp; RAM Efficiency</string>
-    <string name="settings_storage_subtitle">Uses phone storage for receipts without inflating app data size</string>
-    <string name="settings_storage_highlight_sqlite">Lightweight SQLite DB: Only small text records stored in app data</string>
-    <string name="settings_storage_highlight_receipts">Bill Receipts: Directly referenced from Phone Storage / Gallery URIs</string>
-    <string name="settings_storage_clear_cache_button">Clear App Cache &amp; Free RAM</string>
 
     <!-- App Info & Security section -->
     <string name="settings_privacy_title">100% Private &amp; Local Storage</string>
     <string name="settings_privacy_body">Smart Budget stores all financial ledgers and accounts securely on your local Android device using Room database. No remote servers required.</string>
+    <!-- Settings bento -->
+    <string name="settings_bento_title">Settings</string>
+    <string name="settings_bento_accounts">Accounts</string>
+    <string name="settings_bento_sms_title">Bank SMS sync</string>
+    <string name="settings_bento_sms_body">Bank and card SMS are read on this phone and added to the right account automatically.</string>
+    <string name="settings_bento_appearance">Theme and currency</string>
+    <string name="settings_bento_theme">Theme</string>
+    <string name="settings_bento_currency">Currency</string>
+    <string name="settings_bento_tap_to_change">Tap to change</string>
+    <string name="settings_bento_targets">Monthly targets</string>
+    <string name="settings_bento_savings_goal">Savings goal</string>
+    <string name="settings_bento_budget">Total budget</string>
+    <string name="settings_bento_low_alert">Low-balance alert</string>
+    <string name="settings_bento_not_set">Not set</string>
+    <string name="settings_bento_categories">Categories (%1$d)</string>
+    <string name="settings_bento_new_category">New category</string>
+    <string name="settings_bento_no_limit">No limit</string>
+    <string name="settings_bento_data">Your data</string>
+    <string name="settings_bento_backup">Backup and export</string>
+    <string name="settings_bento_backup_body">Full backup file, CSV or JSON</string>
+    <string name="settings_bento_clear_cache">Clear cache</string>
+    <string name="settings_bento_clear_cache_body">Removes temporary files. Your data is not touched.</string>
+    <string name="settings_bento_delete_account_title">Delete %1$s?</string>
+    <string name="settings_bento_delete_account_message">The account is removed. Its past transactions stay in the ledger. This cannot be undone.</string>
+    <string name="settings_made_with">Made with</string>
+    <string name="settings_love">love</string>
+    <string name="settings_by_vijay">by Vijay</string>
+    <string name="settings_version">Smart Budget · version %1$s</string>
 </resources>

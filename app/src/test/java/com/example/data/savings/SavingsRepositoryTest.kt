@@ -121,6 +121,27 @@ class SavingsRepositoryTest {
     }
 
     @Test
+    fun goldAndLandCanBeRecordedWithoutWeightOrPrice() = runTest {
+        val chains = SavingsDetails.Gold(quantity = 2)
+        val chainsId = repository.addItem(item(SavingsSection.GOLD), chains, SavingsValuation.suggestedEntries(chains, today, today), today)
+        val saved = db.savingsDao().getItemById(chainsId)!!
+        assertEquals(0.0, saved.investedAmount, 0.001)
+        assertEquals(0.0, saved.currentValue, 0.001)
+        assertEquals(chains, SavingsDetails.fromJson(saved.detailsJson))
+        assertTrue(db.savingsDao().getEntriesForItemList(chainsId).isEmpty())
+
+        // Entering a rate later does not break a piece that has no weight.
+        repository.setRate(SnapshotKeys.GOLD_24K, 10_000.0, today)
+        assertEquals(0.0, db.savingsDao().getItemById(chainsId)!!.currentValue, 0.001)
+
+        val plot = SavingsDetails.Land(area = 5.0, areaUnit = AreaUnit.CENT)
+        val plotId = repository.addItem(item(SavingsSection.LAND), plot, SavingsValuation.suggestedEntries(plot, today, today), today)
+        assertEquals(plot, SavingsDetails.fromJson(db.savingsDao().getItemById(plotId)!!.detailsJson))
+        // Neither counts in the page total.
+        assertTrue(SavingsSummary.counted(db.savingsDao().getAllItemsList()).isEmpty())
+    }
+
+    @Test
     fun rdHistoryDrivesInvestedAndInstalmentsPaid() = runTest {
         val rd = SavingsDetails.Rd(5_000.0, 6.5, 12, 5)
         val start = date(2026, 5, 5)
@@ -211,9 +232,10 @@ class SavingsRepositoryTest {
         val plot = SavingsDetails.Land(area = 5.0, areaUnit = AreaUnit.CENT, purchasePrice = 1_200_000.0, currentValue = 2_000_000.0, loanOutstanding = 300_000.0)
         val plotId = repository.addItem(item(SavingsSection.LAND), plot, SavingsValuation.suggestedEntries(plot, date(2019, 6, 15), today), today)
         assertEquals(1_200_000.0, db.savingsDao().getItemById(plotId)!!.investedAmount, 0.001)
-        // Net worth takes the loan against the plot off.
+        // Land (like gold and silver) is a record only: net worth leaves it, and its loan, out.
         val items = db.savingsDao().getAllItemsList()
-        assertEquals(12_345.0 + 250_000.0 + 2_000_000.0 - 300_000.0, SavingsSummary.netWorth(emptyList(), items), 0.01)
+        assertEquals(12_345.0 + 250_000.0, SavingsSummary.netWorth(emptyList(), items), 0.01)
+        assertEquals(2, SavingsSummary.counted(items).size)
     }
 
     @Test

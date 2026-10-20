@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -67,6 +69,7 @@ import com.example.data.savings.SavingsSummary
 import com.example.data.savings.SavingsTotals
 import com.example.data.savings.SnapshotKeys
 import com.example.ui.components.formatMoney
+import com.example.ui.components.heroColor
 
 /**
  * The Savings tab: a record of savings and assets the user enters by hand. It never touches the
@@ -231,7 +234,9 @@ private fun SavingsList(
     onAdd: (SavingsSection?) -> Unit
 ) {
     val today = remember { System.currentTimeMillis() }
-    val totals = SavingsTotals.of(items)
+    // Gold, silver and land are a record only: they are left out of the money totals.
+    val totals = SavingsTotals.of(SavingsSummary.counted(items))
+    val hasUncounted = items.any { !SavingsSection.from(it.section).countsInTotal }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("savings_list"),
@@ -241,6 +246,8 @@ private fun SavingsList(
         item {
             SummaryCard(
                 totals = totals,
+                hasUncounted = hasUncounted,
+                allocation = SavingsSummary.allocation(items),
                 netWorth = if (holderFilter == null) SavingsSummary.netWorth(accountBalances, items) else null,
                 maturities = SavingsSummary.upcomingMaturities(items, today),
                 currencySymbol = currencySymbol,
@@ -301,14 +308,15 @@ private fun SavingsList(
                 item(key = key) {
                     GroupHeader(
                         title = holder, icon = Icons.Default.Person, color = MaterialTheme.colorScheme.primary,
-                        count = list.size, totals = SavingsTotals.of(list), currencySymbol = currencySymbol,
+                        count = list.size, totals = SavingsTotals.of(SavingsSummary.counted(list)), currencySymbol = currencySymbol,
                         expanded = open, onToggle = { onToggleGroup(key) }, onAdd = null
                     )
                 }
                 if (open) items(list, key = { it.id }) { ItemCard(it, currencySymbol, showSection = true, onClick = { onItemClick(it) }) }
             }
         } else {
-            availableSections.forEach { section ->
+            val (filled, empty) = availableSections.partition { section -> items.any { it.section == section.name } }
+            filled.forEach { section ->
                 val list = items.filter { it.section == section.name }
                 val key = "section:${section.name}"
                 val open = key !in collapsed
@@ -317,6 +325,7 @@ private fun SavingsList(
                     GroupHeader(
                         title = stringResource(style.title), icon = style.icon, color = style.color,
                         count = list.size, totals = SavingsTotals.of(list), currencySymbol = currencySymbol,
+                        measure = if (section.countsInTotal) null else assetMeasure(list),
                         expanded = open, onToggle = { onToggleGroup(key) }, onAdd = { onAdd(section) },
                         modifier = Modifier.testTag("savings_section_${section.name}")
                     )
@@ -324,18 +333,23 @@ private fun SavingsList(
                 if (open && (section == SavingsSection.GOLD || section == SavingsSection.SILVER)) {
                     item(key = "$key:rate") { RateRow(section, rates, list, currencySymbol, onEdit = { onEditRate(section) }) }
                 }
-                if (open) {
-                    // Once anything is recorded, empty sections keep just their header and + button.
-                    if (list.isEmpty() && allCount == 0) {
-                        item(key = "$key:empty") {
-                            TextButton(onClick = { onAdd(section) }, modifier = Modifier.fillMaxWidth()) {
-                                Icon(Icons.Default.Add, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text(stringResource(style.addFirst))
-                            }
-                        }
-                    } else if (list.isNotEmpty()) {
-                        items(list, key = { it.id }) { ItemCard(it, currencySymbol, showSection = false, onClick = { onItemClick(it) }) }
+                if (open) items(list, key = { it.id }) { ItemCard(it, currencySymbol, showSection = false, onClick = { onItemClick(it) }) }
+            }
+            // Sections with nothing in them yet: small coloured tiles, two to a row.
+            if (empty.isNotEmpty()) {
+                item(key = "start-tracking") {
+                    Text(
+                        stringResource(R.string.savings_start_tracking),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+                val rows = empty.chunked(2)
+                items(rows.size, key = { "start-row-$it" }) { index ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rows[index].forEach { section -> StartTile(section, onClick = { onAdd(section) }, modifier = Modifier.weight(1f)) }
+                        if (rows[index].size == 1) Spacer(Modifier.weight(1f))
                     }
                 }
             }
@@ -345,9 +359,37 @@ private fun SavingsList(
     }
 }
 
+/** An empty section as a tinted tile with its icon and a +, opening the add form for it. */
+@Composable
+private fun StartTile(section: SavingsSection, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val style = section.style()
+    val accent = com.example.ui.theme.accentOf(style.color)
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 88.dp).testTag("savings_start_${section.name}"),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(style.icon, contentDescription = null, tint = accent.ink)
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.savings_add_to, stringResource(style.title)), tint = accent.ink)
+            }
+            Text(stringResource(style.title), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold), maxLines = 2)
+        }
+    }
+}
+
+/** The indigo hero tile: total value, invested and gain, the mix by section, net worth and next maturities. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun SummaryCard(
     totals: SavingsTotals,
+    hasUncounted: Boolean,
+    allocation: List<Pair<SavingsSection, Double>>,
     netWorth: Double?,
     maturities: List<SavingsItemEntity>,
     currencySymbol: String,
@@ -355,40 +397,80 @@ private fun SummaryCard(
     onAdd: () -> Unit,
     onItemClick: (SavingsItemEntity) -> Unit
 ) {
-    Card(
+    val white = androidx.compose.ui.graphics.Color.White
+    val soft = white.copy(alpha = 0.8f)
+    androidx.compose.material3.Surface(
         modifier = Modifier.fillMaxWidth().testTag("savings_summary"),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        shape = RoundedCornerShape(28.dp),
+        color = heroColor(),
+        contentColor = white
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.savings_total_value), style = MaterialTheme.typography.labelMedium)
-                    Text(formatMoney(currencySymbol, totals.current), style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+                    Text(stringResource(R.string.savings_total_value), style = MaterialTheme.typography.labelLarge, color = soft)
+                    Text(formatMoney(currencySymbol, totals.current), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold))
                 }
-                FilledTonalButton(onClick = onAdd, modifier = Modifier.testTag("savings_add")) {
+                androidx.compose.material3.Button(
+                    onClick = onAdd,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = white, contentColor = heroColor()),
+                    modifier = Modifier.testTag("savings_add")
+                ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
                     Text(stringResource(R.string.savings_add))
                 }
             }
-            Spacer(Modifier.height(4.dp))
-            Text(stringResource(R.string.savings_invested_amount, formatMoney(currencySymbol, totals.invested)), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.savings_invested_amount, formatMoney(currencySymbol, totals.invested)), style = MaterialTheme.typography.bodyMedium, color = soft)
             if (totals.invested > 0 || totals.current > 0) GainText(currencySymbol, totals.gain, totals.gainPct)
+            if (hasUncounted) Text(stringResource(R.string.savings_not_counted_note), style = MaterialTheme.typography.bodySmall, color = soft)
+            val total = allocation.sumOf { it.second }
+            if (total > 0) {
+                // The mix by section, each in its own colour (lightened to stand out on indigo).
+                Row(modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    allocation.forEach { (section, value) ->
+                        Box(
+                            modifier = Modifier
+                                .weight((value / total).toFloat().coerceAtLeast(0.01f))
+                                .fillMaxHeight()
+                                .background(androidx.compose.ui.graphics.lerp(section.style().color, white, 0.35f))
+                        )
+                    }
+                }
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    allocation.forEach { (section, value) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(10.dp).clip(CircleShape).background(androidx.compose.ui.graphics.lerp(section.style().color, white, 0.35f)))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(section.style().title) + " " + formatPct(value / total * 100).replace(".00", ""),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                        }
+                    }
+                }
+            }
             if (netWorth != null) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                LabelValueRow(stringResource(R.string.savings_net_worth), formatMoney(currencySymbol, netWorth), detail = stringResource(R.string.savings_net_worth_detail), emphasize = true)
+                HorizontalDivider(color = white.copy(alpha = 0.2f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.savings_net_worth), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                        Text(stringResource(R.string.savings_net_worth_detail), style = MaterialTheme.typography.bodySmall, color = soft)
+                    }
+                    Text(formatMoney(currencySymbol, netWorth), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold))
+                }
             }
             if (maturities.isNotEmpty()) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text(stringResource(R.string.savings_upcoming_maturities), style = MaterialTheme.typography.labelMedium)
+                HorizontalDivider(color = white.copy(alpha = 0.2f))
+                Text(stringResource(R.string.savings_upcoming_maturities), style = MaterialTheme.typography.labelMedium, color = soft)
                 maturities.forEach { m ->
                     val days = SavingsCalculator.daysBetween(today, m.maturityDate!!).toInt()
                     Row(modifier = Modifier.fillMaxWidth().clickable { onItemClick(m) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(m.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+                        Text(m.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
                         Text(
                             formatDay(m.maturityDate) + " · " + pluralStringResource(R.plurals.savings_in_days, days, days),
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            color = soft
                         )
                     }
                 }
@@ -408,12 +490,14 @@ private fun GroupHeader(
     expanded: Boolean,
     onToggle: () -> Unit,
     onAdd: (() -> Unit)?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    measure: String? = null // set for gold, silver and land: weight / pieces / size instead of money
 ) {
     Card(
         modifier = modifier.fillMaxWidth().clickable(onClick = onToggle),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.10f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
@@ -422,7 +506,12 @@ private fun GroupHeader(
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(title + " (" + count + ")", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
-                if (count > 0) {
+                if (count > 0 && measure != null) {
+                    if (measure.isNotBlank()) Text(measure, style = MaterialTheme.typography.bodyMedium)
+                    if (totals.current > 0) {
+                        Text(stringResource(R.string.savings_estimated, formatMoney(currencySymbol, totals.current)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else if (count > 0) {
                     Text(formatMoney(currencySymbol, totals.current), style = MaterialTheme.typography.bodyMedium)
                     Text(
                         formatSignedMoney(currencySymbol, totals.gain), color = gainColor(totals.gain),
@@ -471,11 +560,45 @@ private fun ItemCard(item: SavingsItemEntity, currencySymbol: String, showSectio
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(formatMoney(currencySymbol, totals.current), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                Text(formatSignedMoney(currencySymbol, totals.gain), color = gainColor(totals.gain), style = MaterialTheme.typography.bodySmall)
+                if (section.countsInTotal) {
+                    Text(formatMoney(currencySymbol, totals.current), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    Text(formatSignedMoney(currencySymbol, totals.gain), color = gainColor(totals.gain), style = MaterialTheme.typography.bodySmall)
+                } else {
+                    // A record: show what it is (weight, pieces, size), and a value only when one is known.
+                    val measure = assetMeasure(listOf(item))
+                    if (measure.isNotBlank()) Text(measure, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    if (totals.current > 0) {
+                        Text(stringResource(R.string.savings_estimated, formatMoney(currencySymbol, totals.current)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         }
     }
+}
+
+/**
+ * What gold, silver and land records hold, without money: total grams by purity and pieces for
+ * metals ("42 g 22K · 3 pieces"), size for land when every plot uses one unit ("5 cent").
+ */
+@Composable
+private fun assetMeasure(items: List<SavingsItemEntity>): String {
+    val details = items.mapNotNull { SavingsDetails.fromJson(it.detailsJson) }
+    val parts = mutableListOf<String>()
+    val grams = details.mapNotNull {
+        when (it) {
+            is SavingsDetails.Gold -> it.grams?.let { g -> (if (it.form == GoldForm.SGB) "SGB" else "${it.purity.carats}K") to g }
+            is SavingsDetails.Silver -> it.grams?.let { g -> "${formatPlain(it.purityPct)}%" to g }
+            else -> null
+        }
+    }.groupBy({ it.first }, { it.second })
+    grams.forEach { (purity, list) -> parts += "${formatPlain(Math.round(list.sum() * 1000) / 1000.0)} g $purity" }
+    val pieces = details.sumOf { (it as? SavingsDetails.Gold)?.quantity ?: (it as? SavingsDetails.Silver)?.quantity ?: 0 }
+    if (pieces > 0) parts += pluralStringResource(R.plurals.savings_pieces, pieces, pieces)
+    val land = details.filterIsInstance<SavingsDetails.Land>().filter { it.area != null }
+    if (land.isNotEmpty() && land.map { it.areaUnit }.distinct().size == 1) {
+        parts += "${formatPlain(land.sumOf { it.area!! })} ${stringResource(land.first().areaUnit.label())}"
+    }
+    return parts.joinToString(" · ")
 }
 
 /** Today's gold or silver rate for the section, plus the total weight held. Every item is valued from it. */
@@ -491,6 +614,7 @@ private fun RateRow(section: SavingsSection, rates: MarketRates, items: List<Sav
                 else -> ""
             }
         }.mapValues { (_, list) -> list.sumOf { (it as? SavingsDetails.Gold)?.grams ?: (it as? SavingsDetails.Silver)?.grams ?: 0.0 } }
+            .filterValues { it > 0 }
     }
     Card(
         modifier = Modifier.fillMaxWidth().testTag("savings_rate_${section.name}"),

@@ -166,77 +166,114 @@ private fun calculationLines(item: SavingsItemEntity, details: SavingsDetails?, 
                 }
             }
         }
-        is SavingsDetails.Gold -> if (details.form == GoldForm.SGB) {
-            buildList {
+        is SavingsDetails.Gold -> buildList {
+            val grams = details.grams
+            val paid = details.purchaseAmount
+            details.quantity?.let { add(CalcLine(stringResource(R.string.savings_calc_quantity), pluralStringResource(R.plurals.savings_pieces, it, it))) }
+            if (details.form == GoldForm.SGB) {
                 val rate = rates.gold24PerGram
-                if (rate == null) {
+                if (grams != null && rate != null) {
+                    add(CalcLine(stringResource(R.string.savings_calc_value_grams), money(grams * rate), "${formatPlain(grams)} × ${money(rate)} (24K)", emphasize = true))
+                    if (paid != null) add(CalcLine(stringResource(R.string.savings_calc_gain), signed(grams * rate - paid), "${money(grams * rate)} − ${money(paid)}"))
+                } else if (grams != null) {
                     add(missingRate(R.string.savings_calc_missing_gold))
-                } else {
-                    add(CalcLine(stringResource(R.string.savings_calc_value_grams), money(details.grams * rate), "${formatPlain(details.grams)} × ${money(rate)} (24K)", emphasize = true))
-                    add(CalcLine(stringResource(R.string.savings_calc_gain), signed(details.grams * rate - details.purchaseAmount), "${money(details.grams * rate)} − ${money(details.purchaseAmount)}"))
                 }
-                details.sgbIssuePrice?.let { issue ->
-                    val sgb = SavingsCalculator.sgbInterest(details.grams, issue, item.startDate, today)
-                    add(CalcLine(stringResource(R.string.savings_calc_sgb_interest), money(sgb.interestPerHalfYear), "${formatPlain(details.grams)} × ${money(issue)} × 2.5% ÷ 2"))
+                val issue = details.sgbIssuePrice
+                if (grams != null && issue != null) {
+                    val sgb = SavingsCalculator.sgbInterest(grams, issue, item.startDate, today)
+                    add(CalcLine(stringResource(R.string.savings_calc_sgb_interest), money(sgb.interestPerHalfYear), "${formatPlain(grams)} × ${money(issue)} × 2.5% ÷ 2"))
                     add(CalcLine(stringResource(R.string.savings_calc_sgb_received), money(sgb.interestReceived), stringResource(R.string.savings_calc_payouts, sgb.payoutsSoFar)))
                     add(CalcLine(stringResource(R.string.savings_calc_matures), formatDay(sgb.maturityDate)))
                 }
-            }
-        } else {
-            buildList {
+            } else {
                 val rate24 = rates.gold24PerGram
-                if (rate24 == null) {
-                    add(missingRate(R.string.savings_calc_missing_gold))
-                } else {
-                    val r = SavingsCalculator.gold(details.grams, details.purity, rate24, rates.gold22PerGram, details.purchaseAmount)
-                    add(
-                        CalcLine(
-                            stringResource(R.string.savings_calc_rate_used, "${details.purity.carats}K"), money(r.ratePerGramUsed) + "/g",
-                            if (r.rateDerived) "${money(rate24)} × ${details.purity.carats} ÷ 24" else stringResource(R.string.savings_calc_rate_entered)
+                when {
+                    grams == null -> if (paid != null) add(purchaseLine(details, money))
+                    rate24 == null -> {
+                        add(CalcLine(stringResource(R.string.savings_calc_weight), "${formatPlain(grams)} g · ${details.purity.carats}K"))
+                        add(missingRate(R.string.savings_calc_missing_gold))
+                        if (paid != null) add(purchaseLine(details, money))
+                    }
+                    else -> {
+                        val r = SavingsCalculator.gold(grams, details.purity, rate24, rates.gold22PerGram, paid ?: 0.0)
+                        add(
+                            CalcLine(
+                                stringResource(R.string.savings_calc_rate_used, "${details.purity.carats}K"), money(r.ratePerGramUsed) + "/g",
+                                if (r.rateDerived) "${money(rate24)} × ${details.purity.carats} ÷ 24" else stringResource(R.string.savings_calc_rate_entered)
+                            )
                         )
-                    )
-                    add(CalcLine(stringResource(R.string.savings_calc_value_grams), money(r.value), "${formatPlain(details.grams)} g × ${money(r.ratePerGramUsed)}", emphasize = true))
-                    add(purchaseLine(details, money))
-                    add(CalcLine(stringResource(R.string.savings_calc_gain), signed(r.gain), "${money(r.value)} − ${money(details.purchaseAmount)} · ${formatPct(r.gainPct)}"))
+                        add(CalcLine(stringResource(R.string.savings_calc_value_grams), money(r.value), "${formatPlain(grams)} g × ${money(r.ratePerGramUsed)}", emphasize = true))
+                        if (paid != null) {
+                            add(purchaseLine(details, money))
+                            add(CalcLine(stringResource(R.string.savings_calc_gain), signed(r.gain), "${money(r.value)} − ${money(paid)} · ${formatPct(r.gainPct)}"))
+                        }
+                    }
                 }
             }
         }
         is SavingsDetails.Silver -> buildList {
+            val grams = details.grams
+            val paid = details.purchaseAmount
             val rate = rates.silverPerKg
-            if (rate == null) {
-                add(missingRate(R.string.savings_calc_missing_silver))
-            } else {
-                val r = SavingsCalculator.silver(details.grams, details.purityPct, rate, details.purchaseAmount)
-                add(CalcLine(stringResource(R.string.savings_calc_silver_rate), money(r.ratePerGramUsed) + "/g", "${money(rate)} ÷ 1000 × ${formatPlain(details.purityPct)}%"))
-                add(CalcLine(stringResource(R.string.savings_calc_value_grams), money(r.value), "${formatPlain(details.grams)} g × ${money(r.ratePerGramUsed)}", emphasize = true))
-                add(CalcLine(stringResource(R.string.savings_calc_purchase), money(details.purchaseAmount)))
-                add(CalcLine(stringResource(R.string.savings_calc_gain), signed(r.gain), "${money(r.value)} − ${money(details.purchaseAmount)} · ${formatPct(r.gainPct)}"))
+            details.quantity?.let { add(CalcLine(stringResource(R.string.savings_calc_quantity), pluralStringResource(R.plurals.savings_pieces, it, it))) }
+            when {
+                grams == null -> if (paid != null) add(CalcLine(stringResource(R.string.savings_calc_purchase), money(paid)))
+                rate == null -> {
+                    add(CalcLine(stringResource(R.string.savings_calc_weight), "${formatPlain(grams)} g · ${formatPlain(details.purityPct)}%"))
+                    add(missingRate(R.string.savings_calc_missing_silver))
+                    if (paid != null) add(CalcLine(stringResource(R.string.savings_calc_purchase), money(paid)))
+                }
+                else -> {
+                    val r = SavingsCalculator.silver(grams, details.purityPct, rate, paid ?: 0.0)
+                    add(CalcLine(stringResource(R.string.savings_calc_silver_rate), money(r.ratePerGramUsed) + "/g", "${money(rate)} ÷ 1000 × ${formatPlain(details.purityPct)}%"))
+                    add(CalcLine(stringResource(R.string.savings_calc_value_grams), money(r.value), "${formatPlain(grams)} g × ${money(r.ratePerGramUsed)}", emphasize = true))
+                    if (paid != null) {
+                        add(CalcLine(stringResource(R.string.savings_calc_purchase), money(paid)))
+                        add(CalcLine(stringResource(R.string.savings_calc_gain), signed(r.gain), "${money(r.value)} − ${money(paid)} · ${formatPct(r.gainPct)}"))
+                    }
+                }
             }
         }
         is SavingsDetails.Land -> {
             val r = SavingsCalculator.land(details, item.startDate, today)
+            val value = details.currentValue
             buildList {
-                add(CalcLine(stringResource(R.string.savings_calc_area), "${formatPlain(Math.round(r.areaSqft * 100) / 100.0)} sq ft", "${formatPlain(details.area)} ${stringResource(details.areaUnit.label())} × ${formatPlain(details.areaUnit.sqft)}"))
-                add(
-                    CalcLine(
-                        stringResource(R.string.savings_calc_total_cost), money(r.totalCost),
-                        listOf(details.purchasePrice, details.stampDutyAndRegistration, details.brokerage, details.otherCosts).filter { it > 0 }.joinToString(" + ") { money(it) }
+                val area = details.area
+                if (area != null && r.areaSqft != null) {
+                    add(CalcLine(stringResource(R.string.savings_calc_area), "${formatPlain(Math.round(r.areaSqft * 100) / 100.0)} sq ft", "${formatPlain(area)} ${stringResource(details.areaUnit.label())} × ${formatPlain(details.areaUnit.sqft)}"))
+                }
+                if (r.totalCost > 0) {
+                    add(
+                        CalcLine(
+                            stringResource(R.string.savings_calc_total_cost), money(r.totalCost),
+                            listOfNotNull(details.purchasePrice, details.stampDutyAndRegistration, details.brokerage, details.otherCosts).filter { it > 0 }.joinToString(" + ") { money(it) }
+                        )
                     )
-                )
-                add(
-                    CalcLine(
-                        stringResource(R.string.savings_calc_current_estimate), money(details.currentValue),
-                        stringResource(valueSourceLabel(details.valueSource)) + (details.valueDate?.let { " · " + formatDay(it) } ?: ""), emphasize = true
+                }
+                if (value != null) {
+                    add(
+                        CalcLine(
+                            stringResource(R.string.savings_calc_current_estimate), money(value),
+                            stringResource(valueSourceLabel(details.valueSource)) + (details.valueDate?.let { " · " + formatDay(it) } ?: ""), emphasize = true
+                        )
                     )
-                )
-                add(CalcLine(stringResource(R.string.savings_calc_gain), signed(r.gain), "${money(details.currentValue)} − ${money(r.totalCost)} · ${formatPct(r.gainPct)}"))
+                }
+                if (r.gain != null) add(CalcLine(stringResource(R.string.savings_calc_gain), signed(r.gain), "${money(value!!)} − ${money(r.totalCost)} · ${formatPct(r.gainPct ?: 0.0)}"))
                 add(CalcLine(stringResource(R.string.savings_calc_years_held), stringResource(R.string.savings_calc_years, num(r.yearsHeld, 2))))
                 r.cagr?.let {
-                    add(CalcLine(stringResource(R.string.savings_calc_cagr), formatPct(it * 100), "(${money(details.currentValue)} ÷ ${money(r.totalCost)})^(1 ÷ ${num(r.yearsHeld, 2)}) − 1"))
+                    add(CalcLine(stringResource(R.string.savings_calc_cagr), formatPct(it * 100), "(${money(value!!)} ÷ ${money(r.totalCost)})^(1 ÷ ${num(r.yearsHeld, 2)}) − 1"))
                 }
-                add(CalcLine(stringResource(R.string.savings_calc_price_sqft), "${money(r.pricePerSqftAtPurchase)} → ${money(r.pricePerSqftNow)}", stringResource(R.string.savings_calc_price_sqft_detail)))
-                if (details.loanOutstanding > 0) add(CalcLine(stringResource(R.string.savings_calc_net_equity), money(r.netEquity), "${money(details.currentValue)} − ${money(details.loanOutstanding)}"))
-                if (details.monthlyRent > 0) add(CalcLine(stringResource(R.string.savings_calc_rental_yield), formatPct(r.rentalYieldPct), "${money(details.monthlyRent)} × 12 ÷ ${money(details.currentValue)}"))
+                if (r.pricePerSqftAtPurchase != null || r.pricePerSqftNow != null) {
+                    add(
+                        CalcLine(
+                            stringResource(R.string.savings_calc_price_sqft),
+                            "${r.pricePerSqftAtPurchase?.let { money(it) } ?: "—"} → ${r.pricePerSqftNow?.let { money(it) } ?: "—"}",
+                            stringResource(R.string.savings_calc_price_sqft_detail)
+                        )
+                    )
+                }
+                if (details.loanOutstanding > 0 && r.netEquity != null) add(CalcLine(stringResource(R.string.savings_calc_net_equity), money(r.netEquity), "${money(value!!)} − ${money(details.loanOutstanding)}"))
+                r.rentalYieldPct?.let { add(CalcLine(stringResource(R.string.savings_calc_rental_yield), formatPct(it), "${money(details.monthlyRent)} × 12 ÷ ${money(value!!)}")) }
             }
         }
         is SavingsDetails.Scheme -> {
@@ -315,7 +352,7 @@ private fun purchaseLine(details: SavingsDetails.Gold, money: (Double) -> String
         details.makingCharges.takeIf { it > 0 }?.let { stringResource(R.string.savings_calc_making, money(it)) },
         details.gst.takeIf { it > 0 }?.let { stringResource(R.string.savings_calc_gst, money(it)) }
     )
-    return CalcLine(stringResource(R.string.savings_calc_purchase), money(details.purchaseAmount), parts.joinToString(", ").ifBlank { null })
+    return CalcLine(stringResource(R.string.savings_calc_purchase), money(details.purchaseAmount ?: 0.0), parts.joinToString(", ").ifBlank { null })
 }
 
 @Composable

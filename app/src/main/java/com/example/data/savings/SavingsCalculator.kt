@@ -395,34 +395,37 @@ object SavingsCalculator {
 
     // ---- Land & property ---------------------------------------------------------------------
 
+    /** Every figure that needs a missing input (size, price or today's value) is null. */
     data class LandResult(
-        val areaSqft: Double,
-        val totalCost: Double,
-        val gain: Double,
-        val gainPct: Double,
+        val areaSqft: Double?,
+        val totalCost: Double, // 0 when no price or costs were entered
+        val gain: Double?,
+        val gainPct: Double?,
         val yearsHeld: Double,
         val cagr: Double?,
-        val pricePerSqftAtPurchase: Double,
-        val pricePerSqftNow: Double,
-        val netEquity: Double, // current value - loan outstanding
-        val rentalYieldPct: Double // yearly rent / current value
+        val pricePerSqftAtPurchase: Double?,
+        val pricePerSqftNow: Double?,
+        val netEquity: Double?, // current value - loan outstanding
+        val rentalYieldPct: Double? // yearly rent / current value
     )
 
     fun land(d: SavingsDetails.Land, purchaseDate: Long, today: Long): LandResult {
-        val sqft = d.area * d.areaUnit.sqft
-        val cost = d.purchasePrice + d.stampDutyAndRegistration + d.brokerage + d.otherCosts
+        val sqft = d.area?.let { it * d.areaUnit.sqft }?.takeIf { it > 0 }
+        val cost = (d.purchasePrice ?: 0.0) + d.stampDutyAndRegistration + d.brokerage + d.otherCosts
+        val value = d.currentValue
         val years = yearsBetween(purchaseDate, today)
+        val comparable = value != null && cost > 0
         return LandResult(
             areaSqft = sqft,
             totalCost = cost,
-            gain = d.currentValue - cost,
-            gainPct = pct(d.currentValue - cost, cost),
+            gain = if (comparable) value!! - cost else null,
+            gainPct = if (comparable) pct(value!! - cost, cost) else null,
             yearsHeld = years,
-            cagr = cagr(cost, d.currentValue, years),
-            pricePerSqftAtPurchase = if (sqft > 0) d.purchasePrice / sqft else 0.0,
-            pricePerSqftNow = if (sqft > 0) d.currentValue / sqft else 0.0,
-            netEquity = d.currentValue - d.loanOutstanding,
-            rentalYieldPct = pct(d.monthlyRent * 12, d.currentValue)
+            cagr = if (comparable) cagr(cost, value!!, years) else null,
+            pricePerSqftAtPurchase = if (sqft != null && d.purchasePrice != null) d.purchasePrice / sqft else null,
+            pricePerSqftNow = if (sqft != null && value != null) value / sqft else null,
+            netEquity = value?.let { it - d.loanOutstanding },
+            rentalYieldPct = if (value != null && value > 0 && d.monthlyRent > 0) pct(d.monthlyRent * 12, value) else null
         )
     }
 

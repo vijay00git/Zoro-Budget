@@ -146,12 +146,22 @@ class SavingsCalculatorTest {
             stampDutyAndRegistration = 108_000.0, otherCosts = 20_000.0, currentValue = 2_000_000.0
         )
         val r = SavingsCalculator.land(plot, date(2019, 6, 15), today)
-        assertEquals(2_178.0, r.areaSqft, 0.001)
+        assertEquals(2_178.0, r.areaSqft!!, 0.001)
         assertEquals(1_328_000.0, r.totalCost, 0.001)
-        assertEquals(672_000.0, r.gain, 0.001)
-        assertEquals(550.96, r.pricePerSqftAtPurchase, 0.01)
+        assertEquals(672_000.0, r.gain!!, 0.001)
+        assertEquals(550.96, r.pricePerSqftAtPurchase!!, 0.01)
         assertEquals(7.35, r.yearsHeld, 0.01)
         assertEquals(0.0573, r.cagr!!, 0.0001)
+    }
+
+    @Test
+    fun landWithOnlyASizeRecordedStillWorks() {
+        val r = SavingsCalculator.land(SavingsDetails.Land(area = 2.0, areaUnit = AreaUnit.GROUND), date(2019, 6, 15), today)
+        assertEquals(4_800.0, r.areaSqft!!, 0.001)
+        assertEquals(0.0, r.totalCost, 0.001)
+        assertNull(r.gain)
+        assertNull(r.cagr)
+        assertNull(r.pricePerSqftNow)
     }
 
     @Test

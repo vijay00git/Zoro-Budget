@@ -78,4 +78,18 @@
     <string name="month_selector_previous">Previous month</string>
     <string name="month_selector_next">Next month</string>
     <string name="month_selector_this_month">This month</string>
+    <!-- Category icon and colour picker -->
+    <string name="appearance_preview">Preview</string>
+    <string name="appearance_colour">Colour</string>
+    <string name="appearance_icon">Icon</string>
+    <string name="appearance_selected">Selected</string>
+    <string name="appearance_change">Change icon and colour</string>
+    <string name="appearance_hide">Hide icon and colour</string>
+    <string name="icon_group_food">Food and drink</string>
+    <string name="icon_group_groceries">Groceries and shopping</string>
+    <string name="icon_group_home">Home and bills</string>
+    <string name="icon_group_travel">Travel</string>
+    <string name="icon_group_health">Health and care</string>
+    <string name="icon_group_people">People, family and fun</string>
+    <string name="icon_group_money">Money</string>
 </resources>

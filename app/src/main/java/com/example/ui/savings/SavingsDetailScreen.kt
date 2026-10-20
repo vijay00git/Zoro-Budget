@@ -102,14 +102,21 @@ fun SavingsDetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = style.color.copy(alpha = 0.12f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, style.color)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.savings_current_value), style = MaterialTheme.typography.labelMedium)
-                    Text(formatMoney(currencySymbol, totals.current), style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+                    Text(
+                        if (totals.current > 0 || section.countsInTotal) formatMoney(currencySymbol, totals.current) else stringResource(R.string.savings_not_valued),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                    )
                     Spacer(Modifier.height(4.dp))
-                    Text(stringResource(R.string.savings_invested_amount, formatMoney(currencySymbol, totals.invested)), style = MaterialTheme.typography.bodyMedium)
-                    GainText(currencySymbol, totals.gain, totals.gainPct)
+                    if (totals.invested > 0 || section.countsInTotal) {
+                        Text(stringResource(R.string.savings_invested_amount, formatMoney(currencySymbol, totals.invested)), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    // A gain only means something when both what was paid and today's value are known.
+                    if (section.countsInTotal || (totals.invested > 0 && totals.current > 0)) GainText(currencySymbol, totals.gain, totals.gainPct)
                     if (SavingsStatus.from(item.status) != SavingsStatus.ACTIVE) {
                         Text(stringResource(SavingsStatus.from(item.status).label()), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -205,33 +212,35 @@ private fun detailRows(item: SavingsItemEntity, details: SavingsDetails?, cs: St
         }
         is SavingsDetails.Gold -> {
             add(stringResource(R.string.savings_field_form) to stringResource(details.form.label()))
+            details.quantity?.let { add(stringResource(R.string.savings_field_quantity_pieces) to it.toString()) }
             if (details.form == GoldForm.SGB) {
-                add(stringResource(R.string.savings_field_sgb_units) to formatPlain(details.grams))
+                details.grams?.let { add(stringResource(R.string.savings_field_sgb_units) to formatPlain(it)) }
                 details.sgbIssuePrice?.let { add(stringResource(R.string.savings_field_sgb_issue_price) to formatMoney(cs, it)) }
             } else {
-                add(stringResource(R.string.savings_field_grams) to "${formatPlain(details.grams)} g · ${details.purity.carats}K")
+                details.grams?.let { add(stringResource(R.string.savings_field_grams) to "${formatPlain(it)} g · ${details.purity.carats}K") }
             }
-            add(stringResource(R.string.savings_field_purchase_amount) to formatMoney(cs, details.purchaseAmount))
+            details.purchaseAmount?.let { add(stringResource(R.string.savings_field_purchase_amount) to formatMoney(cs, it)) }
             if (details.makingCharges > 0) add(stringResource(R.string.savings_detail_making) to formatMoney(cs, details.makingCharges))
             if (details.gst > 0) add(stringResource(R.string.savings_detail_gst) to formatMoney(cs, details.gst))
             details.billNo?.let { add(stringResource(R.string.savings_field_bill_no) to it) }
         }
         is SavingsDetails.Silver -> {
             add(stringResource(R.string.savings_field_form) to stringResource(details.form.label()))
-            add(stringResource(R.string.savings_field_grams) to "${formatPlain(details.grams)} g · ${formatPlain(details.purityPct)}%")
-            add(stringResource(R.string.savings_field_purchase_amount) to formatMoney(cs, details.purchaseAmount))
+            details.quantity?.let { add(stringResource(R.string.savings_field_quantity_pieces) to it.toString()) }
+            details.grams?.let { add(stringResource(R.string.savings_field_grams) to "${formatPlain(it)} g · ${formatPlain(details.purityPct)}%") }
+            details.purchaseAmount?.let { add(stringResource(R.string.savings_field_purchase_amount) to formatMoney(cs, it)) }
         }
         is SavingsDetails.Land -> {
             add(stringResource(R.string.savings_field_property_type) to stringResource(details.propertyType.label()))
-            add(stringResource(R.string.savings_field_area) to "${formatPlain(details.area)} ${stringResource(details.areaUnit.label())}")
+            details.area?.let { add(stringResource(R.string.savings_field_area) to "${formatPlain(it)} ${stringResource(details.areaUnit.label())}") }
             details.address?.let { add(stringResource(R.string.savings_field_address) to it) }
             details.surveyNo?.let { add(stringResource(R.string.savings_field_survey_no) to it) }
             details.pattaNo?.let { add(stringResource(R.string.savings_field_patta_no) to it) }
-            add(stringResource(R.string.savings_field_land_price) to formatMoney(cs, details.purchasePrice))
+            details.purchasePrice?.let { add(stringResource(R.string.savings_field_land_price) to formatMoney(cs, it)) }
             if (details.stampDutyAndRegistration > 0) add(stringResource(R.string.savings_field_stamp_duty) to formatMoney(cs, details.stampDutyAndRegistration))
             if (details.brokerage > 0) add(stringResource(R.string.savings_field_brokerage) to formatMoney(cs, details.brokerage))
             if (details.otherCosts > 0) add(stringResource(R.string.savings_field_other_costs) to formatMoney(cs, details.otherCosts))
-            add(stringResource(R.string.savings_field_land_value) to formatMoney(cs, details.currentValue))
+            details.currentValue?.let { add(stringResource(R.string.savings_field_land_value) to formatMoney(cs, it)) }
             if (details.monthlyRent > 0) add(stringResource(R.string.savings_field_monthly_rent) to formatMoney(cs, details.monthlyRent))
             if (details.loanOutstanding > 0) add(stringResource(R.string.savings_field_loan_outstanding) to formatMoney(cs, details.loanOutstanding))
         }
