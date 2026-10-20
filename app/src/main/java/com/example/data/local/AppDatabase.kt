@@ -9,10 +9,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.local.dao.AccountDao
 import com.example.data.local.dao.CategoryDao
 import com.example.data.local.dao.RecurringBillDao
+import com.example.data.local.dao.SavingsDao
 import com.example.data.local.dao.TransactionDao
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.RecurringBillEntity
+import com.example.data.local.entity.SavingsAttachmentEntity
+import com.example.data.local.entity.SavingsEntryEntity
+import com.example.data.local.entity.SavingsItemEntity
+import com.example.data.local.entity.SavingsSnapshotEntity
 import com.example.data.local.entity.TransactionEntity
 
 @Database(
@@ -20,9 +25,13 @@ import com.example.data.local.entity.TransactionEntity
         AccountEntity::class,
         TransactionEntity::class,
         CategoryEntity::class,
-        RecurringBillEntity::class
+        RecurringBillEntity::class,
+        SavingsItemEntity::class,
+        SavingsEntryEntity::class,
+        SavingsAttachmentEntity::class,
+        SavingsSnapshotEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun categoryDao(): CategoryDao
     abstract fun recurringBillDao(): RecurringBillDao
+    abstract fun savingsDao(): SavingsDao
 
     companion object {
         @Volatile
@@ -93,6 +103,43 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v9 -> v10: the Savings page. New tables only (records, their dated investment history,
+        // attachments and value/rate snapshots); no existing table or row changes.
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `savings_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`section` TEXT NOT NULL, `subType` TEXT, `name` TEXT NOT NULL, `holder` TEXT NOT NULL, " +
+                        "`institution` TEXT, `refNo` TEXT, `nominee` TEXT, `startDate` INTEGER NOT NULL, `maturityDate` INTEGER, " +
+                        "`status` TEXT NOT NULL, `notes` TEXT, `investedAmount` REAL NOT NULL, `currentValue` REAL NOT NULL, " +
+                        "`detailsJson` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_items_section` ON `savings_items` (`section`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_items_holder` ON `savings_items` (`holder`)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `savings_entries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`itemId` INTEGER NOT NULL, `date` INTEGER NOT NULL, `type` TEXT NOT NULL, `amount` REAL NOT NULL, " +
+                        "`units` REAL, `unitPrice` REAL, `note` TEXT, FOREIGN KEY(`itemId`) REFERENCES `savings_items`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_entries_itemId` ON `savings_entries` (`itemId`)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `savings_attachments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`itemId` INTEGER NOT NULL, `fileName` TEXT NOT NULL, `mimeType` TEXT NOT NULL, `relativePath` TEXT NOT NULL, " +
+                        "`sizeBytes` INTEGER NOT NULL, `label` TEXT, `docTag` TEXT, `addedAt` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`itemId`) REFERENCES `savings_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_attachments_itemId` ON `savings_attachments` (`itemId`)")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `savings_snapshots` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`itemId` INTEGER, `key` TEXT NOT NULL, `value` REAL NOT NULL, `date` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`itemId`) REFERENCES `savings_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_snapshots_itemId` ON `savings_snapshots` (`itemId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_snapshots_key` ON `savings_snapshots` (`key`)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -100,7 +147,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "smart_budget_db"
                 )
-                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     // Versions 1-3 predate this app's first real release and have no schema
                     // history captured (exportSchema was off), so there's no real user data to
                     // preserve for those - a destructive fallback is only acceptable for THEM.

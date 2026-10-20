@@ -365,6 +365,41 @@ Without this, a phone reinstall (the only update path, since there is no keystor
 
 ## Build order
 
+**Done (2026-10-20): step 1.**
+- **Database v10:** `MIGRATION_9_10` adds the four tables. `SavingsMigrationTest` builds a real v9 database from `9.json`, migrates it, and lets Room validate the result.
+- **Calculations:** `data/savings/` holds `SavingsCalculator`, `SavingsValuation` and `SavingsRepository`. `SavingsCalculatorTest` reproduces every worked example in this plan.
+- **Tests:** all 76 unit tests pass, and ktlint is clean.
+
+**Done (2026-10-20): step 2.**
+- **Savings tab:** added as the 4th of 5 tabs (`ui/savings/`, with its own `SavingsViewModel`).
+- **List page:**
+  - summary card (value, invested, gain, net worth, maturing next);
+  - holder chips and By type / By holder grouping;
+  - status filters;
+  - collapsible sections, all remembered in `savings_prefs`.
+- **FD and RD:**
+  - **Form:** full screen, and asks before discarding typed input.
+  - **Detail page:** numbered Calculation card, Details, and an investment history editor with per-FY totals and a running total.
+  - **Delete:** asks for confirmation, then offers Undo.
+- **Sections:** only FD and RD show until their forms exist (`availableSections` in `SavingsUi.kt`).
+- **Tested on the Elo device (copy of real data):**
+  - v9→v10 migration kept all 456 transactions and the 3 balances.
+  - The FD and RD figures match the worked examples.
+  - Deleting a missed RD month updated "5 of 12".
+  - Undo restored a deleted record with its history.
+
+**Done (2026-10-20): step 3.**
+- **All 8 sections** now have forms, calculation steps and detail rows: Stocks, SIP / Mutual Funds, Gold (including SGB), Silver, Land & Property, and Other schemes (PPF, EPF, NPS, Sukanya, insurance, chit fund, bond, money lent, crypto, other).
+- **Gold and Silver:**
+  - each section has a rate row: today's rate, when it was entered, and total weight by purity;
+  - entering a rate revalues every item and adds a point to its value history.
+- **SIP:** a fund can have a SIP, a one-time amount, or both. Both go into the investment history (`MutualFund.lumpSum`). Other assets record what was put in (`Generic.invested`).
+- **List:** once any record exists, empty sections show only their header and + button.
+- **Tested on the Elo:**
+  - a 22K necklace at a 24K rate of ₹10,000 shows ₹1,83,333.33;
+  - the 5-cent plot matches every figure in the Land example above.
+- **Tests:** 81 unit tests pass, and ktlint is clean.
+
 1. Database v10 (items, entries, attachments, snapshots) and its migration test; `SavingsCalculator` with unit tests for every worked example above (FD, RD, SIP XIRR, gold, silver, land).
 2. Savings tab (5th tab), summary card, a collapsible section list, holder filter chips and group-by-holder; the investment history editor; the add/edit form for FD and RD; the detail screen with the Calculation card.
 3. Stocks, SIP, gold and silver (with shared rates); Land & Property; Other schemes.

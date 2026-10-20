@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.Badge
@@ -57,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.AppDatabase
 import com.example.data.local.BudgetRepository
+import com.example.data.savings.SavingsRepository
 import com.example.data.notifications.BillAlertScheduler
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
@@ -71,6 +73,9 @@ import com.example.ui.dialogs.EditCategoryBudgetDialog
 import com.example.ui.dialogs.EditTransactionDialog
 import com.example.ui.dialogs.ExportImportBackupDialog
 import com.example.ui.dialogs.QuickReviewPendingDialog
+import com.example.ui.savings.SavingsScreen
+import com.example.ui.savings.SavingsViewModel
+import com.example.ui.savings.SavingsViewModelFactory
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
@@ -82,6 +87,7 @@ sealed class Screen(val route: String, @StringRes val titleRes: Int, val icon: I
     object Home : Screen("home", R.string.nav_overview, Icons.Default.Home)
     object Transactions : Screen("transactions", R.string.nav_ledger, Icons.Default.ReceiptLong)
     object Reports : Screen("reports", R.string.nav_planning, Icons.Default.BarChart)
+    object Savings : Screen("savings", R.string.nav_savings, Icons.Default.Savings)
     object Settings : Screen("settings", R.string.nav_settings, Icons.Default.Settings)
 }
 
@@ -95,6 +101,13 @@ class MainActivity : ComponentActivity() {
         val db = AppDatabase.getDatabase(applicationContext)
         val repository = BudgetRepository(db, db.accountDao(), db.transactionDao(), db.categoryDao())
         ExpenseViewModelFactory(repository)
+    }
+
+    private val savingsViewModel: SavingsViewModel by viewModels {
+        SavingsViewModelFactory(
+            SavingsRepository(AppDatabase.getDatabase(applicationContext)),
+            applicationContext.getSharedPreferences(SavingsViewModel.PREFS_NAME, MODE_PRIVATE)
+        )
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -115,7 +128,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             SmartBudgetTheme(themeMode = themeMode) {
-                SmartBudgetApp(viewModel = viewModel)
+                SmartBudgetApp(viewModel = viewModel, savingsViewModel = savingsViewModel)
             }
         }
     }
@@ -123,12 +136,13 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SmartBudgetApp(viewModel: ExpenseViewModel) {
+fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewModel) {
     var selectedScreenIndex by remember { mutableIntStateOf(0) }
     val screens = listOf(
         Screen.Home,
         Screen.Transactions,
         Screen.Reports,
+        Screen.Savings,
         Screen.Settings
     )
 
@@ -308,7 +322,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                         transferInitialToAccountId = account.id
                         showAccountTransferDialog = true
                     },
-                    onChangeLowBalanceAlert = { selectedScreenIndex = 3 },
+                    onChangeLowBalanceAlert = { selectedScreenIndex = screens.indexOf(Screen.Settings) },
                     onPendingReviewClick = {
                         showQuickReviewDialog = true
                     },
@@ -374,7 +388,14 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     onSetTotalMonthlyBudget = { viewModel.setTotalMonthlyBudget(it) }
                 )
 
-                3 -> SettingsScreen(
+                3 -> SavingsScreen(
+                    viewModel = savingsViewModel,
+                    accountBalances = accounts.map { it.balance },
+                    currencySymbol = currencySymbol,
+                    snackbarHostState = snackbarHostState
+                )
+
+                4 -> SettingsScreen(
                     accounts = accounts,
                     importStatusMessage = importStatusMessage,
                     currencySymbol = currencySymbol,

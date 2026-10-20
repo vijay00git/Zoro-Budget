@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Savings tab -->
+    <string name="nav_savings">Savings</string>
+
+    <!-- Sections -->
+    <string name="savings_section_fd">Fixed Deposits</string>
+    <string name="savings_section_rd">Recurring Deposits</string>
+    <string name="savings_section_stock">Stocks</string>
+    <string name="savings_section_mf">SIP / Mutual Funds</string>
+    <string name="savings_section_gold">Gold</string>
+    <string name="savings_section_silver">Silver</string>
+    <string name="savings_section_land">Land &amp; Property</string>
+    <string name="savings_section_other">Other schemes</string>
+    <string name="savings_add_first_fd">Add your first FD</string>
+    <string name="savings_add_first_rd">Add your first RD</string>
+    <string name="savings_add_first_stock">Add your first stock</string>
+    <string name="savings_add_first_mf">Add your first fund</string>
+    <string name="savings_add_first_gold">Add your first gold item</string>
+    <string name="savings_add_first_silver">Add your first silver item</string>
+    <string name="savings_add_first_land">Add your first property</string>
+    <string name="savings_add_first_other">Add a scheme</string>
+
+    <!-- Statuses -->
+    <string name="savings_status_active">Active</string>
+    <string name="savings_status_matured">Matured</string>
+    <string name="savings_status_closed">Closed</string>
+    <string name="savings_status_sold">Sold</string>
+
+    <!-- List page -->
+    <string name="savings_total_value">Total value today</string>
+    <string name="savings_current_value">Value today</string>
+    <string name="savings_invested_amount">Invested %1$s</string>
+    <string name="savings_net_worth">Net worth</string>
+    <string name="savings_net_worth_detail">Bank, cash and card balances plus savings</string>
+    <string name="savings_upcoming_maturities">Maturing next</string>
+    <string name="savings_add">Add</string>
+    <string name="savings_add_to">Add to %1$s</string>
+    <string name="savings_pick_section">What are you adding?</string>
+    <string name="savings_holder_all">Everyone</string>
+    <string name="savings_group_section">By type</string>
+    <string name="savings_group_holder">By holder</string>
+    <string name="savings_no_match">No records match these filters.</string>
+    <string name="savings_expand">Show records</string>
+    <string name="savings_collapse">Hide records</string>
+    <string name="savings_matures_on">Matures %1$s</string>
+    <plurals name="savings_in_days">
+        <item quantity="one">in %1$d day</item>
+        <item quantity="other">in %1$d days</item>
+    </plurals>
+    <string name="savings_deleted">Deleted %1$s</string>
+    <string name="savings_undo">Undo</string>
+
+    <!-- Detail page -->
+    <string name="savings_back">Back</string>
+    <string name="savings_edit">Edit</string>
+    <string name="savings_delete">Delete</string>
+    <string name="savings_delete_title">Delete this record?</string>
+    <string name="savings_delete_message">%1$s and its investment history will be deleted. Your ledger is not affected.</string>
+    <string name="savings_details_title">Details</string>
+    <string name="savings_yes">Yes</string>
+
+    <!-- Calculation card -->
+    <string name="savings_calc_title">Calculation</string>
+    <string name="savings_calc_tenure">Tenure (t)</string>
+    <string name="savings_calc_years">%1$s years</string>
+    <string name="savings_calc_rate_per_period">Rate per period (r ÷ n)</string>
+    <string name="savings_calc_periods">Number of periods (n × t)</string>
+    <string name="savings_calc_growth">Growth factor (1 + r/n)^(n × t)</string>
+    <string name="savings_calc_maturity">Maturity amount</string>
+    <string name="savings_calc_interest_at_maturity">Interest at maturity</string>
+    <string name="savings_calc_value_today">Value today</string>
+    <string name="savings_calc_after_years">after %1$s years</string>
+    <string name="savings_calc_interest_so_far">Interest earned so far</string>
+    <string name="savings_calc_simple_interest">Simple interest (P × r × t) – under 6 months</string>
+    <string name="savings_calc_interest_per_payout">Interest per payout (P × r ÷ payouts a year)</string>
+    <string name="savings_calc_total_interest_simple">Total interest over the tenure (P × r × t)</string>
+    <string name="savings_calc_maturity_principal">Paid back at maturity (principal)</string>
+    <string name="savings_calc_days_to_maturity">Time to maturity</string>
+    <string name="savings_calc_matured">Matured on</string>
+    <plurals name="savings_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="savings_calc_total_deposit">Total deposit (R × N)</string>
+    <string name="savings_calc_rd_formula">Σ %1$s × (1 + %2$s%% ÷ 4)^(4i ÷ 12), i = 1 to %3$d</string>
+    <string name="savings_calc_installments_paid">Instalments paid</string>
+    <string name="savings_calc_x_of_y">%1$d of %2$d</string>
+    <string name="savings_calc_deposited_so_far">Deposited so far</string>
+    <string name="savings_calc_next_installment">Next instalment</string>
+    <string name="savings_calc_note_tds">Before tax: TDS on interest is not deducted in these figures.</string>
+    <string name="savings_calc_note_rd">Interest is compounded quarterly, as banks do for RDs. Instalments paid come from the investment history.</string>
+
+    <!-- Investment history -->
+    <string name="savings_history_title">Investment history</string>
+    <string name="savings_history_add">Add entry</string>
+    <string name="savings_history_total_invested">Total invested</string>
+    <string name="savings_history_total_withdrawn">Total withdrawn</string>
+    <string name="savings_history_total_income">Interest and income received</string>
+    <string name="savings_history_by_fy">Invested per financial year</string>
+    <string name="savings_history_fy">FY %1$d–%2$02d</string>
+    <string name="savings_history_empty">No entries yet. Add the dates and amounts you invested.</string>
+    <string name="savings_history_running">Total %1$s</string>
+    <string name="savings_entry_add_title">Add entry</string>
+    <string name="savings_entry_edit_title">Edit entry</string>
+    <string name="savings_entry_invest">Invested</string>
+    <string name="savings_entry_withdraw">Withdrawn</string>
+    <string name="savings_entry_income">Income</string>
+    <string name="savings_entry_date">Date</string>
+    <string name="savings_entry_amount">Amount</string>
+    <string name="savings_entry_note">Note (optional)</string>
+
+    <!-- Form -->
+    <string name="savings_form_add_title">New: %1$s</string>
+    <string name="savings_form_edit_title">Edit: %1$s</string>
+    <string name="savings_form_heading_amounts">Amounts and dates</string>
+    <string name="savings_form_heading_more">More details (optional)</string>
+    <string name="savings_save">Save</string>
+    <string name="savings_cancel">Cancel</string>
+    <string name="savings_ok">OK</string>
+    <string name="savings_discard_title">Discard what you entered?</string>
+    <string name="savings_discard">Discard</string>
+    <string name="savings_keep_editing">Keep editing</string>
+    <string name="savings_pick_date">Pick a date</string>
+    <string name="savings_field_name">Name</string>
+    <string name="savings_field_name_hint_fd">e.g. SBI FD – 2 years</string>
+    <string name="savings_field_name_hint_rd">e.g. Post Office RD</string>
+    <string name="savings_field_holder">Holder name</string>
+    <string name="savings_field_institution">Bank or institution</string>
+    <string name="savings_field_ref_no">Account / reference number</string>
+    <string name="savings_field_nominee">Nominee</string>
+    <string name="savings_field_status">Status</string>
+    <string name="savings_field_notes">Notes</string>
+    <string name="savings_field_start_date">Start date</string>
+    <string name="savings_field_maturity_date">Maturity date</string>
+    <string name="savings_field_principal">Deposit amount</string>
+    <string name="savings_field_rate">Interest rate (% a year)</string>
+    <string name="savings_field_tenure_quick">Tenure</string>
+    <string name="savings_months_short">%1$d months</string>
+    <string name="savings_years_short">%1$d yr</string>
+    <string name="savings_error_maturity">The maturity date must be after the start date.</string>
+    <string name="savings_field_interest">Interest</string>
+    <string name="savings_payout_cumulative">Added to the deposit</string>
+    <string name="savings_payout_cumulative_compounded">Added to the deposit, compounded %1$s</string>
+    <string name="savings_payout_paid_out">Paid out %1$s</string>
+    <string name="savings_field_compounding">Compounding</string>
+    <string name="savings_compounding_simple">simple interest</string>
+    <string name="savings_freq_monthly">monthly</string>
+    <string name="savings_freq_quarterly">quarterly</string>
+    <string name="savings_freq_half_yearly">half-yearly</string>
+    <string name="savings_freq_yearly">yearly</string>
+    <string name="savings_field_auto_renew">Renews automatically</string>
+    <string name="savings_field_installment">Monthly instalment</string>
+    <string name="savings_field_tenure_months">Tenure (months)</string>
+    <string name="savings_field_installment_day">Instalment day of month</string>
+    <string name="savings_rd_history_note">Monthly entries from the start date up to today are added to the investment history. Delete any month you missed.</string>
+
+    <!-- Step 3: name hints -->
+    <string name="savings_field_name_hint_stock">e.g. TCS</string>
+    <string name="savings_field_name_hint_mf">e.g. Parag Parikh Flexi Cap</string>
+    <string name="savings_field_name_hint_gold">e.g. Wedding necklace</string>
+    <string name="savings_field_name_hint_silver">e.g. Silver lamp set</string>
+    <string name="savings_field_name_hint_land">e.g. Plot at Avadi</string>
+    <string name="savings_field_name_hint_other">e.g. SBI PPF account</string>
+
+    <!-- Stocks -->
+    <string name="savings_field_symbol">Symbol (optional)</string>
+    <string name="savings_field_quantity">Quantity (shares)</string>
+    <string name="savings_field_avg_price">Average buy price</string>
+    <string name="savings_field_buy_date">First bought on</string>
+    <string name="savings_field_current_price">Current price</string>
+    <string name="savings_field_price_date">Price as of</string>
+    <string name="savings_field_dividends">Dividends received (total)</string>
+    <string name="savings_field_sector">Sector (optional)</string>
+
+    <!-- SIP / mutual funds -->
+    <string name="savings_mf_direct">Direct</string>
+    <string name="savings_mf_regular">Regular</string>
+    <string name="savings_mf_equity">Equity</string>
+    <string name="savings_mf_debt">Debt</string>
+    <string name="savings_mf_hybrid">Hybrid</string>
+    <string name="savings_mf_elss">ELSS (tax saver)</string>
+    <string name="savings_field_fund_type">Fund type</string>
+    <string name="savings_field_sip_amount">SIP amount per month</string>
+    <string name="savings_field_sip_day">SIP day of month</string>
+    <string name="savings_field_sip_stopped">SIP has stopped</string>
+    <string name="savings_field_sip_stopped_date">SIP stopped on</string>
+    <string name="savings_field_lump_sum">One-time amount invested (optional)</string>
+    <string name="savings_field_units">Units held</string>
+    <string name="savings_field_nav">Current NAV</string>
+    <string name="savings_field_nav_date">NAV as of</string>
+    <string name="savings_mf_history_note">Each monthly SIP from the start date up to today, and the one-time amount, are added to the investment history. Delete any month you missed. Enter a SIP amount, a one-time amount, or both.</string>
+
+    <!-- Gold and silver -->
+    <string name="savings_field_form">Form</string>
+    <string name="savings_gold_jewellery">Jewellery</string>
+    <string name="savings_gold_digital">Digital gold</string>
+    <string name="savings_gold_sgb">Sovereign Gold Bond</string>
+    <string name="savings_metal_coin">Coin</string>
+    <string name="savings_metal_bar">Bar</string>
+    <string name="savings_silver_article">Articles</string>
+    <string name="savings_field_grams">Weight (grams)</string>
+    <string name="savings_field_sgb_units">Units (1 unit = 1 g)</string>
+    <string name="savings_field_sgb_issue_price">Issue price per unit</string>
+    <string name="savings_field_issue_date">Issue date</string>
+    <string name="savings_field_purity">Purity</string>
+    <string name="savings_field_purity_pct">Purity (%)</string>
+    <string name="savings_field_purchase_amount">Amount paid</string>
+    <string name="savings_field_making_charges">Making charges included (optional)</string>
+    <string name="savings_field_gst">GST included (optional)</string>
+    <string name="savings_field_purchase_date">Bought on</string>
+    <string name="savings_field_bill_no">Jeweller / bill number (optional)</string>
+    <string name="savings_rate_gold_title">Today\'s gold rate</string>
+    <string name="savings_rate_silver_title">Today\'s silver rate</string>
+    <string name="savings_rate_gold24">24K rate per gram</string>
+    <string name="savings_rate_gold22">22K rate per gram (optional)</string>
+    <string name="savings_rate_gold22_hint">Jewellers quote 22K separately. If you leave it empty, 22K is worked out as 24K × 22 ÷ 24.</string>
+    <string name="savings_rate_silver">Rate per kg</string>
+    <string name="savings_rate_as_of">Rate entered %1$s</string>
+    <string name="savings_rate_missing_gold">Enter today\'s gold rate to value your gold</string>
+    <string name="savings_rate_missing_silver">Enter today\'s silver rate to value your silver</string>
+    <string name="savings_rate_total_weight">You hold: %1$s</string>
+    <string name="savings_rate_enter">Enter rate</string>
+    <string name="savings_rate_update">Update rate</string>
+
+    <!-- Land and property -->
+    <string name="savings_field_property_type">Property type</string>
+    <string name="savings_property_plot">Plot</string>
+    <string name="savings_property_house">House</string>
+    <string name="savings_property_flat">Flat</string>
+    <string name="savings_property_agricultural">Agricultural land</string>
+    <string name="savings_property_commercial">Commercial</string>
+    <string name="savings_field_area">Area</string>
+    <string name="savings_area_sqft">sq ft</string>
+    <string name="savings_area_sqm">sq m</string>
+    <string name="savings_area_cent">cent</string>
+    <string name="savings_area_ground">ground</string>
+    <string name="savings_area_acre">acre</string>
+    <string name="savings_area_hectare">hectare</string>
+    <string name="savings_field_land_price">Purchase price</string>
+    <string name="savings_field_stamp_duty">Stamp duty and registration</string>
+    <string name="savings_field_brokerage">Brokerage</string>
+    <string name="savings_field_other_costs">Other costs (legal, development)</string>
+    <string name="savings_field_land_value">Value today (your estimate)</string>
+    <string name="savings_field_value_date">Value as of</string>
+    <string name="savings_value_own">Own estimate</string>
+    <string name="savings_value_guideline">Guideline value</string>
+    <string name="savings_value_valuer">Valuer</string>
+    <string name="savings_field_address">Address / location</string>
+    <string name="savings_field_survey_no">Survey number</string>
+    <string name="savings_field_patta_no">Patta number</string>
+    <string name="savings_field_monthly_rent">Rent received per month (optional)</string>
+    <string name="savings_field_loan_outstanding">Loan outstanding on it (optional)</string>
+
+    <!-- Other schemes -->
+    <string name="savings_other_ppf">PPF</string>
+    <string name="savings_other_epf">EPF</string>
+    <string name="savings_other_nps">NPS</string>
+    <string name="savings_other_sukanya">Sukanya Samriddhi</string>
+    <string name="savings_other_insurance">Insurance policy</string>
+    <string name="savings_other_chit">Chit fund</string>
+    <string name="savings_other_bond">Bond / debenture</string>
+    <string name="savings_other_loan">Money lent</string>
+    <string name="savings_other_crypto">Crypto</string>
+    <string name="savings_other_other">Other</string>
+    <string name="savings_field_balance">Current balance</string>
+    <string name="savings_field_balance_date">Balance as of</string>
+    <string name="savings_field_yearly_contribution">Yearly contribution (optional)</string>
+    <string name="savings_field_open_date">Account opened on</string>
+    <string name="savings_field_premium">Premium</string>
+    <string name="savings_field_term_years">Premium-paying term (years)</string>
+    <string name="savings_field_policy_start">Policy start date</string>
+    <string name="savings_field_sum_assured">Sum assured</string>
+    <string name="savings_field_bonus">Bonus added so far</string>
+    <string name="savings_field_chit_value">Chit value</string>
+    <string name="savings_field_chit_months">Total months</string>
+    <string name="savings_field_chit_paid">Months paid</string>
+    <string name="savings_field_chit_prize">Prize amount taken (if any)</string>
+    <string name="savings_field_chit_dividends">Dividends received</string>
+    <string name="savings_field_face_value">Face value</string>
+    <string name="savings_field_coupon">Coupon rate (% a year)</string>
+    <string name="savings_field_person">Lent to</string>
+    <string name="savings_field_loan_amount">Amount lent</string>
+    <string name="savings_field_loan_rate">Interest rate (% a year, optional)</string>
+    <string name="savings_field_lent_on">Lent on</string>
+    <string name="savings_field_received_back">Received back so far</string>
+    <string name="savings_field_due_date">Due back on (optional)</string>
+    <string name="savings_field_amount_invested">Amount invested</string>
+    <string name="savings_field_value_now">Value today</string>
+
+    <!-- Step 3: calculation lines -->
+    <string name="savings_calc_invested_qty">Invested (quantity × average price)</string>
+    <string name="savings_calc_value_qty">Value today (quantity × current price)</string>
+    <string name="savings_calc_profit">Profit / loss</string>
+    <string name="savings_calc_dividends">Dividends received</string>
+    <string name="savings_calc_total_return">Total return with dividends</string>
+    <string name="savings_calc_held_for">Held for</string>
+    <string name="savings_calc_long_term">Long term: held over 12 months</string>
+    <string name="savings_calc_short_term">Short term: held 12 months or less</string>
+    <string name="savings_calc_invested_history">Invested (from the investment history)</string>
+    <plurals name="savings_entries">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
+    </plurals>
+    <string name="savings_calc_value_units">Value today (units × NAV)</string>
+    <string name="savings_calc_gain">Gain / loss</string>
+    <string name="savings_calc_xirr">Yearly return (XIRR)</string>
+    <string name="savings_calc_elss_lock">Last instalment locked until</string>
+    <string name="savings_calc_elss_lock_detail">Each ELSS instalment is locked for 3 years</string>
+    <string name="savings_calc_no_rate">Value today</string>
+    <string name="savings_calc_missing_gold">Enter today\'s gold rate on the Gold section to value this. Until then it counts at the amount paid.</string>
+    <string name="savings_calc_missing_silver">Enter today\'s silver rate on the Silver section to value this. Until then it counts at the amount paid.</string>
+    <string name="savings_calc_rate_used">%1$s rate used</string>
+    <string name="savings_calc_rate_entered">The rate you entered</string>
+    <string name="savings_calc_value_grams">Value today (weight × rate)</string>
+    <string name="savings_calc_purchase">Amount paid</string>
+    <string name="savings_calc_making">making %1$s</string>
+    <string name="savings_calc_gst">GST %1$s</string>
+    <string name="savings_calc_sgb_interest">Interest every 6 months</string>
+    <string name="savings_calc_sgb_received">Interest received so far</string>
+    <string name="savings_calc_payouts">%1$d payouts so far</string>
+    <string name="savings_calc_matures">Matures on</string>
+    <string name="savings_calc_silver_rate">Rate per gram for this purity</string>
+    <string name="savings_calc_area">Area in square feet</string>
+    <string name="savings_calc_total_cost">Total cost</string>
+    <string name="savings_calc_current_estimate">Value today</string>
+    <string name="savings_calc_years_held">Years held</string>
+    <string name="savings_calc_cagr">Growth per year (CAGR)</string>
+    <string name="savings_calc_price_sqft">Price per sq ft</string>
+    <string name="savings_calc_price_sqft_detail">When bought → today</string>
+    <string name="savings_calc_net_equity">Your equity (value − loan)</string>
+    <string name="savings_calc_rental_yield">Rental yield</string>
+    <string name="savings_calc_balance">Balance</string>
+    <string name="savings_calc_years_left">Time to maturity</string>
+    <string name="savings_calc_projected">Projected at maturity</string>
+    <string name="savings_calc_projected_detail">%1$s growing at %2$s%% a year, plus %3$s added each year</string>
+    <string name="savings_calc_premiums_paid">Premiums paid</string>
+    <string name="savings_calc_amount_paid">Paid so far</string>
+    <string name="savings_calc_total_payable">Total premiums over the term</string>
+    <string name="savings_calc_next_premium">Next premium due</string>
+    <string name="savings_calc_months_left">Months left</string>
+    <string name="savings_calc_net_cost">Net paid (after dividends)</string>
+    <string name="savings_calc_interest_due">Interest due</string>
+    <string name="savings_calc_outstanding">Still to get back</string>
+    <string name="savings_calc_note_stale_price">The price is from %1$s. Update it to see today\'s value.</string>
+    <string name="savings_calc_note_xirr">XIRR is the yearly return on the actual dates and amounts in the investment history.</string>
+    <string name="savings_calc_note_making">Making charges and GST are usually not paid back when jewellery is sold.</string>
+    <string name="savings_calc_note_land">The value today is your own figure. Update it whenever you learn the current rate.</string>
+    <string name="savings_calc_note_scheme">The projection assumes today\'s rate and contribution stay the same until maturity.</string>
+    <string name="savings_calc_note_chit_prize">The prize has been taken, so this chit counts as zero in your savings.</string>
+    <string name="savings_detail_making">Making charges</string>
+    <string name="savings_detail_gst">GST</string>
+    <string name="savings_detail_yearly_contribution">Yearly contribution</string>
+</resources>
