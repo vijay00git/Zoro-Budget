@@ -19,7 +19,8 @@ android {
     minSdk = 24
     targetSdk = 36
     versionCode = 1
-    versionName = "1.0"
+    // CI sets BUILD_NUMBER, so each released APK shows its build ("1.0.42") in Settings.
+    versionName = System.getenv("BUILD_NUMBER")?.let { "1.0.$it" } ?: "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

@@ -22,20 +22,64 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # The app on the phone is signed with this key; signing CI builds with it lets each
+      # released APK install over the existing app as an update, keeping its data.
+      - name: Restore signing key
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            echo "$DEBUG_KEYSTORE_BASE64" | base64 --decode > debug.keystore
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "::error::Secret DEBUG_KEYSTORE_BASE64 is missing; a release signed with a random key would not install over the phone's app."
+            exit 1
+          else
+            echo "No signing secret (pull request): building with a throwaway key, nothing is released."
+          fi
+
       - name: ktlint check
         run: ./gradlew ktlintCheck
-
-      - name: Compile Kotlin
-        run: ./gradlew compileDebugKotlin
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
       - name: Assemble debug APK
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
         run: ./gradlew assembleDebug
 
-      - name: Upload debug APK
+      - name: Name the APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "smart-budget-build-${{ github.run_number }}.apk"
+
+      - name: Upload APK to the run
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: smart-budget-build-${{ github.run_number }}
+          path: smart-budget-build-${{ github.run_number }}.apk
+
+  release:
+    # Every push to main publishes the APK as a GitHub Release; pull requests only build.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: smart-budget-build-${{ github.run_number }}
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          notes=$(printf 'Commit %s\n\n%s\n\nInstall: download the APK on the phone and open it. It updates the existing app and keeps your data.' "${GITHUB_SHA::7}" "$COMMIT_MESSAGE")
+          gh release create "build-${{ github.run_number }}" \
+            "smart-budget-build-${{ github.run_number }}.apk" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Smart Budget build ${{ github.run_number }}" \
+            --notes "$notes" \
+            --latest
