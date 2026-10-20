@@ -1,41 +1,23 @@
 package com.example.ui.dialogs
-import com.example.R
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -46,519 +28,293 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import com.example.R
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
+import com.example.data.local.entity.RecurringBillEntity
 import com.example.data.local.entity.TransactionEntity
+import com.example.data.utils.BillFrequency
+import com.example.data.utils.BillSchedule
+import com.example.ui.components.frequencyName
 import com.example.ui.theme.ExpenseRed
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Create or edit a recurring bill. With [fromTransaction] the form starts from that ledger entry
+ * ("make this recurring"): same name, amount, account and category, first due date one period on.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddOrEditRecurringBillDialog(
-    billToEdit: TransactionEntity? = null,
+    billToEdit: RecurringBillEntity? = null,
+    fromTransaction: TransactionEntity? = null,
     accounts: List<AccountEntity>,
     categories: List<CategoryEntity>,
-    currencySymbol: String = "$",
+    currencySymbol: String = "₹",
     onDismiss: () -> Unit,
-    onSave: (
-        title: String,
-        amount: Double,
-        type: String,
-        accountId: Long,
-        categoryTag: String,
-        frequency: String,
-        dueDate: Int,
-        notes: String?,
-        receiptUri: String?
-    ) -> Unit,
+    onSave: (RecurringBillEntity) -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
-    val defaultCategoryTag = stringResource(R.string.recurring_bill_dialog_default_category)
-    var title by remember { mutableStateOf(billToEdit?.title ?: "") }
-    var amountText by remember { mutableStateOf(billToEdit?.amount?.toString() ?: "") }
-    var selectedType by remember { mutableStateOf(billToEdit?.type ?: "DEBIT") } // "DEBIT" or "CREDIT"
-    var selectedAccountId by remember { mutableStateOf(billToEdit?.accountId ?: accounts.firstOrNull()?.id ?: 1L) }
-    var selectedCategoryTag by remember { mutableStateOf(billToEdit?.categoryTag ?: defaultCategoryTag) }
-    var frequency by remember { mutableStateOf(billToEdit?.recurringFrequency ?: "MONTHLY") } // "MONTHLY", "WEEKLY", "YEARLY"
-    var dueDate by remember { mutableIntStateOf(billToEdit?.recurringDueDate ?: 4) } // Default day 4 for EMI
-    var dueDateText by remember { mutableStateOf(billToEdit?.recurringDueDate?.toString() ?: "4") }
-    var notes by remember { mutableStateOf(billToEdit?.notes ?: "") }
-    var receiptUri by remember { mutableStateOf<String?>(billToEdit?.receiptUri) }
-
-    var accountDropdownExpanded by remember { mutableStateOf(false) }
-    var categoryDropdownExpanded by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            receiptUri = uri.toString()
-        }
+    val defaultCategory = stringResource(R.string.recurring_bill_dialog_default_category)
+    val initialFrequency = BillFrequency.from(billToEdit?.frequency)
+    var name by remember { mutableStateOf(billToEdit?.name ?: fromTransaction?.merchantOrSender ?: fromTransaction?.title ?: "") }
+    var amountText by remember { mutableStateOf((billToEdit?.amount ?: fromTransaction?.amount)?.let { formatPlain(it) } ?: "") }
+    var type by remember { mutableStateOf(billToEdit?.type ?: fromTransaction?.type ?: "DEBIT") }
+    var accountId by remember {
+        mutableStateOf(billToEdit?.accountId ?: fromTransaction?.accountId ?: accounts.firstOrNull { it.isDefault }?.id ?: accounts.firstOrNull()?.id)
     }
+    var categoryTag by remember { mutableStateOf(billToEdit?.categoryTag ?: fromTransaction?.categoryTag ?: defaultCategory) }
+    var frequency by remember { mutableStateOf(initialFrequency) }
+    var nextDueDate by remember {
+        mutableStateOf(
+            billToEdit?.nextDueDate
+                ?: fromTransaction?.let {
+                    val day = Calendar.getInstance().apply { timeInMillis = it.dateTimestamp }.get(Calendar.DAY_OF_MONTH)
+                    BillSchedule.advance(it.dateTimestamp, BillFrequency.MONTHLY, day)
+                }
+                ?: BillSchedule.startOfDay(System.currentTimeMillis())
+        )
+    }
+    var reminderDays by remember { mutableStateOf(billToEdit?.reminderDaysBefore ?: 3) }
+    var notes by remember { mutableStateOf(billToEdit?.notes ?: "") }
 
-    val daysOfWeek = listOf(
-        1 to stringResource(R.string.recurring_bill_dialog_day_monday),
-        2 to stringResource(R.string.recurring_bill_dialog_day_tuesday),
-        3 to stringResource(R.string.recurring_bill_dialog_day_wednesday),
-        4 to stringResource(R.string.recurring_bill_dialog_day_thursday),
-        5 to stringResource(R.string.recurring_bill_dialog_day_friday),
-        6 to stringResource(R.string.recurring_bill_dialog_day_saturday),
-        7 to stringResource(R.string.recurring_bill_dialog_day_sunday)
-    )
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var accountMenuOpen by remember { mutableStateOf(false) }
+    var categoryMenuOpen by remember { mutableStateOf(false) }
+
+    val amount = amountText.replace(",", "").toDoubleOrNull()
+    val amountError = amountText.isNotBlank() && (amount == null || amount <= 0.0)
+    val canSave = name.isNotBlank() && amount != null && amount > 0.0 && accountId != null
+    val dateFormat = remember { SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ReceiptLong,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = if (billToEdit != null) stringResource(R.string.recurring_bill_dialog_title_edit) else stringResource(R.string.recurring_bill_dialog_title_add),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(if (billToEdit != null) R.string.bill_form_title_edit else R.string.bill_form_title_add),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f)
+                )
                 if (billToEdit != null && onDelete != null) {
-                    IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.recurring_bill_dialog_delete_cd), tint = ExpenseRed)
+                    IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.testTag("bill_form_delete")) {
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.bill_form_delete), tint = ExpenseRed)
                     }
                 }
             }
         },
         text = {
             Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Title
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = type == "DEBIT",
+                        onClick = { type = "DEBIT" },
+                        label = { Text(stringResource(R.string.bill_form_type_bill)) }
+                    )
+                    FilterChip(
+                        selected = type == "CREDIT",
+                        onClick = { type = "CREDIT" },
+                        label = { Text(stringResource(R.string.bill_form_type_income)) }
+                    )
+                }
+
                 OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text(stringResource(R.string.recurring_bill_dialog_name_label)) },
-                    placeholder = { Text(stringResource(R.string.recurring_bill_dialog_name_placeholder)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("recurring_bill_title_input"),
-                    singleLine = true
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.bill_form_name)) },
+                    placeholder = { Text(stringResource(R.string.bill_form_name_placeholder)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth().testTag("bill_form_name")
                 )
 
-                // Amount
                 OutlinedTextField(
                     value = amountText,
-                    onValueChange = { amountText = it },
-                    label = { Text(stringResource(R.string.recurring_bill_dialog_amount_label, currencySymbol)) },
-                    placeholder = { Text(stringResource(R.string.recurring_bill_dialog_amount_placeholder)) },
-                    leadingIcon = { Text(currencySymbol, style = MaterialTheme.typography.bodyLarge) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("recurring_bill_amount_input"),
-                    singleLine = true
+                    onValueChange = { input -> amountText = input.filter { it.isDigit() || it == '.' || it == ',' } },
+                    label = { Text(stringResource(R.string.bill_form_amount)) },
+                    prefix = { Text(currencySymbol) },
+                    isError = amountError,
+                    supportingText = if (amountError) {
+                        { Text(stringResource(R.string.bill_form_amount_error)) }
+                    } else {
+                        null
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth().testTag("bill_form_amount")
                 )
 
-                // Recurring Schedule / Frequency Selector
-                Text(
-                    text = stringResource(R.string.recurring_bill_dialog_frequency_label),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf("MONTHLY", "WEEKLY", "YEARLY").forEach { freqKey ->
+                Text(stringResource(R.string.bill_form_frequency), style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BillFrequency.entries.forEach { option ->
                         FilterChip(
-                            selected = frequency == freqKey,
-                            onClick = {
-                                frequency = freqKey
-                                if (freqKey == "WEEKLY" && dueDate > 7) {
-                                    dueDate = 1
-                                    dueDateText = "1"
-                                }
-                            },
-                            label = {
-                                Text(
-                                    text = when (freqKey) {
-                                        "MONTHLY" -> stringResource(R.string.recurring_bill_dialog_freq_monthly)
-                                        "WEEKLY" -> stringResource(R.string.recurring_bill_dialog_freq_weekly)
-                                        else -> stringResource(R.string.recurring_bill_dialog_freq_yearly)
-                                    },
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            },
-                            modifier = Modifier.weight(1f)
+                            selected = frequency == option,
+                            onClick = { frequency = option },
+                            label = { Text(frequencyName(option)) },
+                            modifier = Modifier.testTag("bill_form_frequency_${option.name}")
                         )
                     }
                 }
 
-                // Custom Due Date / Day Picker
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(12.dp)
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth().testTag("bill_form_due_date")
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CalendarMonth,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = when (frequency) {
-                                    "WEEKLY" -> stringResource(R.string.recurring_bill_dialog_due_label_weekly)
-                                    "YEARLY" -> stringResource(R.string.recurring_bill_dialog_due_label_yearly)
-                                    else -> stringResource(R.string.recurring_bill_dialog_due_label_monthly)
-                                },
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            )
-                        }
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.bill_form_next_due, dateFormat.format(nextDueDate)))
+                }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        if (frequency == "WEEKLY") {
-                            // Day of week selector
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                daysOfWeek.forEach { (dayNum, dayName) ->
-                                    val isSelected = dueDate == dayNum
-                                    Surface(
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                                        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clickable { dueDate = dayNum }
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.padding(vertical = 8.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = dayName.take(3),
-                                                style = MaterialTheme.typography.labelSmall.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 11.sp
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            // Monthly Day of Month TextField & Quick Presets
-                            OutlinedTextField(
-                                value = dueDateText,
-                                onValueChange = { input ->
-                                    if (input.isBlank()) {
-                                        dueDateText = ""
+                Text(stringResource(R.string.bill_form_reminder), style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0, 1, 3, 7).forEach { days ->
+                        FilterChip(
+                            selected = reminderDays == days,
+                            onClick = { reminderDays = days },
+                            label = {
+                                Text(
+                                    if (days == 0) {
+                                        stringResource(R.string.bill_form_reminder_same_day)
                                     } else {
-                                        val parsed = input.toIntOrNull()
-                                        if (parsed != null && parsed in 1..31) {
-                                            dueDate = parsed
-                                            dueDateText = parsed.toString()
-                                        }
+                                        stringResource(R.string.bill_form_reminder_days, days)
                                     }
-                                },
-                                label = { Text(stringResource(R.string.recurring_bill_dialog_due_day_field_label)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                supportingText = {
-                                    Text(stringResource(R.string.recurring_bill_dialog_alerts_supporting_text, dueDate))
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("recurring_bill_duedate_input"),
-                                singleLine = true
-                            )
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Text(
-                                text = stringResource(R.string.recurring_bill_dialog_quick_date_presets_label),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold)
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                listOf(1, 4, 5, 10, 15, 25, 30).forEach { day ->
-                                    FilterChip(
-                                        selected = dueDate == day,
-                                        onClick = {
-                                            dueDate = day
-                                            dueDateText = day.toString()
-                                        },
-                                        label = { Text(stringResource(R.string.recurring_bill_dialog_day_preset, day), style = MaterialTheme.typography.labelSmall) }
-                                    )
-                                }
+                                )
                             }
-                        }
+                        )
                     }
                 }
 
-                // Account Selection
-                ExposedDropdownMenuBox(
-                    expanded = accountDropdownExpanded,
-                    onExpandedChange = { accountDropdownExpanded = !accountDropdownExpanded }
-                ) {
-                    val currentAccountName = accounts.find { it.id == selectedAccountId }?.name ?: stringResource(R.string.recurring_bill_dialog_select_account)
+                ExposedDropdownMenuBox(expanded = accountMenuOpen, onExpandedChange = { accountMenuOpen = it }) {
                     OutlinedTextField(
-                        value = currentAccountName,
+                        value = accounts.firstOrNull { it.id == accountId }?.name ?: "",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text(stringResource(R.string.recurring_bill_dialog_pay_from_account_label)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountDropdownExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                        label = { Text(stringResource(R.string.bill_form_account)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountMenuOpen) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
-
-                    ExposedDropdownMenu(
-                        expanded = accountDropdownExpanded,
-                        onDismissRequest = { accountDropdownExpanded = false }
-                    ) {
+                    ExposedDropdownMenu(expanded = accountMenuOpen, onDismissRequest = { accountMenuOpen = false }) {
                         accounts.forEach { acc ->
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.recurring_bill_dialog_account_item, acc.name, acc.type)) },
+                                text = { Text(acc.name) },
                                 onClick = {
-                                    selectedAccountId = acc.id
-                                    accountDropdownExpanded = false
+                                    accountId = acc.id
+                                    accountMenuOpen = false
                                 }
                             )
                         }
                     }
                 }
 
-                // Category Selection
-                ExposedDropdownMenuBox(
-                    expanded = categoryDropdownExpanded,
-                    onExpandedChange = { categoryDropdownExpanded = !categoryDropdownExpanded }
-                ) {
+                ExposedDropdownMenuBox(expanded = categoryMenuOpen, onExpandedChange = { categoryMenuOpen = it }) {
                     OutlinedTextField(
-                        value = selectedCategoryTag,
+                        value = categoryTag,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text(stringResource(R.string.recurring_bill_dialog_category_label)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryDropdownExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                        label = { Text(stringResource(R.string.bill_form_category)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuOpen) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
-
-                    ExposedDropdownMenu(
-                        expanded = categoryDropdownExpanded,
-                        onDismissRequest = { categoryDropdownExpanded = false }
-                    ) {
+                    ExposedDropdownMenu(expanded = categoryMenuOpen, onDismissRequest = { categoryMenuOpen = false }) {
                         categories.forEach { cat ->
                             DropdownMenuItem(
                                 text = { Text(cat.name) },
                                 onClick = {
-                                    selectedCategoryTag = cat.name
-                                    categoryDropdownExpanded = false
+                                    categoryTag = cat.name
+                                    categoryMenuOpen = false
                                 }
                             )
                         }
                     }
                 }
 
-                // Notes
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text(stringResource(R.string.recurring_bill_dialog_notes_label)) },
-                    placeholder = { Text(stringResource(R.string.recurring_bill_dialog_notes_placeholder)) },
+                    label = { Text(stringResource(R.string.bill_form_notes)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-
-                // Capture & Attach Bill Image Section
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.recurring_bill_dialog_receipt_section_title),
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    if (receiptUri == null) {
-                        OutlinedButton(
-                            onClick = { imagePickerLauncher.launch("image/*") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("attach_recurring_bill_image_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PhotoCamera,
-                                contentDescription = stringResource(R.string.recurring_bill_dialog_capture_image_cd),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.recurring_bill_dialog_attach_image_button), style = MaterialTheme.typography.labelMedium)
-                        }
-                    } else {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    val uriStr = receiptUri ?: ""
-                                    if (uriStr.startsWith("content://") || uriStr.startsWith("file://") || uriStr.startsWith("http")) {
-                                        AsyncImage(
-                                            model = uriStr,
-                                            contentDescription = stringResource(R.string.recurring_bill_dialog_receipt_preview_cd),
-                                            modifier = Modifier
-                                                .size(44.dp)
-                                                .clip(RoundedCornerShape(8.dp)),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    } else {
-                                        Surface(
-                                            color = com.example.ui.theme.IncomeGreenContainer,
-                                            shape = RoundedCornerShape(8.dp),
-                                            modifier = Modifier.size(44.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Receipt,
-                                                    contentDescription = stringResource(R.string.recurring_bill_dialog_receipt_icon_cd),
-                                                    tint = com.example.ui.theme.IncomeGreen,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    Column {
-                                        Text(
-                                            text = stringResource(R.string.recurring_bill_dialog_receipt_attached),
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.recurring_bill_dialog_image_attached),
-                                            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        )
-                                    }
-                                }
-
-                                IconButton(
-                                    onClick = { receiptUri = null },
-                                    modifier = Modifier.testTag("remove_recurring_receipt_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = stringResource(R.string.recurring_bill_dialog_remove_receipt_cd),
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
             }
         },
         confirmButton = {
             Button(
+                enabled = canSave,
                 onClick = {
-                    val parsedAmount = amountText.toDoubleOrNull()
-                    val resolvedDueDate = dueDateText.toIntOrNull()?.coerceIn(1, 31) ?: dueDate
-                    if (title.isNotBlank() && parsedAmount != null && parsedAmount > 0) {
-                        onSave(
-                            title,
-                            parsedAmount,
-                            selectedType,
-                            selectedAccountId,
-                            selectedCategoryTag,
-                            frequency,
-                            resolvedDueDate,
-                            notes.ifBlank { null },
-                            receiptUri
+                    val dueDay = Calendar.getInstance().apply { timeInMillis = nextDueDate }.get(Calendar.DAY_OF_MONTH)
+                    val base = billToEdit ?: RecurringBillEntity(
+                        name = "",
+                        amount = 0.0,
+                        accountId = 0L,
+                        categoryTag = "",
+                        nextDueDate = nextDueDate,
+                        dueDay = dueDay,
+                        matchPayee = fromTransaction?.merchantOrSender
+                    )
+                    onSave(
+                        base.copy(
+                            name = name.trim(),
+                            amount = amount ?: 0.0,
+                            type = type,
+                            accountId = accountId ?: 0L,
+                            categoryTag = categoryTag,
+                            frequency = frequency.name,
+                            nextDueDate = BillSchedule.startOfDay(nextDueDate),
+                            dueDay = dueDay,
+                            reminderDaysBefore = reminderDays,
+                            notes = notes.ifBlank { null }
                         )
-                    }
+                    )
                 },
-                modifier = Modifier.testTag("save_recurring_bill_button")
-            ) {
-                Text(if (billToEdit != null) stringResource(R.string.recurring_bill_dialog_save_button) else stringResource(R.string.recurring_bill_dialog_add_button))
-            }
+                modifier = Modifier.testTag("bill_form_save")
+            ) { Text(stringResource(R.string.bill_form_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.recurring_bill_dialog_cancel_button))
-            }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.bill_form_cancel)) }
         }
     )
 
+    if (showDatePicker) {
+        // The Material date picker works in UTC midnights; convert to and from local days.
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis = localDayToUtc(nextDueDate))
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { nextDueDate = utcDayToLocal(it) }
+                    showDatePicker = false
+                }) { Text(stringResource(R.string.bill_form_ok)) }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.bill_form_cancel)) } }
+        ) { DatePicker(state = pickerState) }
+    }
+
     if (showDeleteConfirm && onDelete != null) {
         ConfirmDeleteDialog(
-            title = stringResource(R.string.confirm_delete_recurring_bill_title),
-            message = stringResource(R.string.confirm_delete_recurring_bill_message, title.ifBlank { billToEdit?.title ?: "" }),
+            title = stringResource(R.string.bill_form_delete_title),
+            message = stringResource(R.string.bill_form_delete_message),
             onConfirm = {
                 showDeleteConfirm = false
                 onDelete()
@@ -566,4 +322,23 @@ fun AddOrEditRecurringBillDialog(
             onDismiss = { showDeleteConfirm = false }
         )
     }
+}
+
+private fun formatPlain(value: Double): String =
+    if (value % 1.0 == 0.0) value.toLong().toString() else String.format(Locale.US, "%.2f", value)
+
+private fun localDayToUtc(localMillis: Long): Long {
+    val local = Calendar.getInstance().apply { timeInMillis = localMillis }
+    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(local.get(Calendar.YEAR), local.get(Calendar.MONTH), local.get(Calendar.DAY_OF_MONTH))
+    }.timeInMillis
+}
+
+private fun utcDayToLocal(utcMillis: Long): Long {
+    val utc = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utcMillis }
+    return Calendar.getInstance().apply {
+        clear()
+        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH))
+    }.timeInMillis
 }

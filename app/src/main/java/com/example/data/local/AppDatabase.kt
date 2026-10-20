@@ -8,24 +8,28 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.local.dao.AccountDao
 import com.example.data.local.dao.CategoryDao
+import com.example.data.local.dao.RecurringBillDao
 import com.example.data.local.dao.TransactionDao
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
+import com.example.data.local.entity.RecurringBillEntity
 import com.example.data.local.entity.TransactionEntity
 
 @Database(
     entities = [
         AccountEntity::class,
         TransactionEntity::class,
-        CategoryEntity::class
+        CategoryEntity::class,
+        RecurringBillEntity::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
     abstract fun transactionDao(): TransactionDao
     abstract fun categoryDao(): CategoryDao
+    abstract fun recurringBillDao(): RecurringBillDao
 
     companion object {
         @Volatile
@@ -61,6 +65,34 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v7 -> v8: added transactions.smsSender and transactions.smsAccountLast4 so SMS rows
+        // from a bank/card no account recognises yet can be flagged and learned on review.
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transactions ADD COLUMN smsSender TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN smsAccountLast4 TEXT DEFAULT NULL")
+            }
+        }
+
+        // v8 -> v9: recurring bills move out of the transactions table into recurring_bills, and
+        // transactions.recurringBillId links each payment to its bill. Existing flagged rows are
+        // converted by LegacyRecurringBillConverter without changing any balance.
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `recurring_bills` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`name` TEXT NOT NULL, `amount` REAL NOT NULL, `type` TEXT NOT NULL, `accountId` INTEGER NOT NULL, " +
+                        "`categoryTag` TEXT NOT NULL, `frequency` TEXT NOT NULL, `nextDueDate` INTEGER NOT NULL, " +
+                        "`dueDay` INTEGER NOT NULL, `reminderDaysBefore` INTEGER NOT NULL, `isActive` INTEGER NOT NULL, " +
+                        "`notes` TEXT, `matchPayee` TEXT, `lastPaidTimestamp` INTEGER, `createdTimestamp` INTEGER NOT NULL)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_recurring_bills_accountId` ON `recurring_bills` (`accountId`)")
+                db.execSQL("ALTER TABLE transactions ADD COLUMN recurringBillId INTEGER DEFAULT NULL")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_recurringBillId` ON `transactions` (`recurringBillId`)")
+                LegacyRecurringBillConverter.convert(db)
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -68,7 +100,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "smart_budget_db"
                 )
-                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     // Versions 1-3 predate this app's first real release and have no schema
                     // history captured (exportSchema was off), so there's no real user data to
                     // preserve for those - a destructive fallback is only acceptable for THEM.

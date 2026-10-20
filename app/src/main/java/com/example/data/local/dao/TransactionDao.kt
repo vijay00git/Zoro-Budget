@@ -20,8 +20,26 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE isPendingReview = 1 AND isDismissed = 0 ORDER BY dateTimestamp DESC")
     fun getPendingReviewTransactions(): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE isRecurring = 1 AND isDismissed = 0")
-    suspend fun getRecurringTransactionsList(): List<TransactionEntity>
+    @Query("SELECT * FROM transactions WHERE recurringBillId = :billId AND isDismissed = 0 ORDER BY dateTimestamp DESC")
+    fun getPaymentsForBill(billId: Long): Flow<List<TransactionEntity>>
+
+    // Ledger rows that could be a bill's payment: same direction, amount within the tolerance,
+    // inside the date window and not already linked to a bill.
+    @Query(
+        "SELECT * FROM transactions WHERE isDismissed = 0 AND recurringBillId IS NULL AND type = :type " +
+            "AND amount BETWEEN :minAmount AND :maxAmount AND dateTimestamp BETWEEN :fromMillis AND :toMillis " +
+            "ORDER BY dateTimestamp DESC"
+    )
+    suspend fun findBillPaymentCandidates(
+        type: String,
+        minAmount: Double,
+        maxAmount: Double,
+        fromMillis: Long,
+        toMillis: Long
+    ): List<TransactionEntity>
+
+    @Query("UPDATE transactions SET recurringBillId = NULL WHERE recurringBillId = :billId")
+    suspend fun unlinkPaymentsFromBill(billId: Long)
 
     // Powers merchant-based auto-categorization: once the user has confirmed a category for a
     // given SMS sender/merchant, the next transaction from that same merchant is pre-tagged with

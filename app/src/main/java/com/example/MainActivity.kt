@@ -35,8 +35,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -58,6 +60,7 @@ import com.example.data.local.BudgetRepository
 import com.example.data.notifications.BillAlertScheduler
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
+import com.example.data.local.entity.RecurringBillEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.ExpenseViewModel
 import com.example.ui.ExpenseViewModelFactory
@@ -74,7 +77,6 @@ import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.TransactionsScreen
 import com.example.ui.theme.PendingAmber
 import com.example.ui.theme.SmartBudgetTheme
-import com.example.utils.AppDebugLogger
 
 sealed class Screen(val route: String, @StringRes val titleRes: Int, val icon: ImageVector) {
     object Home : Screen("home", R.string.nav_overview, Icons.Default.Home)
@@ -100,7 +102,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        AppDebugLogger.init(applicationContext)
+        // The debug log capture was removed; delete the log file older versions left behind.
+        java.io.File(filesDir, "debug_logs").deleteRecursively()
 
         BillAlertScheduler.schedulePeriodic(applicationContext)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -131,6 +134,10 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
 
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val transactions by viewModel.filteredTransactions.collectAsStateWithLifecycle()
+    val allTransactions by viewModel.allTransactions.collectAsStateWithLifecycle()
+    val bills by viewModel.bills.collectAsStateWithLifecycle()
+    val billUndo by viewModel.billUndo.collectAsStateWithLifecycle()
+    val overviewMonthOffset by viewModel.overviewMonthOffset.collectAsStateWithLifecycle()
     val pendingTransactions by viewModel.pendingTransactions.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val currencySymbol by viewModel.currencySymbol.collectAsStateWithLifecycle()
@@ -159,15 +166,30 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showBackupDialog by remember { mutableStateOf(false) }
     var showAddRecurringBillDialog by remember { mutableStateOf(false) }
+    var editingBill by remember { mutableStateOf<RecurringBillEntity?>(null) }
+    var billFromTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
+    var payingBill by remember { mutableStateOf<RecurringBillEntity?>(null) }
+    var viewingBillId by remember { mutableStateOf<Long?>(null) }
     var showAccountTransferDialog by remember { mutableStateOf(false) }
     var showQuickReviewDialog by remember { mutableStateOf(false) }
     var transferInitialFromAccountId by remember { mutableStateOf<Long?>(null) }
+    var transferInitialToAccountId by remember { mutableStateOf<Long?>(null) }
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.loadPreferences(context)
+    }
+
+    val undoLabel = stringResource(R.string.bills_undo)
+    LaunchedEffect(billUndo) {
+        // Cleared only after the snackbar closes: clearing first would restart this effect and
+        // cancel the snackbar before it is shown.
+        val undo = billUndo ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(undo.message, actionLabel = undoLabel, duration = SnackbarDuration.Long)
+        viewModel.clearBillUndo()
+        if (result == SnackbarResult.ActionPerformed) viewModel.undoBillAction(undo)
     }
 
     LaunchedEffect(importStatusMessage) {
@@ -265,7 +287,9 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
             when (selectedScreenIndex) {
                 0 -> HomeScreen(
                     accounts = accounts,
-                    transactions = transactions,
+                    transactions = allTransactions,
+                    monthOffset = overviewMonthOffset,
+                    onMonthOffsetChange = { viewModel.setOverviewMonthOffset(it) },
                     pendingTransactions = pendingTransactions,
                     categories = categories,
                     currencySymbol = currencySymbol,
@@ -276,17 +300,28 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     onAddRecurringBillClick = { showAddRecurringBillDialog = true },
                     onTransferClick = { initialAccId ->
                         transferInitialFromAccountId = initialAccId
+                        transferInitialToAccountId = null
                         showAccountTransferDialog = true
                     },
+                    onAddMoneyClick = { account ->
+                        transferInitialFromAccountId = null
+                        transferInitialToAccountId = account.id
+                        showAccountTransferDialog = true
+                    },
+                    onChangeLowBalanceAlert = { selectedScreenIndex = 3 },
                     onPendingReviewClick = {
                         showQuickReviewDialog = true
                     },
+                    onCategoryClick = { category ->
+                        viewModel.showCategoryInLedger(category, overviewMonthOffset)
+                        selectedScreenIndex = 1
+                    },
                     onTransactionClick = { editingTransaction = it },
-                    onSeeAllClick = { selectedScreenIndex = 1 },
-                    onScanInbox = { viewModel.scanInboxMessages(context) },
-                    smsSyncFromDate = smsSyncFromDate,
                     onAddTransactionClick = { showAddTransactionDialog = true },
-                    onMarkRecurringAsPaid = { viewModel.markRecurringAsPaid(it) }
+                    bills = bills,
+                    onBillClick = { viewingBillId = it.id },
+                    onMarkBillPaid = { payingBill = it },
+                    onSeeAllBills = { selectedScreenIndex = 2 }
                 )
 
                 1 -> TransactionsScreen(
@@ -321,7 +356,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                 )
 
                 2 -> ReportsScreen(
-                    transactions = transactions,
+                    transactions = allTransactions,
                     categories = categories,
                     selectedMonthOffset = selectedMonthOffset,
                     currencySymbol = currencySymbol,
@@ -330,8 +365,10 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     onEditCategoryBudget = { editingCategoryBudget = it },
                     onAddCustomCategoryClick = { showAddCategoryDialog = true },
                     onAddRecurringBillClick = { showAddRecurringBillDialog = true },
-                    onToggleRecurring = { tx, isRec, freq, dueDate -> viewModel.toggleTransactionRecurring(tx, isRec, freq, dueDate) },
-                    onSkipRecurringCycle = { tx -> viewModel.skipRecurringCycle(tx) },
+                    bills = bills,
+                    accounts = accounts,
+                    onBillClick = { viewingBillId = it.id },
+                    onMarkBillPaid = { payingBill = it },
                     onTransactionClick = { editingTransaction = it },
                     onUpdateSavingsGoalTarget = { viewModel.setSavingsGoalTarget(it) },
                     onSetTotalMonthlyBudget = { viewModel.setTotalMonthlyBudget(it) }
@@ -356,7 +393,6 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     onScanInbox = { viewModel.scanInboxMessages(context) },
                     smsSyncFromDate = smsSyncFromDate,
                     onSetSmsSyncFromDate = { date -> viewModel.setSmsSyncFromDate(context, date) },
-                    onProcessSimulatedSms = { viewModel.processSimulatedSms(it) },
                     onAddAccountClick = { showAddAccountDialog = true },
                     onTransferClick = { acc ->
                         transferInitialFromAccountId = acc?.id
@@ -373,6 +409,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                 com.example.ui.dialogs.AccountTransferDialog(
                     accounts = accounts,
                     initialFromAccountId = transferInitialFromAccountId,
+                    initialToAccountId = transferInitialToAccountId,
                     currencySymbol = currencySymbol,
                     onDismiss = { showAccountTransferDialog = false },
                     onTransfer = { fromAcc, toAcc, amount, notes, dateTimestamp ->
@@ -388,18 +425,12 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                     categories = categories,
                     currencySymbol = currencySymbol,
                     onDismiss = { editingTransaction = null },
-                    onSave = { title, category, accountId, notes, isRecurring, frequency, dueDate, receiptUri ->
-                        viewModel.updateTransactionTitleAndTag(
-                            tx,
-                            title,
-                            category,
-                            accountId,
-                            notes,
-                            receiptUri,
-                            isRecurring,
-                            frequency,
-                            dueDate
-                        )
+                    onSave = { title, category, accountId, notes, receiptUri ->
+                        viewModel.updateTransactionTitleAndTag(tx, title, category, accountId, notes, receiptUri)
+                        editingTransaction = null
+                    },
+                    onMakeRecurring = {
+                        billFromTransaction = tx
                         editingTransaction = null
                     },
                     onDelete = {
@@ -409,27 +440,76 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
                 )
             }
 
-            if (showAddRecurringBillDialog) {
+            if (showAddRecurringBillDialog || editingBill != null || billFromTransaction != null) {
+                val closeBillForm = {
+                    showAddRecurringBillDialog = false
+                    editingBill = null
+                    billFromTransaction = null
+                }
                 com.example.ui.dialogs.AddOrEditRecurringBillDialog(
+                    billToEdit = editingBill,
+                    fromTransaction = billFromTransaction,
                     accounts = accounts,
                     categories = categories,
                     currencySymbol = currencySymbol,
-                    onDismiss = { showAddRecurringBillDialog = false },
-                    onSave = { title, amount, type, accountId, categoryTag, frequency, dueDate, notes, receiptUri ->
-                        viewModel.addOrUpdateRecurringBill(
-                            title = title,
-                            amount = amount,
-                            type = type,
-                            accountId = accountId,
-                            categoryTag = categoryTag,
-                            frequency = frequency,
-                            dueDate = dueDate,
-                            notes = notes,
-                            receiptUri = receiptUri
-                        )
-                        showAddRecurringBillDialog = false
+                    onDismiss = closeBillForm,
+                    onSave = { bill ->
+                        viewModel.saveBill(bill, firstPayment = billFromTransaction)
+                        closeBillForm()
+                    },
+                    onDelete = editingBill?.let { bill ->
+                        {
+                            viewModel.deleteBill(bill)
+                            closeBillForm()
+                        }
                     }
                 )
+            }
+
+            payingBill?.let { bill ->
+                com.example.ui.dialogs.MarkBillPaidDialog(
+                    bill = bill,
+                    accounts = accounts,
+                    currencySymbol = currencySymbol,
+                    loadCandidates = { viewModel.billPaymentCandidates(it) },
+                    onDismiss = { payingBill = null },
+                    onLinkExisting = { payment ->
+                        viewModel.linkBillPayment(bill, payment)
+                        payingBill = null
+                        viewingBillId = null
+                    },
+                    onRecordNew = { amount, accountId, paidAt ->
+                        viewModel.recordBillPayment(bill, amount, accountId, paidAt)
+                        payingBill = null
+                        viewingBillId = null
+                    }
+                )
+            }
+
+            bills.firstOrNull { it.id == viewingBillId }?.let { bill ->
+                if (payingBill == null && editingBill == null) {
+                    com.example.ui.dialogs.BillDetailsDialog(
+                        bill = bill,
+                        accounts = accounts,
+                        currencySymbol = currencySymbol,
+                        payments = remember(bill.id) { viewModel.paymentsForBill(bill.id) },
+                        onDismiss = { viewingBillId = null },
+                        onMarkPaid = { payingBill = bill },
+                        onSkip = {
+                            viewModel.skipBillCycle(bill)
+                            viewingBillId = null
+                        },
+                        onSetActive = { viewModel.setBillActive(bill, it) },
+                        onEdit = {
+                            editingBill = bill
+                            viewingBillId = null
+                        },
+                        onPaymentClick = {
+                            editingTransaction = it
+                            viewingBillId = null
+                        }
+                    )
+                }
             }
 
             editingCategoryBudget?.let { cat ->
@@ -474,11 +554,12 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel) {
             if (showQuickReviewDialog && pendingTransactions.isNotEmpty()) {
                 QuickReviewPendingDialog(
                     pendingTransactions = pendingTransactions,
+                    accounts = accounts,
                     categories = categories,
                     currencySymbol = currencySymbol,
                     onDismiss = { showQuickReviewDialog = false },
-                    onConfirm = { tx, title, categoryTag ->
-                        viewModel.updateTransactionTitleAndTag(tx, title, categoryTag, tx.accountId, tx.notes)
+                    onConfirm = { tx, title, categoryTag, accountId ->
+                        viewModel.updateTransactionTitleAndTag(tx, title, categoryTag, accountId, tx.notes)
                     },
                     onDecline = { tx -> viewModel.deleteTransaction(tx) }
                 )

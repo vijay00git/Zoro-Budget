@@ -5,13 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.data.export.DataExporter
+import com.example.data.local.BillActionResult
 import com.example.data.local.BudgetRepository
 import com.example.data.local.entity.AccountEntity
 import com.example.data.preferences.AppPreferences
 import com.example.data.local.entity.CategoryEntity
+import com.example.data.local.entity.RecurringBillEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.sms.SmsInboxScanner
-import com.example.data.sms.SmsParser
+import com.example.data.utils.BillSchedule
+import com.example.ui.components.monthWindow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -71,6 +74,11 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
     private val _selectedMonthOffset = MutableStateFlow(0) // 0 = Current month, -1 = previous month
     val selectedMonthOffset = _selectedMonthOffset.asStateFlow()
 
+    // Month shown on the Overview tab. Separate from the Planning month and from the Ledger
+    // filters, so Overview always opens on the current month until the user picks another.
+    private val _overviewMonthOffset = MutableStateFlow(0)
+    val overviewMonthOffset = _overviewMonthOffset.asStateFlow()
+
     // Multi-Filter & Custom Date Range Search
     private val _themeMode = MutableStateFlow("SYSTEM") // SYSTEM, LIGHT, DARK
     val themeMode = _themeMode.asStateFlow()
@@ -104,6 +112,11 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
 
     private val _smsSyncFromDate = MutableStateFlow<Long?>(null)
     val smsSyncFromDate = _smsSyncFromDate.asStateFlow()
+
+    // Every non-dismissed transaction, unaffected by the Ledger filters - for Overview and
+    // Planning, which do their own month windowing.
+    val allTransactions: StateFlow<List<TransactionEntity>> = repository.transactions
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Filtered Transactions Flow
     val filteredTransactions: StateFlow<List<TransactionEntity>> = combine(
@@ -146,11 +159,12 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 "CREDIT" -> tx.type == "CREDIT" && tx.categoryTag != "Transfer"
                 "TRANSFER" -> tx.categoryTag == "Transfer" || tx.title.startsWith("Transfer", ignoreCase = true)
                 "PENDING" -> tx.isPendingReview
-                "RECURRING" -> tx.isRecurring
+                "RECURRING" -> tx.recurringBillId != null
                 else -> true
             }
 
             val matchDateRange = when (dateRange) {
+                "TODAY" -> tx.dateTimestamp >= BillSchedule.startOfDay(now)
                 "THIS_WEEK" -> {
                     cal.timeInMillis = now
                     cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
@@ -170,7 +184,8 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 "LAST_30_DAYS" -> tx.dateTimestamp >= (now - (30L * 86400000L))
                 "CUSTOM" -> {
                     val startOk = customStart == null || tx.dateTimestamp >= customStart
-                    val endOk = customEnd == null || tx.dateTimestamp <= (customEnd + 86399999L) // end of selected day
+                    // Inclusive of the whole end day, whatever time of day the picker stored
+                    val endOk = customEnd == null || tx.dateTimestamp < BillSchedule.startOfDay(customEnd) + 86_400_000L
                     startOk && endOk
                 }
                 else -> true
@@ -232,6 +247,10 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         _selectedMonthOffset.value = offset
     }
 
+    fun setOverviewMonthOffset(offset: Int) {
+        _overviewMonthOffset.value = offset.coerceAtMost(0)
+    }
+
     fun setDateRangeFilter(range: String) {
         _dateRangeFilter.value = range
         if (range != "CUSTOM") {
@@ -252,6 +271,20 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
 
     fun setMaxAmountFilter(max: Double?) {
         _maxAmountFilter.value = max
+    }
+
+    /**
+     * Opens the Ledger on one category for one month (from an Overview category row). Other
+     * Ledger filters are cleared so the list matches the number the user tapped; the selected
+     * account is kept because Overview was showing that account too.
+     */
+    fun showCategoryInLedger(category: String, monthOffset: Int) {
+        val accountId = _selectedAccountId.value
+        clearAllFilters()
+        _selectedAccountId.value = accountId
+        _selectedCategoryFilter.value = category
+        val (start, end) = monthWindow(monthOffset)
+        setCustomDateRange(start, end - 1)
     }
 
     fun clearAllFilters() {
@@ -283,12 +316,24 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
             // Income/savings categories (e.g. "Salary & Income") don't get a slice of an
             // expense budget - only categories people actually spend against do.
             val expenseCats = repository.categories.first().filter { !it.isIncomeCategory }
-            if (expenseCats.isNotEmpty()) {
-                val perCatLimit = (total / expenseCats.size)
+            if (expenseCats.isEmpty()) return@launch
+            val currentTotal = expenseCats.sumOf { it.monthlyBudgetLimit }
+            if (currentTotal > 0) {
+                // Keep the user's own split: scale every category's limit by the same factor, so
+                // a ₹8,000 rent budget and a ₹1,000 snacks budget stay in proportion. Categories
+                // without a limit stay without one.
+                val factor = total / currentTotal
+                expenseCats.filter { it.monthlyBudgetLimit > 0 }.forEach { cat ->
+                    repository.updateCategory(cat.copy(monthlyBudgetLimit = Math.round(cat.monthlyBudgetLimit * factor).toDouble()))
+                }
+                _importStatusMessage.value = "Scaled your category budgets to a ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%,.0f", total)} monthly total"
+            } else {
+                // No limits yet: start from an even split
+                val perCatLimit = Math.round(total / expenseCats.size).toDouble()
                 expenseCats.forEach { cat ->
                     repository.updateCategory(cat.copy(monthlyBudgetLimit = perCatLimit))
                 }
-                _importStatusMessage.value = "Set overall monthly budget to ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", total)} across ${expenseCats.size} categories"
+                _importStatusMessage.value = "Set a ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%,.0f", total)} monthly budget split across ${expenseCats.size} categories"
             }
         }
     }
@@ -314,108 +359,72 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         }
     }
 
-    fun toggleTransactionRecurring(
-        transaction: TransactionEntity,
-        isRecurring: Boolean,
-        frequency: String? = "MONTHLY",
-        dueDate: Int? = null
-    ) {
-        viewModelScope.launch {
-            val updated = transaction.copy(
-                isRecurring = isRecurring,
-                recurringFrequency = if (isRecurring) (frequency ?: "MONTHLY") else null,
-                recurringDueDate = if (isRecurring) dueDate else null
-            )
-            repository.updateTransaction(transaction, updated)
-            _importStatusMessage.value = if (isRecurring) "Marked as recurring bill (${updated.recurringFrequency ?: "MONTHLY"})" else "Removed from recurring bills"
-        }
-    }
+    // --- Recurring bills ---
 
-    fun markRecurringAsPaid(transaction: TransactionEntity) {
-        viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            val paidTx = TransactionEntity(
-                title = "Paid: ${transaction.title}",
-                amount = transaction.amount,
-                type = transaction.type,
-                accountId = transaction.accountId,
-                categoryTag = transaction.categoryTag,
-                dateTimestamp = now,
-                source = "RECURRING_PAID",
-                isPendingReview = false,
-                notes = "Recurring ${transaction.recurringFrequency ?: "MONTHLY"} payment recorded on ${java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date())}"
-            )
-            repository.runInTransaction {
-                repository.addTransaction(paidTx)
-                // Record the payment on the recurring bill itself too, so its due/overdue alert
-                // is suppressed for this cycle instead of still nagging right after being paid.
-                // type/amount are unchanged so this doesn't touch the account balance again.
-                repository.updateTransaction(transaction, transaction.copy(lastPaidTimestamp = now))
-            }
-            _importStatusMessage.value = "Recorded payment for '${transaction.title}' (${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", transaction.amount)})"
-        }
-    }
+    val bills: StateFlow<List<RecurringBillEntity>> = repository.bills
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    /**
-     * Suppresses this cycle's due/overdue alert WITHOUT recording a payment or touching the
-     * account balance - for a bill you're deliberately not paying this cycle (e.g. a
-     * subscription paused this month) but still want tracked as recurring going forward.
-     */
-    fun skipRecurringCycle(transaction: TransactionEntity) {
-        viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            repository.updateTransaction(transaction, transaction.copy(lastPaidTimestamp = now))
-            _importStatusMessage.value = "Skipped this cycle for '${transaction.title}'"
-        }
-    }
+    // The last mark-paid / skip, offered as "Undo" in the snackbar.
+    private val _billUndo = MutableStateFlow<BillUndo?>(null)
+    val billUndo = _billUndo.asStateFlow()
 
-    fun addOrUpdateRecurringBill(
-        existingBill: TransactionEntity? = null,
-        title: String,
-        amount: Double,
-        type: String = "DEBIT",
-        accountId: Long,
-        categoryTag: String = "Bills & Utilities",
-        frequency: String = "MONTHLY",
-        dueDate: Int = 4,
-        notes: String? = null,
-        receiptUri: String? = null
-    ) {
+    fun paymentsForBill(billId: Long) = repository.paymentsForBill(billId)
+
+    suspend fun billPaymentCandidates(bill: RecurringBillEntity) = repository.billPaymentCandidates(bill)
+
+    fun saveBill(bill: RecurringBillEntity, firstPayment: TransactionEntity? = null) {
         viewModelScope.launch {
-            if (existingBill != null) {
-                val updated = existingBill.copy(
-                    title = title.ifBlank { "Recurring Bill" },
-                    amount = amount,
-                    type = type,
-                    accountId = accountId,
-                    categoryTag = categoryTag,
-                    isRecurring = true,
-                    recurringFrequency = frequency,
-                    recurringDueDate = dueDate,
-                    notes = notes,
-                    receiptUri = receiptUri ?: existingBill.receiptUri
-                )
-                repository.updateTransaction(existingBill, updated)
-                _importStatusMessage.value = "Updated recurring bill: $title"
+            if (bill.id == 0L) {
+                if (firstPayment != null) repository.addBillFromPayment(bill, firstPayment) else repository.addBill(bill)
+                _importStatusMessage.value = "Added recurring bill: ${bill.name}"
             } else {
-                val newBill = TransactionEntity(
-                    title = title.ifBlank { "Recurring Bill" },
-                    amount = amount,
-                    type = type,
-                    accountId = accountId,
-                    categoryTag = categoryTag,
-                    source = "MANUAL",
-                    isPendingReview = false,
-                    isRecurring = true,
-                    recurringFrequency = frequency,
-                    recurringDueDate = dueDate,
-                    notes = notes,
-                    receiptUri = receiptUri
-                )
-                repository.addTransaction(newBill)
-                _importStatusMessage.value = "Added recurring bill: $title"
+                repository.updateBill(bill)
+                _importStatusMessage.value = "Updated recurring bill: ${bill.name}"
             }
         }
+    }
+
+    fun deleteBill(bill: RecurringBillEntity) {
+        viewModelScope.launch {
+            repository.deleteBill(bill)
+            _importStatusMessage.value = "Deleted bill: ${bill.name}. Its past payments stay in the ledger."
+        }
+    }
+
+    fun setBillActive(bill: RecurringBillEntity, active: Boolean) {
+        viewModelScope.launch {
+            repository.updateBill(bill.copy(isActive = active))
+            _importStatusMessage.value = if (active) "Resumed ${bill.name}" else "Paused ${bill.name}"
+        }
+    }
+
+    fun recordBillPayment(bill: RecurringBillEntity, amount: Double, accountId: Long, paidAt: Long) {
+        viewModelScope.launch {
+            val result = repository.recordBillPayment(bill, amount, accountId, paidAt)
+            _billUndo.value = BillUndo("Paid ${bill.name}, recorded in the ledger", result)
+        }
+    }
+
+    fun linkBillPayment(bill: RecurringBillEntity, payment: TransactionEntity) {
+        viewModelScope.launch {
+            val result = repository.linkBillPayment(bill, payment)
+            _billUndo.value = BillUndo("Paid ${bill.name}, linked to the existing ledger entry", result)
+        }
+    }
+
+    fun skipBillCycle(bill: RecurringBillEntity) {
+        viewModelScope.launch {
+            val result = repository.skipBillCycle(bill)
+            _billUndo.value = BillUndo("Skipped this cycle of ${bill.name}", result)
+        }
+    }
+
+    fun undoBillAction(undo: BillUndo) {
+        viewModelScope.launch { repository.undoBillAction(undo.result) }
+    }
+
+    fun clearBillUndo() {
+        _billUndo.value = null
     }
 
     suspend fun exportDataCsv(): String {
@@ -537,36 +546,13 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         }
     }
 
-    fun processSimulatedSms(messageText: String) {
-        viewModelScope.launch {
-            if (messageText.isBlank()) {
-                _importStatusMessage.value = "Please enter SMS message content."
-                return@launch
-            }
-            val parsed = SmsParser.parseMessage(messageText)
-            if (parsed != null) {
-                val success = repository.processParsedSmsTransaction(parsed)
-                if (success) {
-                    _importStatusMessage.value = "Parsed: ${parsed.type} of ${_currencySymbol.value}${String.format(java.util.Locale.getDefault(), "%.2f", parsed.amount)} at ${parsed.merchantOrSender ?: "Merchant"}"
-                } else {
-                    _importStatusMessage.value = "Transaction already imported."
-                }
-            } else {
-                _importStatusMessage.value = "Could not parse monetary debit/credit from SMS. Please check format."
-            }
-        }
-    }
-
     fun updateTransactionTitleAndTag(
         transaction: TransactionEntity,
         newTitle: String,
         newCategory: String,
         newAccountId: Long,
         newNotes: String?,
-        newReceiptUri: String? = transaction.receiptUri,
-        isRecurring: Boolean = transaction.isRecurring,
-        recurringFrequency: String? = transaction.recurringFrequency,
-        recurringDueDate: Int? = transaction.recurringDueDate
+        newReceiptUri: String? = transaction.receiptUri
     ) {
         viewModelScope.launch {
             val updated = transaction.copy(
@@ -575,17 +561,13 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
                 accountId = newAccountId,
                 isPendingReview = false,
                 notes = newNotes,
-                receiptUri = newReceiptUri,
-                isRecurring = isRecurring,
-                recurringFrequency = if (isRecurring) (recurringFrequency ?: "MONTHLY") else null,
-                recurringDueDate = if (isRecurring) recurringDueDate else null
+                receiptUri = newReceiptUri
             )
             repository.updateTransaction(transaction, updated)
-            _importStatusMessage.value = if (isRecurring) {
-                "Updated transaction and recurring settings."
-            } else {
-                "Updated transaction details & receipt."
+            if (transaction.isPendingReview) {
+                repository.confirmSmsAccount(transaction, newAccountId)
             }
+            _importStatusMessage.value = "Updated transaction details & receipt."
         }
     }
 
@@ -731,3 +713,5 @@ class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
         }
     }
 }
+
+data class BillUndo(val message: String, val result: BillActionResult)

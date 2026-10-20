@@ -9,5 +9,6 @@ data class ParsedSmsTransaction(
     val rawMessage: String,
     val senderAddress: String? = null, // e.g. "VD-HDFCBK-T", "AD-HDFCBK-S", "BV-INDBNK-S", "BZ-INDBNK-S"
     val timestamp: Long = System.currentTimeMillis(),
-    val isParsedSuccessfully: Boolean = true
+    val isParsedSuccessfully: Boolean = true,
+    val availableBalance: Double? = null // "Avl Bal" reported by the bank, when the SMS includes it
 )

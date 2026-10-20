@@ -63,14 +63,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
+import com.example.data.local.entity.RecurringBillEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.components.CategoryDonutChart
 import com.example.ui.components.MonthlyBarChart
 import com.example.ui.components.MonthlySpendingTrendChart
 import com.example.ui.components.categoryIconFor
 import com.example.ui.dialogs.EditSavingsGoalDialog
-import com.example.ui.dialogs.ManageSubscriptionDialog
+import com.example.data.utils.CategoryTotals
+import com.example.ui.components.AllBillsSection
 import com.example.ui.dialogs.TotalBudgetDialog
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.IncomeGreen
@@ -90,17 +93,16 @@ fun ReportsScreen(
     onMonthOffsetChange: (Int) -> Unit,
     onEditCategoryBudget: (CategoryEntity) -> Unit,
     onAddCustomCategoryClick: () -> Unit,
-    onToggleRecurring: (TransactionEntity, Boolean, String?, Int?) -> Unit,
-    onSkipRecurringCycle: (TransactionEntity) -> Unit = {},
+    bills: List<RecurringBillEntity> = emptyList(),
+    accounts: List<AccountEntity> = emptyList(),
+    onBillClick: (RecurringBillEntity) -> Unit = {},
+    onMarkBillPaid: (RecurringBillEntity) -> Unit = {},
     onAddRecurringBillClick: () -> Unit = {},
     onTransactionClick: (TransactionEntity) -> Unit,
     onUpdateSavingsGoalTarget: (Double) -> Unit,
     onSetTotalMonthlyBudget: (Double) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Dialog States
-    var selectedSubscriptionToManage by remember { mutableStateOf<TransactionEntity?>(null) }
-
     // Selected Tab State (0: All, 1: Budget Planning, 2: Savings Goals, 3: Subscriptions)
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var budgetFilterMode by remember { mutableStateOf("ALL") } // ALL, OVER_BUDGET, BUDGETED
@@ -126,16 +128,17 @@ fun ReportsScreen(
         Pair(title, filtered)
     }
 
-    val totalIncome = monthTx.filter { it.type == "CREDIT" }.sumOf { it.amount }
-    val totalExpense = monthTx.filter { it.type == "DEBIT" }.sumOf { it.amount }
+    // Netted per category (money received back in a category reduces its spending) and with
+    // transfers between own accounts left out - the same rules as the Overview tab.
+    val monthTotals = remember(monthTx) { CategoryTotals.of(monthTx) }
+    val totalIncome = monthTotals.income
+    val totalExpense = monthTotals.expense
     val netSavings = totalIncome - totalExpense
     val savingsRate = if (totalIncome > 0.0) ((netSavings / totalIncome) * 100).coerceIn(-100.0, 100.0) else 0.0
 
     // Group expenses by category name
-    val categoryExpensesMap = remember(monthTx) {
-        monthTx.filter { it.type == "DEBIT" }
-            .groupBy { it.categoryTag }
-            .mapValues { entry -> entry.value.sumOf { it.amount } }
+    val categoryExpensesMap = remember(monthTotals, categories) {
+        categories.associate { it.name to monthTotals.spentIn(it.name) }
     }
 
     // Total Budgeted vs Spent across all expense categories (income/savings categories like
@@ -147,15 +150,6 @@ fun ReportsScreen(
         categories.filter { it.monthlyBudgetLimit > 0 }.sumOf { categoryExpensesMap[it.name] ?: 0.0 }
     }
     val overallBudgetProgress = if (totalBudgetLimit > 0) (totalSpentInBudgetedCategories / totalBudgetLimit).toFloat() else 0f
-
-    // Recurring subscriptions & bills with custom due date alerts
-    val recurringTxWithAlerts = remember(transactions) {
-        transactions.filter { it.isRecurring }
-            .distinctBy { it.title.lowercase() }
-            .map { sub -> sub to com.example.data.utils.RecurringBillUtils.calculateAlert(sub) }
-            .sortedBy { (_, alert) -> alert.daysDifference }
-    }
-    val totalMonthlySubscriptions = recurringTxWithAlerts.sumOf { (sub, _) -> sub.amount }
 
     LazyColumn(
         modifier = modifier
@@ -780,209 +774,18 @@ fun ReportsScreen(
             }
         }
 
-        // --- RECURRING SUBSCRIPTIONS & BILLS SECTION ---
+        // --- RECURRING BILLS SECTION ---
         if (selectedTabIndex == 0 || selectedTabIndex == 3) {
             item {
-                Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-                    Text(
-                        text = stringResource(R.string.reports_screen_subscriptions_title),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Text(
-                        text = stringResource(R.string.reports_screen_subscriptions_subtitle),
-                        style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Button(
-                            onClick = onAddRecurringBillClick,
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.reports_screen_add_bill_button), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-                        }
-
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.reports_screen_monthly_subscriptions_amount, currencySymbol, totalMonthlySubscriptions),
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                ),
-                                maxLines = 1
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            if (recurringTxWithAlerts.isEmpty()) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Autorenew,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(36.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.reports_screen_no_recurring_bills_message),
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.reports_screen_add_recurring_bill_hint),
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    )
-                                }
-                            } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    recurringTxWithAlerts.forEach { (sub, alert) ->
-                                        val (badgeBg, badgeFg) = when (alert.severity) {
-                                            com.example.data.utils.BillAlertSeverity.URGENT -> com.example.ui.theme.ExpenseRedContainer to com.example.ui.theme.ExpenseOnRedContainer
-                                            com.example.data.utils.BillAlertSeverity.WARNING -> Color(0xFFFEF3C7) to Color(0xFF92400E)
-                                            com.example.data.utils.BillAlertSeverity.INFO -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-                                            com.example.data.utils.BillAlertSeverity.PAID -> com.example.ui.theme.IncomeGreenContainer to com.example.ui.theme.IncomeOnGreenContainer
-                                        }
-
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable { selectedSubscriptionToManage = sub },
-                                            shape = RoundedCornerShape(12.dp),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                            )
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    modifier = Modifier.weight(1f)
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(36.dp)
-                                                            .clip(CircleShape)
-                                                            .background(badgeBg),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Autorenew,
-                                                            contentDescription = null,
-                                                            tint = badgeFg,
-                                                            modifier = Modifier.size(18.dp)
-                                                        )
-                                                    }
-
-                                                    Spacer(modifier = Modifier.width(10.dp))
-
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Text(
-                                                            text = sub.title,
-                                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                                        ) {
-                                                            Surface(
-                                                                color = badgeBg,
-                                                                shape = RoundedCornerShape(4.dp)
-                                                            ) {
-                                                                Text(
-                                                                    text = alert.alertMessage.uppercase(),
-                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                                    style = MaterialTheme.typography.labelSmall.copy(
-                                                                        fontWeight = FontWeight.Bold,
-                                                                        color = badgeFg,
-                                                                        fontSize = 10.sp
-                                                                    )
-                                                                )
-                                                            }
-
-                                                            Text(
-                                                                text = alert.frequencyLabel,
-                                                                style = MaterialTheme.typography.labelSmall.copy(
-                                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                                    fontSize = 11.sp
-                                                                ),
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
-                                                        }
-                                                    }
-                                                }
-
-                                                Spacer(modifier = Modifier.width(8.dp))
-
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(
-                                                        text = stringResource(R.string.reports_screen_currency_amount, currencySymbol, sub.amount),
-                                                        style = MaterialTheme.typography.titleMedium.copy(
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = if (alert.severity == com.example.data.utils.BillAlertSeverity.URGENT) ExpenseRed else MaterialTheme.colorScheme.primary
-                                                        )
-                                                    )
-
-                                                    Spacer(modifier = Modifier.width(4.dp))
-
-                                                    IconButton(
-                                                        onClick = { selectedSubscriptionToManage = sub },
-                                                        modifier = Modifier.size(28.dp)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Settings,
-                                                            contentDescription = stringResource(R.string.reports_screen_manage_subscription_desc),
-                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                AllBillsSection(
+                    bills = bills,
+                    accounts = accounts,
+                    currencySymbol = currencySymbol,
+                    onBillClick = onBillClick,
+                    onMarkPaid = onMarkBillPaid,
+                    onAddBill = onAddRecurringBillClick,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                )
             }
         }
 
@@ -1020,26 +823,5 @@ fun ReportsScreen(
                 }
             }
         }
-    }
-
-    // Dialogs
-    selectedSubscriptionToManage?.let { sub ->
-        ManageSubscriptionDialog(
-            transaction = sub,
-            currencySymbol = currencySymbol,
-            onDismiss = { selectedSubscriptionToManage = null },
-            onSaveFrequency = { newFreq, newDueDate ->
-                onToggleRecurring(sub, true, newFreq, newDueDate)
-            },
-            onRemoveSubscription = {
-                onToggleRecurring(sub, false, null, null)
-            },
-            onOpenEditTransaction = {
-                onTransactionClick(sub)
-            },
-            onSkipCycle = {
-                onSkipRecurringCycle(sub)
-            }
-        )
     }
 }

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="overview_total_balance">Total balance</string>
+    <string name="overview_all_accounts">All accounts</string>
+    <string name="overview_add_account">Account</string>
+    <string name="overview_add_transaction">Add transaction</string>
+    <string name="overview_transfer">Transfer</string>
+
+    <string name="overview_pending_title">%1$d SMS transactions to review</string>
+    <string name="overview_pending_subtitle">Check the title and category, or decline the ones that aren\'t yours.</string>
+    <string name="overview_pending_review">Review</string>
+
+    <string name="overview_low_balance_title">Low balance in %1$d account(s)</string>
+    <string name="overview_low_balance_subtitle">Below your %1$s alert level</string>
+    <string name="overview_low_balance_below">%1$s · %2$s below the alert level</string>
+    <string name="overview_low_balance_add_money">Add money</string>
+    <string name="overview_low_balance_change_alert">Change alert level</string>
+
+    <string name="overview_income">Income</string>
+    <string name="overview_spent">Spent</string>
+    <string name="overview_saved">Saved</string>
+    <string name="overview_overspent">Overspent</string>
+    <string name="overview_spent_share_of_income">You spent %1$d%% of what came in this month</string>
+
+    <string name="overview_categories_title">Spending by category</string>
+    <string name="overview_categories_subtitle">Money received back in a category is taken off its spending. Tap a category to see its transactions.</string>
+    <string name="overview_categories_empty">No spending this month yet.</string>
+    <string name="overview_categories_show_all">Show all %1$d categories</string>
+    <string name="overview_categories_show_less">Show less</string>
+    <string name="overview_categories_open">Open %1$s in the ledger</string>
+    <string name="overview_category_over_by">Over budget by %1$s</string>
+    <string name="overview_category_left">%1$s left this month</string>
+
+    <string name="overview_health_title">Financial health</string>
+    <string name="overview_health_tap_hint">Tap to see how this is worked out</string>
+    <string name="overview_health_explain">How the score works</string>
+
+    <string name="health_explain_intro">A quick 10–100 check of this month: how much you have spent against your budget, and whether any account is running low.</string>
+    <string name="health_explain_start">Everyone starts at</string>
+    <string name="health_explain_spending_no_base">No budget or income this month to compare spending with</string>
+    <string name="health_explain_spending_budget">You spent %1$s, %2$d%% of your %3$s monthly budget</string>
+    <string name="health_explain_spending_income">You spent %1$s, %2$d%% of your %3$s income (no monthly budget is set)</string>
+    <string name="health_explain_low_balance">%1$d account(s) below the low-balance alert level, %2$d points each</string>
+    <string name="health_explain_rules" formatted="false">Spending over 60% of the budget costs 10 points, over 80% costs 20, over 100% costs 40. The score never goes below 10.</string>
+    <string name="health_explain_levels">80+ Excellent · 60–79 Good · 40–59 Caution · below 40 Critical</string>
+    <string name="health_explain_improve">To raise it, keep spending inside your budget and top up accounts that are below the alert level. Set budgets in Planning.</string>
+
+    <string name="budget_summary_none">No category budgets set. Set them in Planning to see planned vs actual here.</string>
+    <string name="budget_summary_planned">Planned</string>
+    <string name="budget_summary_spent">Spent</string>
+    <string name="budget_summary_left">Left</string>
+    <string name="budget_summary_over">Over</string>
+    <string name="budget_summary_used">Budgeted categories have used %1$d%% of the plan</string>
+    <string name="budget_summary_unplanned">Unplanned spending</string>
+    <string name="budget_summary_unplanned_hint">In categories with no budget</string>
+    <string name="budget_summary_total">Total spent this month: %1$s</string>
+
+    <string name="heatmap_title">Daily spending</string>
+    <string name="heatmap_subtitle">Darker days cost more. Tap a day to see its transactions.</string>
+    <string name="heatmap_less">Less</string>
+    <string name="heatmap_more">More</string>
+    <string name="heatmap_stats">Heaviest: %1$s (%2$s) · Average %3$s a day · %4$d no-spend days</string>
+    <string name="heatmap_day_summary">%1$s · %2$s spent</string>
+    <string name="heatmap_day_empty">No spending on this day.</string>
+    <string name="heatmap_day_cd">%1$s, %2$s spent</string>
+</resources>

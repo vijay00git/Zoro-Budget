@@ -6,10 +6,13 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.sms.ParsedSmsTransaction
+import com.example.data.sms.SmsAccountMatcher
+import com.example.data.sms.SmsParser
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -219,5 +222,73 @@ class BudgetRepositoryTest {
         val account = db.accountDao().getAccountById(restoredId)
         assertEquals(250.0, account!!.balance, 0.001)
         assertEquals(1, db.transactionDao().getAllTransactions().first().size)
+    }
+
+    @Test
+    fun smsFromANewBankIsImportedFlaggedAndLearnedOnConfirm() = runTest {
+        val hdfcId = db.accountDao().insertAccount(
+            AccountEntity(name = "HDFC", type = "CHECKING", balance = 1000.0, isDefault = true, senderKeywords = "HDFCBK")
+        )
+        val axisId = db.accountDao().insertAccount(AccountEntity(name = "Axis Savings", type = "SAVINGS", balance = 500.0))
+        val firstSms = SmsParser.parseMessage(
+            "Rs.540.00 debited from A/c XX5678 on 05-10-26 towards TNPDCL bill. Avl Bal: Rs.12,045.10 - Axis Bank",
+            timestamp = 1000L,
+            senderAddress = "AX-AXISBK-S"
+        )!!
+
+        assertTrue(repository.processParsedSmsTransaction(firstSms))
+
+        // Nothing recognises AXISBK yet: lands on the default account, pending, flagged.
+        val imported = db.transactionDao().getAllTransactions().first().single()
+        assertEquals(hdfcId, imported.accountId)
+        assertTrue(imported.isPendingReview)
+        assertEquals("AXISBK", imported.smsSender)
+        assertEquals("5678", imported.smsAccountLast4)
+        val accountsBefore = db.accountDao().getAllAccountsList()
+        assertTrue(SmsAccountMatcher.needsAccountConfirmation(imported, accountsBefore))
+
+        // The user moves it to the Axis account and confirms.
+        repository.updateTransaction(imported, imported.copy(accountId = axisId, isPendingReview = false))
+        repository.confirmSmsAccount(imported, axisId)
+
+        val axis = db.accountDao().getAccountById(axisId)!!
+        assertEquals("AXISBK", axis.senderKeywords)
+        assertEquals("5678", axis.accountNumberLast4)
+        assertEquals(1000.0, db.accountDao().getAccountById(hdfcId)!!.balance, 0.001)
+        assertEquals(500.0 - 540.0, axis.balance, 0.001)
+
+        // The next SMS from that bank goes straight to the Axis account.
+        val secondSms = SmsParser.parseMessage(
+            "Rs.99.00 debited from A/c XX5678 on 06-10-26 to SWIGGY. Avl Bal: Rs.11,946.10 - Axis Bank",
+            timestamp = 2000L,
+            senderAddress = "JD-AXISBK-T"
+        )!!
+        repository.processParsedSmsTransaction(secondSms)
+        val second = db.transactionDao().getAllTransactions().first().first { it.dateTimestamp == 2000L }
+        assertEquals(axisId, second.accountId)
+        assertFalse(SmsAccountMatcher.needsAccountConfirmation(second, db.accountDao().getAllAccountsList()))
+    }
+
+    @Test
+    fun senderKeywordStillMatchesWhenSavedLast4IsOutOfDate() = runTest {
+        // An account set up with the wrong (or placeholder) last-4 must keep receiving its bank's
+        // SMS by sender keyword, as it did before digits were taken into account.
+        val hdfcId = db.accountDao().insertAccount(
+            AccountEntity(
+                name = "HDFC", type = "CHECKING", balance = 0.0,
+                accountNumberLast4 = "4321", senderKeywords = "VD-HDFCBK-T, AD-HDFCBK-S, HDFCBK"
+            )
+        )
+        db.accountDao().insertAccount(AccountEntity(name = "Cash", type = "CASH", balance = 0.0, isDefault = true))
+        val sms = SmsParser.parseMessage(
+            "Sent Rs.20.00 From HDFC Bank A/C *7460 To TEA STALL On 12/10/26 Ref 512345678901",
+            senderAddress = "VM-HDFCBK-S"
+        )!!
+
+        repository.processParsedSmsTransaction(sms)
+
+        val tx = db.transactionDao().getAllTransactions().first().single()
+        assertEquals(hdfcId, tx.accountId)
+        assertFalse(SmsAccountMatcher.needsAccountConfirmation(tx, db.accountDao().getAllAccountsList()))
     }
 }

@@ -1,34 +1,82 @@
 package com.example.data.sms
 
-import java.util.regex.Pattern
-
+/**
+ * Turns a bank SMS into a [ParsedSmsTransaction], or returns null for anything that isn't one.
+ *
+ * Classification is based on what the message says, not on who sent it, so a bank the app has
+ * never seen before is still picked up. A message is a transaction only if it has:
+ *  - a money amount (currency-tagged, e.g. "Rs.450", "INR 1,50,000.00", "₹99"),
+ *  - a past-tense transaction verb (debited, sent, spent, withdrawn, credited, received, ...),
+ *  - a payment-instrument reference (A/c, card, UPI, VPA, IMPS/NEFT, RRN, ...),
+ * and does not look like an OTP, offer, due/statement reminder, failed attempt, money request or
+ * telecom balance alert. Promotional DLT senders ("XX-NAME-P") are rejected outright.
+ */
 object SmsParser {
 
-    // Regex patterns for amounts (e.g., $12.50, USD 120.00, Rs. 450, INR 1,500.00, €45.00, 450.00)
-    private val AMOUNT_PATTERN = Pattern.compile(
-        "(?i)(?:\\$|usd|inr|rs\\.?|eur|€|gbp|£|cad|aud|a\\$)?\\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\\.[0-9]{1,2})?|[0-9]+(?:\\.[0-9]{1,2})?)"
+    private const val NUMBER = "([0-9][0-9,]*(?:\\.[0-9]{1,2})?)"
+
+    // "Rs.450", "Rs 1,50,000.00", "INR 99", "₹ 20", "USD 12.50"
+    private val CURRENCY_AMOUNT = Regex("(?i)(?:\\brs\\.?|\\binr|₹|\\busd|\\$|\\beur|€|\\bgbp|£)\\s*$NUMBER")
+
+    // Untagged amount right after a verb, e.g. SBI's "A/C X1234 debited by 500.0"
+    private val VERB_AMOUNT = Regex("(?i)\\b(?:debited|credited)\\s+(?:by|for|with)\\s+$NUMBER")
+
+    // Text just before an amount that marks it as a balance or limit rather than the transaction
+    private val BALANCE_CONTEXT = Regex("(?i)(?:\\bbal(?:ance)?|\\blimit|\\boutstanding|\\bavl|\\bavailable)[^0-9]{0,6}$")
+
+    private val AVAILABLE_BALANCE = Regex(
+        "(?i)(?:\\bavl\\.?\\s*bal(?:ance)?|\\bavailable\\s+bal(?:ance)?|\\bbal(?:ance)?)\\s*(?:is|:|-)?\\s*(?:rs\\.?|inr|₹)\\s*$NUMBER"
     )
 
-    // Regex for specific monetary context in financial SMS
-    private val FINANCIAL_AMOUNT_PATTERN = Pattern.compile(
-        "(?i)(?:rs\\.?|usd|inr|eur|gbp|cad|aud|\\$|€|£|amount|amt|for|by|of)\\s*[:.-]?\\s*(?:\\$|usd|inr|rs\\.?|eur|€|gbp|£)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)"
+    private val DEBIT_VERB = Regex(
+        "(?i)\\b(?:debited|spent|withdrawn|withdrawal|sent|paid|purchased?|charged|deducted|transferred\\s+to|dr\\.?\\s+(?:with|for|by|rs|inr|₹))\\b"
+    )
+    private val CREDIT_VERB = Regex(
+        "(?i)\\b(?:credited|received|deposited|refunded|refund|reversed|reversal|added\\s+to|cr\\.?\\s+(?:with|for|by|rs|inr|₹))\\b"
     )
 
-    // Regex patterns for Account / Card numbers (e.g. A/C ending 4321, card **9876, XX1234, account 5678)
-    private val ACCOUNT_PATTERN = Pattern.compile(
-        "(?i)(?:a/c|ac|account|card|no\\.?|number|ending|xx|\\*{2,4})\\s*[:.-]?\\s*([0-9]{3,4}|[xX*]+[0-9]{3,4})"
+    // Card / product names that contain "credit" or "debit" without describing the money flow
+    private val CARD_PRODUCT_PHRASES = Regex(
+        "(?i)\\b(?:credit|debit|cr)\\s+card\\b|\\bcredit\\s+(?:limit|score|line)\\b|\\bavailable\\s+credit\\b"
     )
 
-    // Keywords indicating DEBIT vs CREDIT
-    private val DEBIT_KEYWORDS = listOf(
-        "debited", "debit", "spent", "paid", "withdrawn", "charged",
-        "sent to", "purchase at", "dr", "used at", "transferred to", "payment for"
+    private val INSTRUMENT = Regex(
+        "(?i)\\ba/?c\\b|\\bacct\\b|\\baccount\\b|\\bcard\\b|\\bupi\\b|\\bvpa\\b|\\bimps\\b|\\bneft\\b|\\brtgs\\b|\\bnach\\b" +
+            "|\\bwallet\\b|\\bbank\\b|\\batm\\b|\\brrn\\b|\\butr\\b|\\bref\\b|@[a-z]{2,}"
     )
 
-    private val CREDIT_KEYWORDS = listOf(
-        "credited", "credit", "received", "deposited", "added",
-        "refunded", "salary from", "cr", "transferred from", "cashback"
+    private val REJECT_PATTERNS = listOf(
+        // OTPs and verification codes
+        Regex("(?i)\\botp\\b|one[- ]time password|verification code|\\bcode is\\b"),
+        // Offers and marketing
+        Regex(
+            "(?i)pre-?approved|\\beligible\\b|\\bapply now\\b|\\bavail\\b|\\bclaim now\\b|\\bwinner\\b" +
+                "|\\boffers?\\b|\\bvoucher\\b|\\bcoupon\\b|\\blimited period\\b|%\\s*off\\b|\\bt&c\\b"
+        ),
+        // Reminders and future-dated debits: nothing has moved yet
+        Regex(
+            "(?i)\\bwill be (?:auto[- ]?)?(?:debited|deducted|charged|credited)\\b|\\bis due\\b|\\bdue (?:on|date|by|tomorrow|today)\\b" +
+                "|\\b(?:minimum|total) (?:amount )?due\\b|\\bstatement\\b|\\breminder\\b|\\bscheduled\\b"
+        ),
+        // Attempts that did not go through
+        Regex("(?i)\\bfailed\\b|\\bdeclined\\b|\\bunsuccessful\\b|\\bcould not be\\b|\\binsufficient\\b|\\brejected\\b"),
+        // UPI collect / money requests
+        Regex("(?i)\\bhas requested\\b|\\brequested (?:money|rs|inr|₹)|\\bcollect request\\b|\\bpay request\\b"),
+        // Telecom balance, usage and recharge notices (the bank sends its own debit SMS)
+        Regex("(?i)\\blast-?call\\b|\\bmain-?bal\\b|\\bdata (?:pack|balance|usage|credited)\\b|\\bvalidity\\b|\\brecharge (?:of|is|was|successful)\\b")
     )
+
+    // DLT sender ids: two-letter operator/circle prefix, the brand header, optional type suffix
+    // (-S service, -T transactional, -G government, -P promotional)
+    private val DLT_SENDER = Regex("^[A-Z]{2}-([A-Z0-9]{3,9})(?:-([A-Z]))?$")
+
+    private val ACCOUNT_LAST4 = Regex("(?i)\\b(?:a/?c|acct|account|card)\\b[^0-9\\n]{0,15}?([0-9]{3,6})\\b")
+
+    private val MERCHANT_STOP = "(?=\\s+(?:on|ref|refno|rrn|utr|bal|avl|via|using|upi|towards|dated|not)\\b|\\s*[,;(]|\\.(?:\\s|[A-Za-z]|$)|\\s+\\d{1,2}[-/]|\\s*$)"
+    private val MERCHANT_EXCLUDED = "(?!your\\b|a/?c\\b|ac\\b|acct\\b|account\\b|the\\b|bank\\b|card\\b|vpa\\b)"
+    private val PAYEE_PATTERN = Regex("(?i)\\b(?:to|at)\\s+(?:vpa\\s+)?$MERCHANT_EXCLUDED([A-Za-z0-9@._&'*-][A-Za-z0-9@._&' *-]{1,40}?)$MERCHANT_STOP")
+    private val PAYER_PATTERN = Regex("(?i)\\b(?:from|by)\\s+(?:vpa\\s+)?$MERCHANT_EXCLUDED([A-Za-z0-9@._&'*-][A-Za-z0-9@._&' *-]{1,40}?)$MERCHANT_STOP")
+    private val INFO_PATTERN = Regex("(?i)\\binfo[:\\s]+([A-Za-z0-9 &'-]{3,30})")
 
     fun parseMessage(
         messageBody: String,
@@ -36,186 +84,137 @@ object SmsParser {
         senderAddress: String? = null
     ): ParsedSmsTransaction? {
         val detectedSender = senderAddress ?: extractSenderFromHeader(messageBody)
-        val lowerMsg = messageBody.lowercase()
+        if (isPromotionalSender(detectedSender)) return null
+        if (REJECT_PATTERNS.any { it.containsMatchIn(messageBody) }) return null
+        if (!INSTRUMENT.containsMatchIn(messageBody)) return null
 
-        // 1. Check if message is a financial transaction SMS
-        val isFinancial = DEBIT_KEYWORDS.any { lowerMsg.contains(it) } ||
-                CREDIT_KEYWORDS.any { lowerMsg.contains(it) } ||
-                lowerMsg.contains("bank") || lowerMsg.contains("a/c") || lowerMsg.contains("balance") ||
-                !detectedSender.isNullOrBlank()
-
-        if (!isFinancial) return null
-
-        // 2. Determine Transaction Type (DEBIT vs CREDIT)
-        var isCredit = false
-        var isDebit = false
-
-        for (kw in CREDIT_KEYWORDS) {
-            if (lowerMsg.contains(kw)) {
-                isCredit = true
-                break
-            }
-        }
-
-        if (!isCredit) {
-            for (kw in DEBIT_KEYWORDS) {
-                if (lowerMsg.contains(kw)) {
-                    isDebit = true
-                    break
-                }
-            }
-        }
-
-        val type = if (isCredit) "CREDIT" else "DEBIT"
-
-        // 3. Extract Amount
+        val type = detectType(messageBody) ?: return null
         val amount = extractAmount(messageBody) ?: return null
-        if (amount <= 0.0) return null
 
-        // 4. Extract Account Suffix
-        val accountLast4 = extractAccountLast4(messageBody)
-
-        // 5. Extract Merchant or Sender Name
         val merchantOrSender = extractMerchantOrSender(messageBody, type)
-
-        // 6. Suggest Category Tag
-        val suggestedCategory = suggestCategory(messageBody, merchantOrSender, type)
-
         return ParsedSmsTransaction(
             amount = amount,
             type = type,
-            accountLast4 = accountLast4,
+            accountLast4 = extractAccountLast4(messageBody),
             merchantOrSender = merchantOrSender,
-            suggestedCategory = suggestedCategory,
+            suggestedCategory = suggestCategory(messageBody, merchantOrSender, type),
             rawMessage = messageBody,
             senderAddress = detectedSender,
             timestamp = timestamp,
-            isParsedSuccessfully = true
+            isParsedSuccessfully = true,
+            availableBalance = extractAvailableBalance(messageBody)
         )
+    }
+
+    /**
+     * The stable part of an SMS sender, used to recognise the same bank across messages:
+     * "VD-HDFCBK-T" and "AD-HDFCBK-S" both become "HDFCBK". Other senders are returned as-is.
+     */
+    fun senderCode(senderAddress: String?): String? {
+        val trimmed = senderAddress?.trim()?.uppercase()?.takeIf { it.isNotEmpty() } ?: return null
+        return DLT_SENDER.matchEntire(trimmed)?.groupValues?.get(1) ?: trimmed
+    }
+
+    private fun isPromotionalSender(sender: String?): Boolean {
+        val match = sender?.trim()?.uppercase()?.let { DLT_SENDER.matchEntire(it) } ?: return false
+        return match.groupValues[2] == "P"
     }
 
     private fun extractSenderFromHeader(text: String): String? {
-        val trimmed = text.trim()
         // Match headers like "VD-HDFCBK-T: Rs 1500 debited..." or "[VD-HDFCBK-T] ..." or "BV-INDBNK-S - ..."
-        val pattern = Pattern.compile("(?i)^(?:sender[:\\s]+)?\\[?([A-Za-z0-9]{2,4}-[A-Za-z0-9-]{4,12})\\]?(?:[:\\s-]|$)")
-        val matcher = pattern.matcher(trimmed)
-        if (matcher.find()) {
-            return matcher.group(1)?.uppercase()
+        val pattern = Regex("(?i)^(?:sender[:\\s]+)?\\[?([A-Za-z0-9]{2,4}-[A-Za-z0-9-]{4,12})\\]?(?:[:\\s-]|$)")
+        return pattern.find(text.trim())?.groupValues?.get(1)?.uppercase()
+    }
+
+    /**
+     * Debit vs credit from the earliest transaction verb. Banks lead with what happened to the
+     * user's account ("A/c debited for Rs 500 ... NAME credited"), so the first verb wins.
+     * Card product names ("Credit Card") are blanked first so they don't read as a credit.
+     */
+    private fun detectType(text: String): String? {
+        val cleaned = CARD_PRODUCT_PHRASES.replace(text) { " ".repeat(it.value.length) }
+        val debitAt = DEBIT_VERB.find(cleaned)?.range?.first
+        val creditAt = CREDIT_VERB.find(cleaned)?.range?.first
+        return when {
+            debitAt == null && creditAt == null -> null
+            creditAt == null -> "DEBIT"
+            debitAt == null -> "CREDIT"
+            debitAt < creditAt -> "DEBIT"
+            else -> "CREDIT"
         }
-        return null
     }
 
     private fun extractAmount(text: String): Double? {
-        // Try specific financial amount pattern first
-        val matcher1 = FINANCIAL_AMOUNT_PATTERN.matcher(text)
-        while (matcher1.find()) {
-            val amtStr = matcher1.group(1)?.replace(",", "")
-            val parsed = amtStr?.toDoubleOrNull()
-            if (parsed != null && parsed > 0.0) {
-                return parsed
-            }
-        }
-
-        // Fallback to general amount matcher
-        val matcher2 = AMOUNT_PATTERN.matcher(text)
-        var highestVal = 0.0
-        while (matcher2.find()) {
-            val amtStr = matcher2.group(1)?.replace(",", "")
-            val parsed = amtStr?.toDoubleOrNull()
-            if (parsed != null && parsed > 0.0 && parsed < 10000000.0) {
-                // Ignore suspicious large numbers like account numbers or OTPs
-                if (parsed > highestVal && !text.contains("otp", ignoreCase = true)) {
-                    highestVal = parsed
-                }
-            }
-        }
-
-        return if (highestVal > 0.0) highestVal else null
+        val transactionAmount = CURRENCY_AMOUNT.findAll(text)
+            .filterNot { BALANCE_CONTEXT.containsMatchIn(text.substring(0, it.range.first)) }
+            .firstNotNullOfOrNull { it.groupValues[1].toAmount() }
+            ?: VERB_AMOUNT.find(text)?.groupValues?.get(1)?.toAmount()
+        return transactionAmount?.takeIf { it > 0.0 && it < 100_000_000.0 }
     }
 
-    private fun extractAccountLast4(text: String): String? {
-        val matcher = ACCOUNT_PATTERN.matcher(text)
-        if (matcher.find()) {
-            val rawAcc = matcher.group(1) ?: return null
-            val digitsOnly = rawAcc.replace(Regex("[^0-9]"), "")
-            if (digitsOnly.length >= 3) {
-                return digitsOnly.takeLast(4)
+    private fun extractAvailableBalance(text: String): Double? =
+        AVAILABLE_BALANCE.find(text)?.groupValues?.get(1)?.toAmount()
+
+    private fun String.toAmount(): Double? = replace(",", "").trimEnd('.').toDoubleOrNull()
+
+    private fun extractAccountLast4(text: String): String? =
+        ACCOUNT_LAST4.find(text)?.groupValues?.get(1)?.takeLast(4)
+
+    private fun extractMerchantOrSender(text: String, type: String): String? {
+        // Debits name a payee ("To SAHA ENTERPRISE", "at Starbucks"), credits a payer
+        // ("by Mr A Ganesan", "from VPA x@ybl"); fall back to the other direction if missing.
+        val patterns = if (type == "CREDIT") {
+            listOf(PAYER_PATTERN, PAYEE_PATTERN, INFO_PATTERN)
+        } else {
+            listOf(PAYEE_PATTERN, PAYER_PATTERN, INFO_PATTERN)
+        }
+
+        for (pattern in patterns) {
+            for (match in pattern.findAll(text)) {
+                val found = match.groupValues[1].trim().trimEnd('.', '-').replace(Regex("\\s+"), " ")
+                if (found.length < 2 || found.none { it.isLetter() }) continue
+                if (found.contains("card", ignoreCase = true)) continue
+                return if (found.contains('@')) found else found.capitalizeWords()
             }
         }
         return null
     }
 
-    private fun extractMerchantOrSender(text: String, type: String): String? {
-        val lower = text.lowercase()
-
-        // Common patterns: "at STARBUCKS", "to JOHN DOE", "from ACME CORP", "for GROCERIES", "vpa MERCHANT@UPI"
-        val patterns = listOf(
-            Pattern.compile("(?i)\\bat\\s+([A-Za-z0-9\\s&'-]{3,25})(?:\\s+on|\\s+ref|\\s+bal|\\.|$)"),
-            Pattern.compile("(?i)\\bto\\s+([A-Za-z0-9\\s&'-]{3,25})(?:\\s+on|\\s+ref|\\s+bal|\\.|$)"),
-            Pattern.compile("(?i)\\bfrom\\s+([A-Za-z0-9\\s&'-]{3,25})(?:\\s+on|\\s+ref|\\s+bal|\\.|$)"),
-            Pattern.compile("(?i)\\bvpa\\s+([A-Za-z0-9.@_-]{3,30})"),
-            Pattern.compile("(?i)\\binfo[:\\s]+([A-Za-z0-9\\s&'-]{3,25})")
-        )
-
-        for (pattern in patterns) {
-            val m = pattern.matcher(text)
-            if (m.find()) {
-                val found = m.group(1)?.trim()
-                if (!found.isNullOrEmpty() && found.length in 2..30 &&
-                    !found.equals("the", ignoreCase = true) &&
-                    !found.equals("your", ignoreCase = true) &&
-                    !found.contains("card", ignoreCase = true)
-                ) {
-                    return found.replace(Regex("\\s+"), " ").capitalizeWords()
-                }
-            }
-        }
-
-        return if (type == "CREDIT") "Deposit / Transfer" else "Merchant / Store"
-    }
+    private val CATEGORY_KEYWORDS = listOf(
+        "Food & Dining" to listOf(
+            "swiggy", "zomato", "restaurant", "hotel", "cafe", "bakery", "mess", "tea stall", "sweets",
+            "dominos", "pizza", "kfc", "mcdonald", "starbucks", "burger", "food", "dining", "biryani"
+        ),
+        "Groceries" to listOf(
+            "bigbasket", "blinkit", "zepto", "dmart", "grocery", "groceries", "supermarket", "super market",
+            "mart", "provision", "vegetables", "fruits", "fresh", "kirana", "store"
+        ),
+        "Shopping" to listOf(
+            "amazon", "flipkart", "myntra", "meesho", "ajio", "nykaa", "textile", "jewellers", "fashion",
+            "apparel", "mall", "shop", "walmart", "target"
+        ),
+        "Transportation" to listOf(
+            "irctc", "uber", "ola", "rapido", "redbus", "metro", "fuel", "petrol", "filling station",
+            "service station", "pump", "hpcl", "iocl", "bpcl", "fastag", "parking", "flight", "transit"
+        ),
+        "Bills & Utilities" to listOf(
+            "electricity", "tneb", "tnpdcl", "bescom", "water", "gas", "broadband", "airtel", "jio", "bsnl",
+            "vodafone", "dth", "tata play", "netflix", "spotify", "subscription", "utility", "bill"
+        ),
+        "Entertainment" to listOf("bookmyshow", "pvr", "inox", "cinema", "theatre", "theater", "movie", "hotstar", "steam", "game"),
+        "Health & Wellness" to listOf(
+            "pharmacy", "medical", "medplus", "apollo", "hospital", "clinic", "diagnostic", "lab", "doctor", "health"
+        ),
+        "Investment & Savings" to listOf("zerodha", "groww", "mutual fund", "sip", "stocks", "investment", "fixed deposit")
+    ).map { (category, words) -> category to Regex("(?i)\\b(?:${words.joinToString("|") { Regex.escape(it) }})\\b") }
 
     private fun suggestCategory(text: String, merchant: String?, type: String): String {
+        val combined = "$text ${merchant ?: ""}"
         if (type == "CREDIT") {
-            if (text.contains("salary", ignoreCase = true) || text.contains("payroll", ignoreCase = true)) {
-                return "Salary & Income"
-            }
-            return "Salary & Income"
+            val isIncome = Regex("(?i)\\b(?:salary|payroll|stipend|interest|dividend)\\b").containsMatchIn(combined)
+            return if (isIncome) "Salary & Income" else "Uncategorized"
         }
-
-        val combined = "$text ${merchant ?: ""}".lowercase()
-
-        return when {
-            combined.contains("starbucks") || combined.contains("cafe") || combined.contains("restaurant") ||
-                    combined.contains("mcdonald") || combined.contains("burger") || combined.contains("pizza") ||
-                    combined.contains("dunkin") || combined.contains("food") || combined.contains("dining") -> "Food & Dining"
-
-            combined.contains("walmart") || combined.contains("target") || combined.contains("amazon") ||
-                    combined.contains("store") || combined.contains("shop") || combined.contains("mall") ||
-                    combined.contains("apparel") || combined.contains("fashion") -> "Shopping"
-
-            combined.contains("grocery") || combined.contains("supermarket") || combined.contains("whole foods") ||
-                    combined.contains("trader joe") || combined.contains("kroger") || combined.contains("fresh") -> "Groceries"
-
-            combined.contains("electric") || combined.contains("utility") || combined.contains("water") ||
-                    combined.contains("gas") || combined.contains("bill") || combined.contains("verizon") ||
-                    combined.contains("at&t") || combined.contains("broadband") || combined.contains("subscription") ||
-                    combined.contains("netflix") || combined.contains("spotify") -> "Bills & Utilities"
-
-            combined.contains("uber") || combined.contains("lyft") || combined.contains("transit") ||
-                    combined.contains("subway") || combined.contains("shell") || combined.contains("chevron") ||
-                    combined.contains("fuel") || combined.contains("petrol") || combined.contains("flight") -> "Transportation"
-
-            combined.contains("cinema") || combined.contains("theater") || combined.contains("movie") ||
-                    combined.contains("game") || combined.contains("steam") || combined.contains("ticket") -> "Entertainment"
-
-            combined.contains("hospital") || combined.contains("pharmacy") || combined.contains("doctor") ||
-                    combined.contains("health") || combined.contains("cvs") || combined.contains("walgreens") -> "Health & Wellness"
-
-            combined.contains("investment") || combined.contains("stocks") || combined.contains("crypto") ||
-                    combined.contains("mutual fund") || combined.contains("deposit") -> "Investment & Savings"
-
-            else -> "Uncategorized"
-        }
+        return CATEGORY_KEYWORDS.firstOrNull { (_, regex) -> regex.containsMatchIn(combined) }?.first ?: "Uncategorized"
     }
 
     private fun String.capitalizeWords(): String {

@@ -10,7 +10,8 @@ import androidx.room.PrimaryKey
         Index("accountId"),
         Index("dateTimestamp"),
         Index("categoryTag"),
-        Index("isPendingReview")
+        Index("isPendingReview"),
+        Index("recurringBillId")
     ]
 )
 data class TransactionEntity(
@@ -26,17 +27,24 @@ data class TransactionEntity(
     val merchantOrSender: String? = null,
     val isPendingReview: Boolean = false, // True if user needs to set title/category
     val notes: String? = null,
+    // Legacy (DB v8 and earlier): bills used to be transactions flagged recurring. Migration 8->9
+    // moves them into recurring_bills and clears the flag; nothing reads these any more.
     val isRecurring: Boolean = false,
-    val recurringFrequency: String? = null, // "MONTHLY", "YEARLY", "WEEKLY"
-    val recurringDueDate: Int? = null, // Day of month (e.g. 4 for 4th of month) or day of week (1..7)
+    val recurringFrequency: String? = null,
+    val recurringDueDate: Int? = null,
     val receiptUri: String? = null, // Attachment URI or image path for bill/receipt
     // True once the user deletes an SMS-sourced transaction they don't want. The row is kept
     // (instead of a hard delete) so rawSmsMessage still matches on the next inbox scan and
     // checkDuplicateSms rejects it - otherwise the same still-present phone SMS gets re-parsed
     // and the "deleted" transaction comes right back.
     val isDismissed: Boolean = false,
-    // For isRecurring rows only: epoch millis of the last time this bill was marked paid, so
-    // RecurringBillUtils.calculateAlert can tell the current cycle is already settled instead
-    // of continuing to show it as due/overdue right after the user paid it.
-    val lastPaidTimestamp: Long? = null
+    // Legacy, see isRecurring.
+    val lastPaidTimestamp: Long? = null,
+    // For SMS-sourced rows: the sender code ("HDFCBK") and account/card digits the SMS named.
+    // Kept so the review flow can spot a bank or card that no account is linked to yet, and
+    // teach the chosen account to recognise it next time.
+    val smsSender: String? = null,
+    val smsAccountLast4: String? = null,
+    // The recurring bill this transaction paid, if any (RecurringBillEntity.id).
+    val recurringBillId: Long? = null
 )

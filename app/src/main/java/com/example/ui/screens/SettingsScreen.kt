@@ -100,7 +100,6 @@ import com.example.ui.dialogs.TotalBudgetDialog
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.IncomeGreen
 import com.example.ui.theme.PendingAmber
-import com.example.utils.AppDebugLogger
 import java.util.Calendar
 import java.util.Locale
 
@@ -127,7 +126,6 @@ fun SettingsScreen(
     onScanInbox: () -> Unit = {},
     smsSyncFromDate: Long? = null,
     onSetSmsSyncFromDate: (Long?) -> Unit = {},
-    onProcessSimulatedSms: (String) -> Unit = {},
     onAddAccountClick: () -> Unit = {},
     onTransferClick: (AccountEntity?) -> Unit = {},
     onEditAccount: (AccountEntity) -> Unit = {},
@@ -140,7 +138,6 @@ fun SettingsScreen(
     var showTotalBudgetDialog by remember { mutableStateOf(false) }
     var showLowBalanceDialog by remember { mutableStateOf(false) }
     var simSmsInput by remember { mutableStateOf("") }
-    var debugLogText by remember { mutableStateOf(AppDebugLogger.getLatestLogText()) }
 
     var hasSmsPermission by remember {
         mutableStateOf(
@@ -161,14 +158,6 @@ fun SettingsScreen(
             onScanInbox()
         }
     }
-
-    val sampleSmsPresets = listOf(
-        stringResource(R.string.settings_sms_sim_preset_1_sms) to stringResource(R.string.settings_sms_sim_preset_1_label),
-        stringResource(R.string.settings_sms_sim_preset_2_sms) to stringResource(R.string.settings_sms_sim_preset_2_label),
-        stringResource(R.string.settings_sms_sim_preset_3_sms) to stringResource(R.string.settings_sms_sim_preset_3_label),
-        stringResource(R.string.settings_sms_sim_preset_4_sms) to stringResource(R.string.settings_sms_sim_preset_4_label),
-        stringResource(R.string.settings_sms_sim_preset_5_sms) to stringResource(R.string.settings_sms_sim_preset_5_label)
-    )
 
     val currencyNameUsd = stringResource(R.string.settings_currency_name_usd)
     val currencyNameEur = stringResource(R.string.settings_currency_name_eur)
@@ -658,155 +647,6 @@ fun SettingsScreen(
                             Text(
                                 text = if (hasSmsPermission) stringResource(R.string.settings_sms_sync_button_scan) else stringResource(R.string.settings_sms_sync_button_grant_permission)
                             )
-                        }
-                    }
-                }
-            }
-        }
-
-        // --- INTERACTIVE SMS SIMULATOR / PARSER ---
-        item {
-            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Sms,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.settings_sms_sim_title),
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.settings_sms_sim_subtitle),
-                                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    )
-                                }
-                            }
-
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.settings_sms_sim_badge),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        fontSize = 9.sp
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Presets Horizontal Scroll Carousel
-                        Text(
-                            text = stringResource(R.string.settings_sms_sim_quick_presets_label),
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        val smsPresetsScrollState = rememberScrollState()
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(smsPresetsScrollState),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                sampleSmsPresets.forEach { (fullSms, chipLabel) ->
-                                    val isSelected = simSmsInput == fullSms
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = { simSmsInput = fullSms },
-                                        label = {
-                                            Text(
-                                                text = chipLabel,
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Default.PlayArrow,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(12.dp),
-                                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        },
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-                                }
-                            }
-                            ScrollEdgeFade(smsPresetsScrollState, modifier = Modifier.matchParentSize())
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = simSmsInput,
-                            onValueChange = { simSmsInput = it },
-                            label = { Text(stringResource(R.string.settings_sms_sim_input_label)) },
-                            placeholder = { Text(stringResource(R.string.settings_sms_sim_input_placeholder)) },
-                            trailingIcon = {
-                                if (simSmsInput.isNotEmpty()) {
-                                    IconButton(onClick = { simSmsInput = "" }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = stringResource(R.string.settings_sms_sim_clear_desc),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("sim_sms_input"),
-                            minLines = 2,
-                            maxLines = 3,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = {
-                                onProcessSimulatedSms(simSmsInput)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("parse_sim_sms_btn"),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = stringResource(R.string.settings_sms_sim_parse_desc), modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.settings_sms_sim_parse_button), style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -1436,107 +1276,6 @@ fun SettingsScreen(
                                 Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(stringResource(R.string.settings_backup_restore_button), style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // --- DEBUG LOG CAPTURE ---
-        item {
-            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text(
-                    text = stringResource(R.string.settings_debug_log_section_title),
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(vertical = 6.dp)
-                )
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.SaveAlt,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.settings_debug_log_capture_title),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Text(
-                                    text = stringResource(R.string.settings_debug_log_capture_subtitle),
-                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = debugLogText,
-                            onValueChange = { debugLogText = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp),
-                            label = { Text(stringResource(R.string.settings_debug_log_field_label)) },
-                            readOnly = true,
-                            maxLines = 15,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        val manualDebugLogCaptureMessage = stringResource(R.string.settings_debug_log_manual_capture_message)
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Button(
-                                onClick = {
-                                    AppDebugLogger.log(manualDebugLogCaptureMessage)
-                                    debugLogText = AppDebugLogger.getLatestLogText()
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.settings_debug_log_refresh_button), style = MaterialTheme.typography.labelLarge)
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    val shareIntent = AppDebugLogger.buildShareIntent(context)
-                                    context.startActivity(shareIntent)
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.settings_debug_log_share_button), style = MaterialTheme.typography.labelLarge)
                             }
                         }
                     }

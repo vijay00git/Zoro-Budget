@@ -73,4 +73,9 @@
     <string name="transaction_amount_credit_format">+%1$s%2$,.2f</string>
     <string name="transaction_amount_debit_format">-%1$s%2$,.2f</string>
     <string name="transaction_pending_label">PENDING</string>
+    <string name="new_sms_source_last4">••%1$s</string>
+    <string name="new_sms_source_message">New bank or card (%1$s). Choose the account it belongs to. Future SMS from it will go there automatically.</string>
+    <string name="month_selector_previous">Previous month</string>
+    <string name="month_selector_next">Next month</string>
+    <string name="month_selector_this_month">This month</string>
 </resources>

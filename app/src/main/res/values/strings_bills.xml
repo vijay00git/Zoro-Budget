@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bill form -->
+    <string name="bill_form_title_add">New recurring bill</string>
+    <string name="bill_form_title_edit">Edit recurring bill</string>
+    <string name="bill_form_delete">Delete bill</string>
+    <string name="bill_form_type_bill">Bill I pay</string>
+    <string name="bill_form_type_income">Income I receive</string>
+    <string name="bill_form_name">Name</string>
+    <string name="bill_form_name_placeholder">e.g. Rent, Airtel, Home loan EMI</string>
+    <string name="bill_form_amount">Amount</string>
+    <string name="bill_form_amount_error">Enter an amount greater than 0</string>
+    <string name="bill_form_frequency">Repeats</string>
+    <string name="bill_form_next_due">Next due: %1$s</string>
+    <string name="bill_form_reminder">Remind me</string>
+    <string name="bill_form_reminder_same_day">On the due date</string>
+    <string name="bill_form_reminder_days">%1$d days before</string>
+    <string name="bill_form_account">Paid from</string>
+    <string name="bill_form_category">Category</string>
+    <string name="bill_form_notes">Notes (optional)</string>
+    <string name="bill_form_save">Save</string>
+    <string name="bill_form_cancel">Cancel</string>
+    <string name="bill_form_ok">OK</string>
+    <string name="bill_form_delete_title">Delete this bill?</string>
+    <string name="bill_form_delete_message">The bill and its reminders are removed. Payments already recorded stay in the ledger.</string>
+
+    <string name="bill_frequency_weekly">Weekly</string>
+    <string name="bill_frequency_monthly">Monthly</string>
+    <string name="bill_frequency_quarterly">Quarterly</string>
+    <string name="bill_frequency_yearly">Yearly</string>
+
+    <!-- Status -->
+    <string name="bill_status_paused">Paused</string>
+    <string name="bill_status_overdue_days">Overdue by %1$d days</string>
+    <string name="bill_status_overdue_yesterday">Overdue since yesterday</string>
+    <string name="bill_status_due_today">Due today</string>
+    <string name="bill_status_due_tomorrow">Due tomorrow</string>
+    <string name="bill_status_due_in_days">Due in %1$d days</string>
+    <string name="bill_status_due_on">Due %1$s</string>
+    <string name="bill_mark_paid">Mark paid</string>
+    <string name="bill_mark_received">Mark received</string>
+
+    <!-- Overview card -->
+    <string name="bills_due_title">Bills to pay</string>
+    <string name="bills_empty_message">Add rent, EMIs and subscriptions to get reminders and track them here.</string>
+    <string name="bills_all_paid_next">All caught up. Next: %1$s on %2$s</string>
+    <string name="bills_all_paid">All caught up.</string>
+    <string name="bills_paid_this_month">%1$d paid this month · %2$s</string>
+    <string name="bills_add">Add bill</string>
+    <string name="bills_see_all">All bills (%1$d)</string>
+    <string name="bills_undo">Undo</string>
+
+    <!-- Planning list -->
+    <string name="bills_section_title">Recurring bills</string>
+    <string name="bills_section_subtitle">%1$s a month across %2$d active bills</string>
+    <string name="bills_section_paused">Paused</string>
+
+    <!-- Mark paid -->
+    <string name="mark_paid_title">Pay %1$s</string>
+    <string name="mark_paid_title_income">Receive %1$s</string>
+    <string name="mark_paid_due_line">%1$s due %2$s</string>
+    <string name="mark_paid_looking">Looking for this payment in your ledger…</string>
+    <string name="mark_paid_already_in_ledger">Already in your ledger?</string>
+    <string name="mark_paid_already_in_ledger_hint">Pick the SMS or entry that paid it, so it isn\'t counted twice.</string>
+    <string name="mark_paid_record_new">Record a new payment</string>
+    <string name="mark_paid_amount">Amount paid</string>
+    <string name="mark_paid_today">Paid today</string>
+    <string name="mark_paid_on_due_date">On %1$s</string>
+    <string name="mark_paid_account">Paid from</string>
+    <string name="mark_paid_moves_to">The bill then moves to its next due date, %1$s.</string>
+    <string name="mark_paid_confirm_record">Record payment</string>
+    <string name="mark_paid_confirm_link">Link payment</string>
+
+    <!-- Details -->
+    <string name="bill_details_next_due">Next due date: %1$s</string>
+    <string name="bill_details_skip">Skip this cycle</string>
+    <string name="bill_details_history">Payments (%1$d)</string>
+    <string name="bill_details_no_history">No payments recorded yet.</string>
+    <string name="bill_details_average">Average payment %1$s</string>
+    <string name="bill_details_edit">Edit</string>
+    <string name="bill_details_pause">Pause</string>
+    <string name="bill_details_resume">Resume</string>
+    <string name="bill_details_close">Close</string>
+    <string name="bill_skip_title">Skip this cycle?</string>
+    <string name="bill_skip_message">No payment is recorded for %1$s. The bill moves to %2$s.</string>
+
+    <!-- Transaction edit -->
+    <string name="edit_transaction_make_recurring">Make this a recurring bill</string>
+    <string name="edit_transaction_bill_payment">Payment for a recurring bill</string>
+</resources>

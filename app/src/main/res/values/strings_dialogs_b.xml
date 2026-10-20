@@ -57,7 +57,7 @@
 
     <!-- TotalBudgetDialog -->
     <string name="total_budget_dialog_title">Set Total Monthly Budget</string>
-    <string name="total_budget_dialog_description">Enter your target overall expense limit for the month. This will automatically allocate spending limits across your active categories:</string>
+    <string name="total_budget_dialog_description">Enter your overall spending limit for the month. Your category budgets are scaled to match and keep their proportions; categories without a budget stay without one.</string>
     <string name="total_budget_dialog_label">Total Monthly Budget (%1$s)</string>
     <string name="total_budget_dialog_currency_prefix">%1$s </string>
     <string name="total_budget_dialog_quick_presets">Quick Presets:</string>
@@ -91,6 +91,7 @@
     <string name="quick_review_dialog_amount">%1$s%2$s%3$,.2f</string>
     <string name="quick_review_dialog_title_field_label">Transaction Title</string>
     <string name="quick_review_dialog_category_label">Category</string>
+    <string name="quick_review_dialog_account_label">Account</string>
     <string name="quick_review_dialog_decline_button">Not a Transaction / Decline</string>
     <string name="quick_review_dialog_confirm_button">Confirm &amp; Next</string>
     <string name="quick_review_dialog_skip_button">Skip</string>

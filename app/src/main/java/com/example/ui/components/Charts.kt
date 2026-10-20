@@ -80,8 +80,9 @@ fun CategoryDonutChart(
     currencySymbol: String = "$",
     modifier: Modifier = Modifier
 ) {
-    val expenseTx = transactions.filter { it.type == "DEBIT" }
-    val totalExpense = expenseTx.sumOf { it.amount }
+    // Net per category, so money received back in a category reduces its slice
+    val totals = remember(transactions) { com.example.data.utils.CategoryTotals.of(transactions) }
+    val totalExpense = totals.expense
 
     if (totalExpense <= 0.0) {
         Card(
@@ -118,10 +119,8 @@ fun CategoryDonutChart(
         Color(0xFF14B8A6), Color(0xFF6366F1), Color(0xFF64748B)
     )
 
-    val categoryExpenses = expenseTx
-        .groupBy { it.categoryTag }
-        .mapNotNull { (catName, txList) ->
-            val sum = txList.sumOf { it.amount }.coerceAtLeast(0.0)
+    val categoryExpenses = totals.spendingByCategory
+        .mapNotNull { (catName, sum) ->
             if (sum <= 0.0) return@mapNotNull null
 
             val catObj = categories.find { it.name.equals(catName, ignoreCase = true) }

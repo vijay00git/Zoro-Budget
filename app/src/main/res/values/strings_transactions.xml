@@ -28,7 +28,7 @@
     <string name="type_expenses">Expenses</string>
     <string name="type_income">Income</string>
     <string name="type_transfers">Transfers</string>
-    <string name="type_subscriptions">Subscriptions</string>
+    <string name="type_subscriptions">Bill payments</string>
     <string name="type_needs_review">Needs Review</string>
     <string name="type_all">All</string>
 

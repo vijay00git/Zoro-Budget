@@ -13,8 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.example.MainActivity
 import com.example.R
 import com.example.data.local.entity.AccountEntity
-import com.example.data.local.entity.TransactionEntity
-import com.example.data.utils.BillAlertInfo
+import com.example.data.local.entity.RecurringBillEntity
 import java.util.Locale
 
 /**
@@ -26,9 +25,9 @@ object NotificationHelper {
     const val CHANNEL_BILL_REMINDERS = "bill_reminders"
     const val CHANNEL_LOW_BALANCE = "low_balance"
 
-    // Bill and low-balance notification IDs are namespaced into disjoint ranges so a
-    // transaction id and an account id can never collide on the same notification slot.
-    private const val BILL_ID_OFFSET = 10_000
+    // Bill reminders are posted under their own tag and low-balance alerts in their own id
+    // range, so a bill id and an account id never land on the same notification slot.
+    private const val BILL_NOTIFICATION_TAG = "bill_reminder"
     private const val LOW_BALANCE_ID_OFFSET = 20_000
 
     fun ensureChannels(context: Context) {
@@ -70,21 +69,29 @@ object NotificationHelper {
         return PendingIntent.getActivity(context, 0, intent, flags)
     }
 
-    fun showBillReminder(context: Context, transaction: TransactionEntity, alertInfo: BillAlertInfo, currencySymbol: String) {
+    fun showBillReminder(context: Context, bill: RecurringBillEntity, daysUntilDue: Int, currencySymbol: String) {
         if (!canPostNotifications(context)) return
 
-        val amountText = String.format(Locale.getDefault(), "%s%.2f", currencySymbol, transaction.amount)
+        val amountText = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, bill.amount)
+        val whenText = when {
+            daysUntilDue < -1 -> context.getString(R.string.bill_status_overdue_days, -daysUntilDue)
+            daysUntilDue == -1 -> context.getString(R.string.bill_status_overdue_yesterday)
+            daysUntilDue == 0 -> context.getString(R.string.bill_status_due_today)
+            daysUntilDue == 1 -> context.getString(R.string.bill_status_due_tomorrow)
+            else -> context.getString(R.string.bill_status_due_in_days, daysUntilDue)
+        }
         val notification = NotificationCompat.Builder(context, CHANNEL_BILL_REMINDERS)
             .setSmallIcon(R.drawable.ic_stat_notification)
-            .setContentTitle(context.getString(R.string.notification_bill_reminder_title, transaction.title))
-            .setContentText(context.getString(R.string.notification_bill_reminder_text, alertInfo.alertMessage, amountText))
+            .setContentTitle(context.getString(R.string.notification_bill_reminder_title, bill.name))
+            .setContentText(context.getString(R.string.notification_bill_reminder_text, whenText, amountText))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(openAppPendingIntent(context))
             .build()
 
+        // Tagged, so a bill id can't collide with an account id used by low-balance alerts.
         androidx.core.app.NotificationManagerCompat.from(context)
-            .notify(BILL_ID_OFFSET + transaction.id.toInt(), notification)
+            .notify(BILL_NOTIFICATION_TAG, bill.id.toInt(), notification)
     }
 
     fun showLowBalance(context: Context, account: AccountEntity, currencySymbol: String, threshold: Double) {

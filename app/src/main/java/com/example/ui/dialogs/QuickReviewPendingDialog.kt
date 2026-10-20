@@ -43,8 +43,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
+import com.example.data.sms.SmsAccountMatcher
+import com.example.ui.components.NewSmsSourceNotice
 import com.example.ui.components.ScrollEdgeFade
 import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.IncomeGreen
@@ -57,26 +60,39 @@ import java.util.Locale
  * the Ledger tab. "Confirm" applies the title/category and clears isPendingReview; "Decline"
  * soft-dismisses SMS-sourced rows (same path as swipe-to-delete) so they don't reappear on the
  * next inbox scan; "Skip" leaves the row untouched for later.
+ *
+ * The queue is the set of ids pending when the dialog opened. Confirm/Decline remove the current
+ * row from [pendingTransactions], so walking that live list by index would skip every other item.
  */
 @Composable
 fun QuickReviewPendingDialog(
     pendingTransactions: List<TransactionEntity>,
+    accounts: List<AccountEntity>,
     categories: List<CategoryEntity>,
     currencySymbol: String = "$",
     onDismiss: () -> Unit,
-    onConfirm: (TransactionEntity, title: String, categoryTag: String) -> Unit,
+    onConfirm: (TransactionEntity, title: String, categoryTag: String, accountId: Long) -> Unit,
     onDecline: (TransactionEntity) -> Unit
 ) {
+    val queue = remember { pendingTransactions.map { it.id } }
     var index by remember { mutableIntStateOf(0) }
 
-    if (index >= pendingTransactions.size) {
+    if (index >= queue.size) {
         LaunchedEffect(Unit) { onDismiss() }
         return
     }
 
-    val current = pendingTransactions[index]
+    // Already handled elsewhere (e.g. edited from the Ledger) - move on to the next one.
+    val current = pendingTransactions.firstOrNull { it.id == queue[index] }
+    if (current == null) {
+        LaunchedEffect(index) { index++ }
+        return
+    }
+
     var titleText by remember(current.id) { mutableStateOf(current.merchantOrSender ?: current.title) }
     var selectedCategory by remember(current.id) { mutableStateOf(current.categoryTag) }
+    var selectedAccountId by remember(current.id) { mutableStateOf(current.accountId) }
+    val needsAccount = remember(current.id) { SmsAccountMatcher.needsAccountConfirmation(current, accounts) }
     val dateFormat = remember { SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()) }
     val categoryChipsListState = rememberLazyListState()
 
@@ -98,13 +114,13 @@ fun QuickReviewPendingDialog(
                         )
                     }
                     Text(
-                        text = stringResource(R.string.quick_review_dialog_progress, index + 1, pendingTransactions.size),
+                        text = stringResource(R.string.quick_review_dialog_progress, index + 1, queue.size),
                         style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = { (index + 1f) / pendingTransactions.size },
+                    progress = { (index + 1f) / queue.size },
                     modifier = Modifier.fillMaxWidth().height(4.dp).testTag("quick_review_progress_bar")
                 )
             }
@@ -186,6 +202,28 @@ fun QuickReviewPendingDialog(
                     ScrollEdgeFade(categoryChipsListState, modifier = Modifier.matchParentSize(), edgeColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                 }
 
+                if (needsAccount) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    NewSmsSourceNotice(current)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.quick_review_dialog_account_label),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(accounts, key = { it.id }) { account ->
+                            FilterChip(
+                                selected = selectedAccountId == account.id,
+                                onClick = { selectedAccountId = account.id },
+                                label = { Text(account.name, style = MaterialTheme.typography.labelSmall) },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.testTag("quick_review_account_chip_${account.id}")
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 OutlinedButton(
@@ -205,7 +243,7 @@ fun QuickReviewPendingDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    onConfirm(current, titleText, selectedCategory)
+                    onConfirm(current, titleText, selectedCategory, selectedAccountId)
                     index++
                 },
                 modifier = Modifier.testTag("quick_review_confirm_button")

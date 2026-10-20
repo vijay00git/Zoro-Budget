@@ -5,8 +5,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.data.local.AppDatabase
 import com.example.data.preferences.AppPreferences
-import com.example.data.utils.BillAlertSeverity
-import com.example.data.utils.RecurringBillUtils
+import com.example.data.utils.BillSchedule
+import com.example.data.utils.BillStatus
 
 /**
  * Checks every recurring bill and account balance against their alert thresholds and posts a
@@ -22,11 +22,12 @@ class BillAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
         val db = AppDatabase.getDatabase(appContext)
         val prefs = AppPreferences.load(appContext)
 
-        val recurringTransactions = db.transactionDao().getRecurringTransactionsList()
-        for (transaction in recurringTransactions) {
-            val alert = RecurringBillUtils.calculateAlert(transaction)
-            if (alert.severity == BillAlertSeverity.URGENT || alert.severity == BillAlertSeverity.WARNING) {
-                NotificationHelper.showBillReminder(appContext, transaction, alert, prefs.currencySymbol)
+        // Remind for bills that are overdue or inside their own reminder window. A paid bill has
+        // already moved to its next cycle, so it stays quiet until that cycle is near.
+        for (bill in db.recurringBillDao().getActiveBillsList()) {
+            val status = BillSchedule.status(bill.nextDueDate, bill.reminderDaysBefore, bill.isActive)
+            if (status == BillStatus.OVERDUE || status == BillStatus.DUE_SOON) {
+                NotificationHelper.showBillReminder(appContext, bill, BillSchedule.daysUntil(bill.nextDueDate), prefs.currencySymbol)
             }
         }
 

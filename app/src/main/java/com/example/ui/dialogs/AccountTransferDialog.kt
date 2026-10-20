@@ -66,6 +66,7 @@ import java.util.Locale
 fun AccountTransferDialog(
     accounts: List<AccountEntity>,
     initialFromAccountId: Long? = null,
+    initialToAccountId: Long? = null,
     currencySymbol: String = "$",
     onDismiss: () -> Unit,
     onTransfer: (fromAccount: AccountEntity, toAccount: AccountEntity, amount: Double, notes: String?, dateTimestamp: Long) -> Unit
@@ -73,17 +74,24 @@ fun AccountTransferDialog(
     val context = LocalContext.current
     val defaultAccountName = stringResource(R.string.account_transfer_dialog_default_account_name)
 
-    // Default source account to selected or first account
+    // Default source account to selected or first account (the richest other one when topping
+    // up a given destination account)
     var fromAccount by remember {
         mutableStateOf(
-            accounts.find { it.id == initialFromAccountId } ?: accounts.firstOrNull() ?: AccountEntity(id = 1, name = defaultAccountName, type = "CHECKING", balance = 0.0)
+            accounts.find { it.id == initialFromAccountId }
+                ?: initialToAccountId?.let { toId -> accounts.filter { it.id != toId }.maxByOrNull { it.balance } }
+                ?: accounts.firstOrNull()
+                ?: AccountEntity(id = 1, name = defaultAccountName, type = "CHECKING", balance = 0.0)
         )
     }
 
-    // Default destination account to a different account than fromAccount
+    // Default destination account to the requested one, or a different account than fromAccount
     var toAccount by remember {
         mutableStateOf(
-            accounts.find { it.id != fromAccount.id } ?: accounts.lastOrNull() ?: fromAccount
+            accounts.find { it.id == initialToAccountId && it.id != fromAccount.id }
+                ?: accounts.find { it.id != fromAccount.id }
+                ?: accounts.lastOrNull()
+                ?: fromAccount
         )
     }
 

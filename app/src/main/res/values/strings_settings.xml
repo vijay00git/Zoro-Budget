@@ -38,25 +38,6 @@
     <string name="settings_sms_sync_button_grant_permission">Grant SMS Permission &amp; Sync</string>
 
     <!-- SMS Simulator / Parser section -->
-    <string name="settings_sms_sim_title">Test Message Parser</string>
-    <string name="settings_sms_sim_subtitle">Tap preset or test custom bank SMS</string>
-    <string name="settings_sms_sim_badge">SIMULATOR</string>
-    <string name="settings_sms_sim_quick_presets_label">Quick Presets:</string>
-    <string name="settings_sms_sim_preset_1_sms">USD 89.50 debited on A/C ending 4321 at Target Superstore on 31-Jul-26.</string>
-    <string name="settings_sms_sim_preset_1_label">Target $89.50</string>
-    <string name="settings_sms_sim_preset_2_sms">Your A/C XX4321 credited with USD 3,200.00 from TechCorp Payroll.</string>
-    <string name="settings_sms_sim_preset_2_label">Salary $3200</string>
-    <string name="settings_sms_sim_preset_3_sms">USD 5.75 debited on A/C ending 4321 at Starbucks Cafe.</string>
-    <string name="settings_sms_sim_preset_3_label">Starbucks $5.75</string>
-    <string name="settings_sms_sim_preset_4_sms">A/C XX4321 debited for USD 115.00 to City Electric Utility on 30-Jul-26.</string>
-    <string name="settings_sms_sim_preset_4_label">Electric $115</string>
-    <string name="settings_sms_sim_preset_5_sms">Payment of USD 42.00 successful to Uber Rides from card ending 1122.</string>
-    <string name="settings_sms_sim_preset_5_label">Uber $42</string>
-    <string name="settings_sms_sim_input_label">SMS Message Text</string>
-    <string name="settings_sms_sim_input_placeholder">e.g. USD 45.00 debited on A/C ending 4321 at Starbucks</string>
-    <string name="settings_sms_sim_clear_desc">Clear</string>
-    <string name="settings_sms_sim_parse_desc">Parse</string>
-    <string name="settings_sms_sim_parse_button">Parse &amp; Add SMS Transaction</string>
 
     <!-- App Appearance & Theme section -->
     <string name="settings_appearance_section_title">App Appearance &amp; Currency</string>
@@ -108,13 +89,6 @@
     <string name="settings_backup_restore_button">Restore Data</string>
 
     <!-- Debug Log Capture section -->
-    <string name="settings_debug_log_section_title">Debug Log Capture</string>
-    <string name="settings_debug_log_capture_title">Capture app logs for crash reports</string>
-    <string name="settings_debug_log_capture_subtitle">Use this to collect recent app events and share them with support</string>
-    <string name="settings_debug_log_manual_capture_message">Manual debug log capture requested</string>
-    <string name="settings_debug_log_field_label">Recent app log</string>
-    <string name="settings_debug_log_refresh_button">Refresh Logs</string>
-    <string name="settings_debug_log_share_button">Share Logs</string>
 
     <!-- Storage, Cache & RAM section -->
     <string name="settings_storage_section_title">Storage, Cache &amp; Memory (RAM)</string>

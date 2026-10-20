@@ -66,6 +66,8 @@ import coil.compose.AsyncImage
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
+import com.example.data.sms.SmsAccountMatcher
+import com.example.ui.components.NewSmsSourceNotice
 import com.example.ui.theme.ExpenseRed
 import java.util.Locale
 
@@ -77,7 +79,8 @@ fun EditTransactionDialog(
     categories: List<CategoryEntity>,
     currencySymbol: String = "$",
     onDismiss: () -> Unit,
-    onSave: (title: String, category: String, accountId: Long, notes: String?, isRecurring: Boolean, frequency: String?, dueDate: Int?, receiptUri: String?) -> Unit,
+    onSave: (title: String, category: String, accountId: Long, notes: String?, receiptUri: String?) -> Unit,
+    onMakeRecurring: (() -> Unit)? = null,
     onDelete: () -> Unit
 ) {
     var title by remember { mutableStateOf(transaction.title) }
@@ -85,10 +88,6 @@ fun EditTransactionDialog(
     var selectedAccountId by remember { mutableStateOf(transaction.accountId) }
     var notes by remember { mutableStateOf(transaction.notes ?: "") }
     var receiptUri by remember { mutableStateOf<String?>(transaction.receiptUri) }
-    var isRecurring by remember { mutableStateOf(transaction.isRecurring) }
-    var recurringFrequency by remember { mutableStateOf(transaction.recurringFrequency ?: "MONTHLY") }
-    var recurringDueDate by remember { androidx.compose.runtime.mutableIntStateOf(transaction.recurringDueDate ?: 4) }
-    var recurringDueDateText by remember { mutableStateOf(transaction.recurringDueDate?.toString() ?: "4") }
     var accountDropdownExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -280,6 +279,9 @@ fun EditTransactionDialog(
                 }
 
                 // Account Selection Dropdown
+                if (transaction.isPendingReview && SmsAccountMatcher.needsAccountConfirmation(transaction, accounts)) {
+                    NewSmsSourceNotice(transaction)
+                }
                 Text(
                     text = stringResource(R.string.edit_transaction_dialog_account_label),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
@@ -429,81 +431,19 @@ fun EditTransactionDialog(
                     }
                 }
 
-                // Recurring Subscription Toggle
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                // Bills: show the link if this paid one, otherwise offer to make it recurring
+                if (transaction.recurringBillId != null) {
+                    Text(
+                        text = stringResource(R.string.edit_transaction_bill_payment),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else if (onMakeRecurring != null && !transaction.isPendingReview) {
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = onMakeRecurring,
+                        modifier = Modifier.fillMaxWidth().testTag("make_recurring_button")
                     ) {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.edit_transaction_dialog_recurring_toggle_title),
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = stringResource(R.string.edit_transaction_dialog_recurring_toggle_subtitle),
-                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            )
-                        }
-                        androidx.compose.material3.Switch(
-                            checked = isRecurring,
-                            onCheckedChange = { isRecurring = it },
-                            modifier = Modifier.testTag("recurring_subscription_switch")
-                        )
-                    }
-
-                    if (isRecurring) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf("MONTHLY", "WEEKLY", "YEARLY").forEach { fKey ->
-                                androidx.compose.material3.FilterChip(
-                                    selected = recurringFrequency == fKey,
-                                    onClick = { recurringFrequency = fKey },
-                                    label = {
-                                        Text(
-                                            text = when (fKey) {
-                                                "MONTHLY" -> stringResource(R.string.edit_transaction_dialog_freq_monthly)
-                                                "WEEKLY" -> stringResource(R.string.edit_transaction_dialog_freq_weekly)
-                                                else -> stringResource(R.string.edit_transaction_dialog_freq_yearly)
-                                            },
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-                        OutlinedTextField(
-                            value = recurringDueDateText,
-                            onValueChange = { input ->
-                                if (input.isBlank()) {
-                                    recurringDueDateText = ""
-                                } else {
-                                    input.toIntOrNull()?.let { parsed ->
-                                        if (parsed in 1..31) {
-                                            recurringDueDate = parsed
-                                            recurringDueDateText = parsed.toString()
-                                        }
-                                    }
-                                }
-                            },
-                            label = { Text(stringResource(R.string.edit_transaction_dialog_due_day_label)) },
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        Text(stringResource(R.string.edit_transaction_make_recurring))
                     }
                 }
             }
@@ -511,15 +451,11 @@ fun EditTransactionDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val resolvedDueDate = recurringDueDateText.toIntOrNull()?.coerceIn(1, 31) ?: recurringDueDate
                     onSave(
                         title,
                         selectedCategory,
                         selectedAccountId,
                         notes.ifBlank { null },
-                        isRecurring,
-                        if (isRecurring) recurringFrequency else null,
-                        if (isRecurring) resolvedDueDate else null,
                         receiptUri
                     )
                 },
