@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,44 +20,33 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sms
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.AppDatabase
 import com.example.data.local.BudgetRepository
@@ -75,7 +65,8 @@ import com.example.ui.dialogs.EditCategoryBudgetDialog
 import com.example.ui.dialogs.EditTransactionDialog
 import com.example.ui.dialogs.ExportImportBackupDialog
 import com.example.ui.dialogs.QuickReviewPendingDialog
-import com.example.ui.components.heroColor
+import com.example.ui.components.CompactNavBar
+import com.example.ui.components.NavTab
 import com.example.ui.savings.SavingsScreen
 import com.example.ui.savings.SavingsViewModel
 import com.example.ui.savings.SavingsViewModelFactory
@@ -83,7 +74,6 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.TransactionsScreen
-import com.example.ui.theme.PendingAmber
 import com.example.ui.theme.SmartBudgetTheme
 
 sealed class Screen(val route: String, @StringRes val titleRes: Int, val icon: ImageVector) {
@@ -140,7 +130,8 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewModel) {
-    var selectedScreenIndex by remember { mutableIntStateOf(0) }
+    // Saved so rotation or a theme change keeps the tab; Back from any other tab returns to Overview.
+    var selectedScreenIndex by rememberSaveable { mutableIntStateOf(0) }
     val screens = listOf(
         Screen.Home,
         Screen.Transactions,
@@ -218,88 +209,23 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
         }
     }
 
+    BackHandler(enabled = selectedScreenIndex != 0) { selectedScreenIndex = 0 }
+
     Scaffold(
         contentWindowInsets = WindowInsets.systemBars,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_top_bar_title),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                },
-                actions = {
-                    IconButton(
-                        onClick = { showBackupDialog = true },
-                        modifier = Modifier.testTag("topbar_backup_export_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FileDownload,
-                            contentDescription = stringResource(R.string.action_export_backup),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    if (pendingTransactions.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                viewModel.setTypeFilter("PENDING")
-                                selectedScreenIndex = 1 // Go to ledger tab
-                            },
-                            modifier = Modifier.testTag("pending_notification_topbar")
-                        ) {
-                            BadgedBox(
-                                badge = {
-                                    Badge(containerColor = PendingAmber) {
-                                        Text("${pendingTransactions.size}")
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.NotificationsActive,
-                                    contentDescription = stringResource(R.string.action_needs_title_tag),
-                                    tint = PendingAmber
-                                )
-                            }
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.testTag("bottom_navigation_bar")
-            ) {
-                screens.forEachIndexed { index, screen ->
-                    NavigationBarItem(
-                        selected = selectedScreenIndex == index,
-                        onClick = { selectedScreenIndex = index },
-                        // The selected tab is an indigo pill, matching the Overview's hero tile.
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = heroColor(),
-                            selectedIconColor = Color.White,
-                            selectedTextColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        icon = {
-                            if (screen == Screen.Transactions && pendingTransactions.isNotEmpty()) {
-                                BadgedBox(
-                                    badge = { Badge(containerColor = PendingAmber) { Text("${pendingTransactions.size}") } }
-                                ) {
-                                    Icon(imageVector = screen.icon, contentDescription = stringResource(screen.titleRes))
-                                }
-                            } else {
-                                Icon(imageVector = screen.icon, contentDescription = stringResource(screen.titleRes))
-                            }
-                        },
-                        label = { Text(stringResource(screen.titleRes)) },
-                        modifier = Modifier.testTag("nav_item_${screen.route}")
+            CompactNavBar(
+                tabs = screens.map { screen ->
+                    NavTab(
+                        key = screen.route,
+                        label = stringResource(screen.titleRes),
+                        icon = screen.icon,
+                        badge = if (screen == Screen.Transactions) pendingTransactions.size else 0
                     )
-                }
-            }
+                },
+                selectedIndex = selectedScreenIndex,
+                onSelect = { selectedScreenIndex = it }
+            )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = Modifier.fillMaxSize()

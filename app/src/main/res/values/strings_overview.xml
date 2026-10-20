@@ -47,7 +47,7 @@
 
 
     <string name="heatmap_title">Daily spending</string>
-    <string name="heatmap_subtitle">Darker days cost more. Tap a day to see its transactions.</string>
+    <string name="heatmap_subtitle">Colours run from teal for light days to red for the heaviest. Tap a day to see its transactions.</string>
     <string name="heatmap_less">Less</string>
     <string name="heatmap_more">More</string>
     <string name="heatmap_stats">Heaviest: %1$s (%2$s) · Average %3$s a day · %4$d no-spend days</string>

@@ -1,5 +1,18 @@
 package com.example.ui.screens
 
+import com.example.ui.theme.accentOf
+import com.example.ui.theme.PendingAmber
+import com.example.ui.theme.ExpenseRed
+import com.example.ui.theme.IncomeGreen
+import com.example.ui.components.formatMoney
+import com.example.ui.components.CategoryAvatar
+import com.example.ui.components.BentoTile
+import com.example.data.utils.CategoryTotals
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.material.icons.filled.Sms
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,7 +84,6 @@ import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.components.ScrollEdgeFade
-import com.example.ui.components.TransactionItem
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -176,17 +188,16 @@ fun TransactionsScreen(
             // Header with Search Bar & Filter Button
             item {
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                    // Compact Single Top Row with Title, Search Input & Filter Button
+                    Text(
+                        text = stringResource(R.string.transactions_screen_title),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.transactions_screen_title),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = onSearchQueryChange,
@@ -293,6 +304,33 @@ fun TransactionsScreen(
                             }
                         }
                         ScrollEdgeFade(dateOptionsListState, modifier = Modifier.matchParentSize())
+                    }
+
+                    // Quick type chips: the common filters without opening the sheet.
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        items(
+                            listOf(
+                                "ALL" to R.string.type_all,
+                                "DEBIT" to R.string.type_expenses,
+                                "CREDIT" to R.string.type_income,
+                                "PENDING" to R.string.type_needs_review
+                            )
+                        ) { (key, label) ->
+                            val isSelected = selectedTypeFilter == key
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { onSelectTypeFilter(key) },
+                                label = {
+                                    Text(
+                                        stringResource(label),
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
+                                    )
+                                },
+                                shape = CircleShape,
+                                modifier = Modifier.height(30.dp).testTag("ledger_type_$key")
+                            )
+                        }
                     }
 
                     // Quick Category Tag Pills Bar
@@ -437,6 +475,11 @@ fun TransactionsScreen(
                 }
             }
 
+            // Totals for exactly what is shown, so they follow every filter and search.
+            if (transactions.isNotEmpty()) {
+                item { LedgerSummaryTile(transactions, currencySymbol) }
+            }
+
             // Transactions List Grouped By Date
             if (transactions.isEmpty()) {
                 item {
@@ -478,53 +521,15 @@ fun TransactionsScreen(
             } else {
                 groupedTransactions.forEach { (dateKeyAndLabel, txList) ->
                     val (_, headerLabel) = dateKeyAndLabel
-                    item(key = "header_${dateKeyAndLabel.first}") {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = headerLabel,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            HorizontalDivider(
-                                modifier = Modifier.weight(1f),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            val netAmount = txList.sumOf { if (it.type == "CREDIT") it.amount else -it.amount }
-                            val netStr = if (netAmount >= 0) {
-                                "+${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, netAmount)}"
-                            } else {
-                                "-${String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, Math.abs(netAmount))}"
-                            }
-                            Text(
-                                text = netStr,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (netAmount >= 0) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            )
-                        }
-                    }
-
-                    items(txList, key = { it.id }) { tx ->
-                        val acc = accounts.find { it.id == tx.accountId }
-                        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
-                            TransactionItem(
-                                transaction = tx,
-                                account = acc,
-                                categories = categories,
-                                onClick = { onTransactionClick(tx) },
-                                currencySymbol = currencySymbol
-                            )
-                        }
+                    item(key = "day_${dateKeyAndLabel.first}") {
+                        LedgerDayBox(
+                            label = headerLabel,
+                            transactions = txList,
+                            accounts = accounts,
+                            categories = categories,
+                            currencySymbol = currencySymbol,
+                            onTransactionClick = onTransactionClick
+                        )
                     }
                 }
             }
@@ -948,6 +953,122 @@ fun TransactionFilterBottomSheet(
                 ) {
                     Text(stringResource(R.string.action_apply))
                 }
+            }
+        }
+    }
+}
+
+/** Money in, money out and the net for the transactions on screen (transfers left out). */
+@Composable
+private fun LedgerSummaryTile(transactions: List<TransactionEntity>, currencySymbol: String) {
+    val counted = transactions.filter { it.categoryTag != CategoryTotals.TRANSFER_CATEGORY }
+    val moneyIn = counted.filter { it.type == "CREDIT" }.sumOf { it.amount }
+    val moneyOut = counted.filter { it.type == "DEBIT" }.sumOf { it.amount }
+    val net = moneyIn - moneyOut
+    BentoTile(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).testTag("ledger_summary"), contentPadding = 14) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LedgerFigure(stringResource(R.string.ledger_money_in), "+" + formatMoney(currencySymbol, moneyIn).substringBefore('.'), IncomeGreen, Modifier.weight(1f))
+            LedgerFigure(stringResource(R.string.ledger_money_out), "−" + formatMoney(currencySymbol, moneyOut).substringBefore('.'), MaterialTheme.colorScheme.onSurface, Modifier.weight(1f))
+            LedgerFigure(
+                stringResource(R.string.ledger_net),
+                (if (net >= 0) "+" else "−") + formatMoney(currencySymbol, kotlin.math.abs(net)).substringBefore('.'),
+                if (net >= 0) IncomeGreen else ExpenseRed,
+                Modifier.weight(1f)
+            )
+        }
+        Text(
+            pluralStringResource(R.plurals.ledger_count, transactions.size, transactions.size),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun LedgerFigure(label: String, value: String, color: Color, modifier: Modifier) {
+    Column(modifier = modifier) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = color, maxLines = 1)
+    }
+}
+
+/** One day as a single tile: its name and net total, then each transaction as a row. */
+@Composable
+private fun LedgerDayBox(
+    label: String,
+    transactions: List<TransactionEntity>,
+    accounts: List<AccountEntity>,
+    categories: List<CategoryEntity>,
+    currencySymbol: String,
+    onTransactionClick: (TransactionEntity) -> Unit
+) {
+    val net = transactions.filter { it.categoryTag != CategoryTotals.TRANSFER_CATEGORY }.sumOf { if (it.type == "CREDIT") it.amount else -it.amount }
+    BentoTile(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), contentPadding = 14) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f))
+            Text(
+                (if (net >= 0) "+" else "−") + formatMoney(currencySymbol, kotlin.math.abs(net)).substringBefore('.'),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = if (net >= 0) IncomeGreen else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        transactions.forEachIndexed { index, tx ->
+            if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            LedgerRow(tx, accounts.find { it.id == tx.accountId }, categories, currencySymbol, onClick = { onTransactionClick(tx) })
+        }
+    }
+}
+
+private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+
+/** A transaction row: category icon with account dot, name, category · account, amount and time. */
+@Composable
+private fun LedgerRow(tx: TransactionEntity, account: AccountEntity?, categories: List<CategoryEntity>, currencySymbol: String, onClick: () -> Unit) {
+    val category = categories.find { it.name.equals(tx.categoryTag, ignoreCase = true) }
+    val isCredit = tx.type == "CREDIT"
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp)
+            .testTag("transaction_item_${tx.id}"),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CategoryAvatar(category?.iconName, tx.categoryTag, category?.colorHex, size = 40.dp, accountColorHex = account?.colorHex, muted = tx.isPendingReview)
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                tx.title.removePrefix("SMS: ").removePrefix("SMS:").trim(),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (tx.source == "SMS_AUTO") {
+                    Icon(Icons.Default.Sms, contentDescription = stringResource(R.string.ledger_from_sms), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                    Spacer(Modifier.width(4.dp))
+                }
+                Text(
+                    listOfNotNull(tx.categoryTag, account?.name).joinToString(" · "),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = category?.colorHex?.let { accentOf(it).ink } ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                (if (isCredit) "+" else "−") + formatMoney(currencySymbol, tx.amount),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                color = if (isCredit) IncomeGreen else MaterialTheme.colorScheme.onSurface
+            )
+            if (tx.isPendingReview) {
+                Text(stringResource(R.string.transaction_pending_label), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = PendingAmber)
+            } else {
+                Text(timeFormat.format(tx.dateTimestamp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

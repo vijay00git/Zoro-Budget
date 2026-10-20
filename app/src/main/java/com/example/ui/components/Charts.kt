@@ -683,6 +683,7 @@ fun MonthlySpendingTrendChart(
                     .fillMaxWidth()
                     .height(180.dp)
             ) {
+                val defaultLineColor = ExpenseRed // read here: theme colours cannot be read inside the draw block
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
@@ -798,7 +799,7 @@ fun MonthlySpendingTrendChart(
                             fillPath.lineTo(points.last().x, h)
                             fillPath.close()
 
-                            val lineColor = if (selectedCategoryFilter != null) getCategoryColor(selectedCategoryFilter!!) else ExpenseRed
+                            val lineColor = if (selectedCategoryFilter != null) getCategoryColor(selectedCategoryFilter!!) else defaultLineColor
 
                             drawPath(
                                 path = fillPath,

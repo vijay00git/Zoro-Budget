@@ -64,4 +64,12 @@
     <string name="amount_range_both">%1$s%2$.0f - %3$s%4$.0f</string>
     <string name="amount_range_min_only">Min %1$s%2$.0f</string>
     <string name="amount_range_max_only">Max %1$s%2$.0f</string>
+    <string name="ledger_money_in">Money in</string>
+    <string name="ledger_money_out">Money out</string>
+    <string name="ledger_net">Net</string>
+    <plurals name="ledger_count">
+        <item quantity="one">%1$d transaction</item>
+        <item quantity="other">%1$d transactions</item>
+    </plurals>
+    <string name="ledger_from_sms">From bank SMS</string>
 </resources>

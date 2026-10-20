@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_top_bar_title">Smart Budget</string>
     <string name="action_export_backup">Export &amp; Backup</string>
-    <string name="action_needs_title_tag">Needs Title/Tag</string>
 
     <string name="nav_overview">Overview</string>
     <string name="nav_ledger">Ledger</string>

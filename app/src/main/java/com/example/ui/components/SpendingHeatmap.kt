@@ -43,7 +43,6 @@ import com.example.R
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.utils.BillSchedule
 import com.example.data.utils.CategoryTotals
-import com.example.ui.theme.ExpenseRed
 import com.example.ui.theme.IncomeGreen
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -81,12 +80,12 @@ fun SpendingHeatmapCard(
     var selectedDay by rememberSaveable(monthOffset) { mutableStateOf<Int?>(null) }
     val dayFormat = remember { SimpleDateFormat("EEE, d MMM", Locale.getDefault()) }
     val shortFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
-    val heatColor = ExpenseRed
 
     Card(
         modifier = modifier.fillMaxWidth().testTag("spending_heatmap"),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.heatmap_title), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
@@ -118,10 +117,10 @@ fun SpendingHeatmapCard(
                             if (day != null) {
                                 val amount = dayTotals[day] ?: 0.0
                                 val isFuture = dayMillis(monthStart, day) > today
-                                val level = if (maxDay > 0 && amount > 0) (amount / maxDay).toFloat() else 0f
+                                val step = heatStep(amount, maxDay)
                                 val background = when {
-                                    amount <= 0 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isFuture) 0.3f else 0.7f)
-                                    else -> heatColor.copy(alpha = 0.18f + 0.82f * level)
+                                    step < 0 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isFuture) 0.3f else 0.7f)
+                                    else -> HeatColors[step]
                                 }
                                 val label = "${shortFormat.format(dayMillis(monthStart, day))}, ${formatMoney(currencySymbol, amount)}"
                                 Box(
@@ -143,7 +142,8 @@ fun SpendingHeatmapCard(
                                     Text(
                                         "$day",
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = if (level > 0.55f) Color.White else MaterialTheme.colorScheme.onSurface
+                                        color = if (step >= 0) HeatText else MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = if (step >= 0) FontWeight.Bold else FontWeight.Normal
                                     )
                                 }
                             }
@@ -154,9 +154,9 @@ fun SpendingHeatmapCard(
 
             Row(modifier = Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.heatmap_less), style = MaterialTheme.typography.labelSmall)
-                listOf(0.18f, 0.4f, 0.6f, 0.8f, 1f).forEach { alpha ->
+                HeatColors.forEach { color ->
                     Spacer(Modifier.width(4.dp))
-                    Box(Modifier.size(12.dp).background(heatColor.copy(alpha = alpha), RoundedCornerShape(3.dp)))
+                    Box(Modifier.size(12.dp).background(color, RoundedCornerShape(3.dp)))
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(stringResource(R.string.heatmap_more), style = MaterialTheme.typography.labelSmall)
@@ -251,4 +251,26 @@ private fun weekdayInitials(): List<String> {
     return List(7) {
         format.format(cal.time).also { cal.add(Calendar.DAY_OF_YEAR, 1) }
     }
+}
+
+/** Calm to alarming: teal, green, amber, orange, red. Bright enough to carry dark text in either theme. */
+private val HeatColors = listOf(
+    Color(0xFF2DD4BF),
+    Color(0xFF4ADE80),
+    Color(0xFFFACC15),
+    Color(0xFFFB923C),
+    Color(0xFFF87171)
+)
+
+private val HeatText = Color(0xFF17181C)
+
+/**
+ * Which of the five colours a day gets, or -1 for no spending. A square-root scale spreads
+ * ordinary days across the colours instead of letting one very large day turn every other
+ * day into the lowest step.
+ */
+private fun heatStep(amount: Double, maxDay: Double): Int {
+    if (amount <= 0 || maxDay <= 0) return -1
+    val level = kotlin.math.sqrt(amount / maxDay)
+    return (level * HeatColors.size).toInt().coerceIn(0, HeatColors.lastIndex)
 }
