@@ -1,4 +1,10 @@
-# Smart Budget
+<p align="center">
+  <img src="docs/images/logo.png" alt="Smart Budget logo: a crow dropping a gold coin into a pot" width="160">
+</p>
+
+<h1 align="center">Smart Budget</h1>
+
+<p align="center"><i>Save coin by coin, like the crow filling its pot.</i></p>
 
 [![Android CI](https://github.com/vijay00git/Zoro-Budget/actions/workflows/android-ci.yml/badge.svg)](https://github.com/vijay00git/Zoro-Budget/actions/workflows/android-ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/vijay00git/Zoro-Budget?label=latest%20APK)](https://github.com/vijay00git/Zoro-Budget/releases/latest)
@@ -9,8 +15,24 @@ An Android budget and expense tracker that builds your ledger from bank SMS. It 
 
 Built with Kotlin and Jetpack Compose.
 
+## App preview
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/overview.png" width="240" alt="Overview: balance card, low-balance, review and health tiles, month ring and bills"><br><b>Overview</b></td>
+    <td align="center"><img src="docs/images/screenshots/ledger.png" width="240" alt="Ledger: search, filters, monthly summary and transactions grouped by day"><br><b>Ledger</b></td>
+    <td align="center"><img src="docs/images/screenshots/savings.png" width="240" alt="Savings: total value, net worth, holders, gold and silver records"><br><b>Savings</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/screenshots/spending-trends.png" width="240" alt="Six-month spending trend and the daily spending heatmap"><br><b>Trends and daily heatmap</b></td>
+    <td align="center"><img src="docs/images/screenshots/planning-charts.png" width="240" alt="Planning: expenses by category donut chart"><br><b>Planning</b></td>
+    <td align="center"><img src="docs/images/screenshots/settings.png" width="240" alt="Settings: monthly targets and category grid"><br><b>Settings</b></td>
+  </tr>
+</table>
+
 ## Contents
 
+- [App preview](#app-preview)
 - [Features](#features)
 - [Install](#install)
 - [Build from source](#build-from-source)

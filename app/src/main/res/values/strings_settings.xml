@@ -80,4 +80,5 @@
     <string name="settings_love">love</string>
     <string name="settings_by_vijay">by Vijay</string>
     <string name="settings_version">Smart Budget · version %1$s</string>
+    <string name="settings_logo_desc">Smart Budget logo: a crow dropping a coin into a pot</string>
 </resources>

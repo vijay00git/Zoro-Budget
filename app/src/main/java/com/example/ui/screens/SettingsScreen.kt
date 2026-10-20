@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -358,6 +361,12 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 8.dp).testTag("settings_credits"),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Image(
+                    painter = painterResource(R.drawable.app_logo),
+                    contentDescription = stringResource(R.string.settings_logo_desc),
+                    modifier = Modifier.size(56.dp).clip(RoundedCornerShape(16.dp))
+                )
+                Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.settings_made_with), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Icon(
