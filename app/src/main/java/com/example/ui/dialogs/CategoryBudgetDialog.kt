@@ -88,7 +88,7 @@ fun EditCategoryBudgetDialog(
                     )
                 }
 
-                if (!category.isPredefined && onDeleteCategory != null) {
+                if (onDeleteCategory != null) {
                     IconButton(
                         onClick = { showDeleteConfirm = true },
                         modifier = Modifier.testTag("delete_category_button")

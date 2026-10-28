@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Welcome tour, shown once after a fresh install -->
+    <string name="tour_step_count">%1$d of %2$d</string>
+    <string name="tour_skip">Skip tour</string>
+    <string name="tour_back">Back</string>
+    <string name="tour_next">Next</string>
+    <string name="tour_start">Show me around</string>
+
+    <string name="tour_welcome_title">Welcome to Smart Budget</string>
+    <string name="tour_welcome_body">A one-minute tour of the app. The accounts, spending and bills you see now are demo data, so you can try everything out. You can clear them at the end.</string>
+
+    <string name="tour_overview_title">Overview</string>
+    <string name="tour_overview_body">Your total balance (tap the eye to show it), low-balance and review alerts, this month\'s spending against your budget, and the next bill due.</string>
+
+    <string name="tour_ledger_title">Ledger</string>
+    <string name="tour_ledger_body">Every transaction, grouped by day. Bank SMS are added here automatically. New ones show a badge so you can check the title and category.</string>
+
+    <string name="tour_planning_title">Planning</string>
+    <string name="tour_planning_body">Set a budget for each category and a savings goal, and add recurring bills. A bill is marked paid when its payment SMS arrives.</string>
+
+    <string name="tour_savings_title">Savings</string>
+    <string name="tour_savings_body">Keep a record of FDs, RDs, stocks, mutual funds, gold, silver, land and more, with the calculations shown step by step.</string>
+
+    <string name="tour_settings_title">Settings</string>
+    <string name="tour_settings_body">Allow SMS reading and pick the date to import from, add your bank accounts and cards, and save a full backup.</string>
+
+    <string name="tour_finish_title">Start with your own data?</string>
+    <string name="tour_finish_body">Clear the demo accounts, transactions and bills now, or keep them to explore a little longer. Categories and budgets stay either way.</string>
+    <string name="tour_finish_body_no_demo">You\'re all set. Head to Settings to allow SMS reading and add your accounts.</string>
+    <string name="tour_clear_demo">Clear demo data</string>
+    <string name="tour_keep_demo">Keep demo data</string>
+    <string name="tour_done">Done</string>
+</resources>

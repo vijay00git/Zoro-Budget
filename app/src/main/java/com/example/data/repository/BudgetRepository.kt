@@ -13,8 +13,8 @@ import com.example.data.sms.SmsAccountMatcher
 import com.example.data.sms.SmsParser
 import com.example.data.utils.BillFrequency
 import com.example.data.utils.BillSchedule
+import com.example.data.utils.CategoryTotals
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 
 class BudgetRepository(
     private val db: AppDatabase,
@@ -30,11 +30,15 @@ class BudgetRepository(
     private val billDao = db.recurringBillDao()
     val bills: Flow<List<RecurringBillEntity>> = billDao.getAllBills()
 
-    suspend fun initializeDefaultDataIfNeeded() {
-        db.withTransaction { initializeDefaultDataIfNeededInternal() }
-    }
+    /**
+     * Seeds the default categories, and accounts when there are none: demo accounts with sample
+     * transactions and bills when [seedDemo] is set (a fresh install), otherwise one empty account
+     * so incoming SMS have somewhere to go. Returns what was seeded as demo data, if anything.
+     */
+    suspend fun initializeDefaultDataIfNeeded(seedDemo: Boolean): DemoData? =
+        db.withTransaction { initializeDefaultDataIfNeededInternal(seedDemo) }
 
-    private suspend fun initializeDefaultDataIfNeededInternal() {
+    private suspend fun initializeDefaultDataIfNeededInternal(seedDemo: Boolean): DemoData? {
         // Seed default categories if empty
         if (categoryDao.getCategoryCount() == 0) {
             val defaultCategories = listOf(
@@ -52,172 +56,216 @@ class BudgetRepository(
             categoryDao.insertCategories(defaultCategories)
         }
 
-        // Seed default account if empty
-        val currentAccounts = accounts.firstOrNull()
-        if (currentAccounts.isNullOrEmpty()) {
-            val primaryAccount = AccountEntity(
-                name = "HDFC Bank Account",
-                type = "CHECKING",
-                balance = 2450.00,
-                accountNumberLast4 = "4321",
-                colorHex = "#2563EB",
-                isDefault = true,
-                senderKeywords = "VD-HDFCBK-T, AD-HDFCBK-S, HDFCBK"
-            )
-            val savingsAccount = AccountEntity(
-                name = "Indian Bank Savings",
-                type = "SAVINGS",
-                balance = 8200.00,
-                accountNumberLast4 = "9876",
-                colorHex = "#059669",
-                isDefault = false,
-                senderKeywords = "BV-INDBNK-S, BZ-INDBNK-S, INDBNK"
-            )
-            val creditCard = AccountEntity(
-                name = "Freedom Credit Card",
-                type = "CREDIT_CARD",
-                balance = -320.50,
-                accountNumberLast4 = "1122",
-                colorHex = "#7C3AED",
-                isDefault = false,
-                senderKeywords = "VISA, CHASE, AMEX"
-            )
+        if (accountDao.getAllAccountsList().isNotEmpty()) return null
+        if (!seedDemo) {
+            ensureDefaultAccount()
+            return null
+        }
 
-            val primaryId = accountDao.insertAccount(primaryAccount)
-            val savingsId = accountDao.insertAccount(savingsAccount)
-            val creditId = accountDao.insertAccount(creditCard)
+        // Demo data for a first install, so every screen has something to show during the tour.
+        val primaryAccount = AccountEntity(
+            name = "HDFC Bank Account",
+            type = "CHECKING",
+            balance = 2450.00,
+            accountNumberLast4 = "4321",
+            colorHex = "#2563EB",
+            isDefault = true,
+            senderKeywords = "VD-HDFCBK-T, AD-HDFCBK-S, HDFCBK"
+        )
+        val savingsAccount = AccountEntity(
+            name = "Indian Bank Savings",
+            type = "SAVINGS",
+            balance = 8200.00,
+            accountNumberLast4 = "9876",
+            colorHex = "#059669",
+            isDefault = false,
+            senderKeywords = "BV-INDBNK-S, BZ-INDBNK-S, INDBNK"
+        )
+        val creditCard = AccountEntity(
+            name = "Freedom Credit Card",
+            type = "CREDIT_CARD",
+            balance = -320.50,
+            accountNumberLast4 = "1122",
+            colorHex = "#7C3AED",
+            isDefault = false,
+            senderKeywords = "VISA, CHASE, AMEX"
+        )
 
-            // Add sample starter transactions to showcase UI on first run
-            val now = System.currentTimeMillis()
-            val day = 86400000L
+        val primaryId = accountDao.insertAccount(primaryAccount)
+        val savingsId = accountDao.insertAccount(savingsAccount)
+        val creditId = accountDao.insertAccount(creditCard)
 
-            transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Monthly Salary Deposit",
-                    amount = 3500.00,
-                    type = "CREDIT",
-                    accountId = primaryId,
-                    categoryTag = "Salary & Income",
-                    dateTimestamp = now - (2 * day),
-                    source = "SMS_AUTO",
-                    merchantOrSender = "Acme Corp Payroll",
-                    isPendingReview = false,
-                    rawSmsMessage = "Your A/C XX4321 credited with USD 3500.00 from Acme Corp Payroll"
+        // Add sample starter transactions to showcase UI on first run
+        val now = System.currentTimeMillis()
+        val day = 86400000L
+
+        transactionDao.insertTransaction(
+            TransactionEntity(
+                title = "Monthly Salary Deposit",
+                amount = 3500.00,
+                type = "CREDIT",
+                accountId = primaryId,
+                categoryTag = "Salary & Income",
+                dateTimestamp = now - (2 * day),
+                source = "SMS_AUTO",
+                merchantOrSender = "Acme Corp Payroll",
+                isPendingReview = false,
+                rawSmsMessage = "Your A/C XX4321 credited with USD 3500.00 from Acme Corp Payroll"
+            )
+        )
+
+        transactionDao.insertTransaction(
+            TransactionEntity(
+                title = "Pending: Starbucks Coffee",
+                amount = 5.75,
+                type = "DEBIT",
+                accountId = primaryId,
+                categoryTag = "Food & Dining",
+                dateTimestamp = now - (1 * day),
+                source = "SMS_AUTO",
+                merchantOrSender = "Starbucks",
+                isPendingReview = true, // Prompt user to add title later!
+                rawSmsMessage = "USD 5.75 debited on A/C ending 4321 at Starbucks Cafe"
+            )
+        )
+
+        transactionDao.insertTransaction(
+            TransactionEntity(
+                title = "Supermarket Groceries",
+                amount = 84.20,
+                type = "DEBIT",
+                accountId = creditId,
+                categoryTag = "Groceries",
+                dateTimestamp = now - (3 * day),
+                source = "MANUAL",
+                merchantOrSender = "Trader Joes",
+                isPendingReview = false
+            )
+        )
+
+        val electricTxId = transactionDao.insertTransaction(
+            TransactionEntity(
+                title = "Electric & Power Bill",
+                amount = 112.40,
+                type = "DEBIT",
+                accountId = primaryId,
+                categoryTag = "Bills & Utilities",
+                dateTimestamp = now - (5 * day),
+                source = "SMS_AUTO",
+                merchantOrSender = "City Power Utility",
+                isPendingReview = false,
+                rawSmsMessage = "A/C XX4321 debited for USD 112.40 to City Power Utility"
+            )
+        )
+
+        val emiTxId = transactionDao.insertTransaction(
+            TransactionEntity(
+                title = "Home Loan EMI",
+                amount = 450.00,
+                type = "DEBIT",
+                accountId = primaryId,
+                categoryTag = "Bills & Utilities",
+                dateTimestamp = now,
+                source = "MANUAL",
+                merchantOrSender = "HDFC Bank Loan",
+                isPendingReview = false,
+                notes = "Monthly car/home EMI due on 4th"
+            )
+        )
+
+        val netflixTxId = transactionDao.insertTransaction(
+            TransactionEntity(
+                title = "Netflix Subscription",
+                amount = 15.99,
+                type = "DEBIT",
+                accountId = creditId,
+                categoryTag = "Entertainment",
+                dateTimestamp = now - (7 * day),
+                source = "SMS_AUTO",
+                merchantOrSender = "Netflix",
+                isPendingReview = false,
+                rawSmsMessage = "A/C XX1122 debited for USD 15.99 to Netflix.com"
+            )
+        )
+
+        val gymTxId = transactionDao.insertTransaction(
+            TransactionEntity(
+                title = "Gym Membership",
+                amount = 45.00,
+                type = "DEBIT",
+                accountId = primaryId,
+                categoryTag = "Health & Wellness",
+                dateTimestamp = now - (10 * day),
+                source = "MANUAL",
+                merchantOrSender = "Fitness Club",
+                isPendingReview = false
+            )
+        )
+
+        // Demo bills, each with the sample payment above as its latest payment
+        listOf(
+            Triple(electricTxId, 5, "City Power Utility"),
+            Triple(emiTxId, 4, "HDFC Bank Loan"),
+            Triple(netflixTxId, 1, "Netflix"),
+            Triple(gymTxId, 15, "Fitness Club")
+        ).forEach { (txId, dueDay, payee) ->
+            val payment = transactionDao.getTransactionById(txId) ?: return@forEach
+            val billId = billDao.insertBill(
+                RecurringBillEntity(
+                    name = payment.title,
+                    amount = payment.amount,
+                    type = payment.type,
+                    accountId = payment.accountId,
+                    categoryTag = payment.categoryTag,
+                    frequency = BillFrequency.MONTHLY.name,
+                    nextDueDate = BillSchedule.nextDueAfterPayment(payment.dateTimestamp, BillFrequency.MONTHLY, dueDay),
+                    dueDay = dueDay,
+                    matchPayee = payee,
+                    lastPaidTimestamp = payment.dateTimestamp
                 )
             )
+            transactionDao.updateTransaction(payment.copy(recurringBillId = billId))
+        }
+        return DemoData(
+            accounts = accountDao.getAllAccountsList().associate { it.id to DemoData.fingerprint(it) },
+            transactions = transactionDao.getAllTransactionsList().associate { it.id to DemoData.fingerprint(it) },
+            bills = billDao.getAllBillsList().associate { it.id to DemoData.fingerprint(it) }
+        )
+    }
 
-            transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Pending: Starbucks Coffee",
-                    amount = 5.75,
-                    type = "DEBIT",
-                    accountId = primaryId,
-                    categoryTag = "Food & Dining",
-                    dateTimestamp = now - (1 * day),
-                    source = "SMS_AUTO",
-                    merchantOrSender = "Starbucks",
-                    isPendingReview = true, // Prompt user to add title later!
-                    rawSmsMessage = "USD 5.75 debited on A/C ending 4321 at Starbucks Cafe"
-                )
+    /**
+     * Removes the demo rows in [demo] that are still as they were seeded. A demo account is kept
+     * if real transactions now use it. Leaves at least one account, so SMS can still be imported.
+     */
+    suspend fun clearDemoData(demo: DemoData) = db.withTransaction {
+        for ((id, fingerprint) in demo.bills) {
+            val bill = billDao.getBillById(id) ?: continue
+            if (DemoData.fingerprint(bill) != fingerprint) continue
+            transactionDao.unlinkPaymentsFromBill(id)
+            billDao.deleteBill(bill)
+        }
+        // The demo balances were set on the accounts directly, not through these transactions,
+        // so deleting them must not move any balance.
+        for ((id, fingerprint) in demo.transactions) {
+            val transaction = transactionDao.getTransactionById(id) ?: continue
+            if (DemoData.fingerprint(transaction) == fingerprint) transactionDao.deleteTransactionById(id)
+        }
+        for ((id, fingerprint) in demo.accounts) {
+            val account = accountDao.getAccountById(id) ?: continue
+            if (DemoData.fingerprint(account) != fingerprint) continue
+            if (transactionDao.countForAccount(id) == 0) accountDao.deleteAccount(account)
+        }
+        ensureDefaultAccount()
+    }
+
+    /** Makes sure there is an account, and that one of them is the default for unmatched SMS. */
+    private suspend fun ensureDefaultAccount() {
+        val all = accountDao.getAllAccountsList()
+        when {
+            all.isEmpty() -> accountDao.insertAccount(
+                AccountEntity(name = "Main account", type = "CHECKING", balance = 0.0, isDefault = true)
             )
-
-            transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Supermarket Groceries",
-                    amount = 84.20,
-                    type = "DEBIT",
-                    accountId = creditId,
-                    categoryTag = "Groceries",
-                    dateTimestamp = now - (3 * day),
-                    source = "MANUAL",
-                    merchantOrSender = "Trader Joes",
-                    isPendingReview = false
-                )
-            )
-
-            val electricTxId = transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Electric & Power Bill",
-                    amount = 112.40,
-                    type = "DEBIT",
-                    accountId = primaryId,
-                    categoryTag = "Bills & Utilities",
-                    dateTimestamp = now - (5 * day),
-                    source = "SMS_AUTO",
-                    merchantOrSender = "City Power Utility",
-                    isPendingReview = false,
-                    rawSmsMessage = "A/C XX4321 debited for USD 112.40 to City Power Utility"
-                )
-            )
-
-            val emiTxId = transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Home Loan EMI",
-                    amount = 450.00,
-                    type = "DEBIT",
-                    accountId = primaryId,
-                    categoryTag = "Bills & Utilities",
-                    dateTimestamp = now,
-                    source = "MANUAL",
-                    merchantOrSender = "HDFC Bank Loan",
-                    isPendingReview = false,
-                    notes = "Monthly car/home EMI due on 4th"
-                )
-            )
-
-            val netflixTxId = transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Netflix Subscription",
-                    amount = 15.99,
-                    type = "DEBIT",
-                    accountId = creditId,
-                    categoryTag = "Entertainment",
-                    dateTimestamp = now - (7 * day),
-                    source = "SMS_AUTO",
-                    merchantOrSender = "Netflix",
-                    isPendingReview = false,
-                    rawSmsMessage = "A/C XX1122 debited for USD 15.99 to Netflix.com"
-                )
-            )
-
-            val gymTxId = transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Gym Membership",
-                    amount = 45.00,
-                    type = "DEBIT",
-                    accountId = primaryId,
-                    categoryTag = "Health & Wellness",
-                    dateTimestamp = now - (10 * day),
-                    source = "MANUAL",
-                    merchantOrSender = "Fitness Club",
-                    isPendingReview = false
-                )
-            )
-
-            // Demo bills, each with the sample payment above as its latest payment
-            listOf(
-                Triple(electricTxId, 5, "City Power Utility"),
-                Triple(emiTxId, 4, "HDFC Bank Loan"),
-                Triple(netflixTxId, 1, "Netflix"),
-                Triple(gymTxId, 15, "Fitness Club")
-            ).forEach { (txId, dueDay, payee) ->
-                val payment = transactionDao.getTransactionById(txId) ?: return@forEach
-                val billId = billDao.insertBill(
-                    RecurringBillEntity(
-                        name = payment.title,
-                        amount = payment.amount,
-                        type = payment.type,
-                        accountId = payment.accountId,
-                        categoryTag = payment.categoryTag,
-                        frequency = BillFrequency.MONTHLY.name,
-                        nextDueDate = BillSchedule.nextDueAfterPayment(payment.dateTimestamp, BillFrequency.MONTHLY, dueDay),
-                        dueDay = dueDay,
-                        matchPayee = payee,
-                        lastPaidTimestamp = payment.dateTimestamp
-                    )
-                )
-                transactionDao.updateTransaction(payment.copy(recurringBillId = billId))
-            }
+            all.none { it.isDefault } -> accountDao.updateAccount(all.first().copy(isDefault = true))
         }
     }
 
@@ -252,7 +300,10 @@ class BudgetRepository(
             amount = parsed.amount,
             type = parsed.type,
             accountId = targetAccount.id,
-            categoryTag = learnedCategory ?: parsed.suggestedCategory,
+            // A category the user has since deleted falls back to "Uncategorized".
+            categoryTag = (learnedCategory ?: parsed.suggestedCategory)
+                .takeIf { categoryDao.getCategoryByName(it) != null }
+                ?: CategoryTotals.UNCATEGORIZED,
             dateTimestamp = parsed.timestamp,
             source = "SMS_AUTO",
             rawSmsMessage = parsed.rawMessage,
@@ -594,7 +645,18 @@ class BudgetRepository(
         return db.withTransaction { block() }
     }
 
-    suspend fun deleteCategory(category: CategoryEntity) {
+    /**
+     * Deletes [category], built-in or added, from the category list so it is no longer offered
+     * for new transactions. Transactions and bills already in it keep it (the user's choice);
+     * new SMS that would have used it go to "Uncategorized".
+     */
+    suspend fun deleteCategory(category: CategoryEntity) = db.withTransaction {
+        if (category.name == CategoryTotals.UNCATEGORIZED) return@withTransaction
+        if (categoryDao.getCategoryByName(CategoryTotals.UNCATEGORIZED) == null) {
+            categoryDao.insertCategory(
+                CategoryEntity(name = CategoryTotals.UNCATEGORIZED, iconName = "Label", colorHex = "#64748B")
+            )
+        }
         categoryDao.deleteCategory(category)
     }
 }

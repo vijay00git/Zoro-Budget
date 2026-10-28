@@ -10,7 +10,7 @@
     <string name="confirm_delete_account_message">"%1$s" will be removed. Its existing transactions won\'t be deleted, but will no longer be linked to any account. This can\'t be undone.</string>
 
     <string name="confirm_delete_category_title">Delete Category?</string>
-    <string name="confirm_delete_category_message">"%1$s" will be permanently deleted. This can\'t be undone.</string>
+    <string name="confirm_delete_category_message">"%1$s" will be removed from your categories and won\'t be offered for new transactions. Transactions already in it keep it.</string>
 
     <string name="confirm_delete_recurring_bill_title">Delete Recurring Bill?</string>
     <string name="confirm_delete_recurring_bill_message">"%1$s" will no longer be tracked as a recurring bill. This can\'t be undone.</string>

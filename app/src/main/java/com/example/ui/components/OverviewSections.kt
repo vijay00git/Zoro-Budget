@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
+import com.example.data.local.entity.TransactionEntity
 import com.example.data.utils.CategoryTotals
 import com.example.data.utils.FinancialHealth
 import com.example.ui.theme.accentOf
@@ -69,8 +70,15 @@ import kotlin.math.roundToInt
 private val CardShape = RoundedCornerShape(20.dp)
 
 /** Accounts that trigger a low-balance alert. Credit cards carry a negative balance by design. */
-fun lowBalanceAccounts(accounts: List<AccountEntity>, threshold: Double): List<AccountEntity> =
-    accounts.filter { it.type != "CREDIT_CARD" && it.balance < threshold }
+fun lowBalanceAccounts(
+    accounts: List<AccountEntity>,
+    threshold: Double,
+    transactions: List<TransactionEntity>
+): List<AccountEntity> {
+    // A new account at 0 with nothing recorded yet isn't low on money; it just hasn't been set up.
+    val used = transactions.mapTo(HashSet()) { it.accountId }
+    return accounts.filter { it.type != "CREDIT_CARD" && it.balance < threshold && (it.balance != 0.0 || it.id in used) }
+}
 
 /** Total balance (all accounts or the selected one), account switcher and quick actions. */
 @Composable

@@ -67,6 +67,7 @@ Built with Kotlin and Jetpack Compose.
 **Planning**
 - Monthly cash flow, an overall budget ring and a savings goal.
 - One tile per category with its limit; over-budget and near-limit categories come first.
+- Delete any category, built-in or your own (except Uncategorized). It stops being offered for new transactions; past transactions keep it.
 - Recurring bills: link the SMS payment that already arrived, so it isn't counted twice. Bills are marked paid automatically when a matching payment SMS comes in. Undo, skip, pause and payment history are included.
 
 **Savings and assets**
@@ -79,6 +80,10 @@ Built with Kotlin and Jetpack Compose.
 **Your data**
 - One-file full backup (ZIP) of everything: transactions, bills, savings, settings and attachments. Restore checks the file first, keeps a copy of the current data, then replaces it.
 - CSV and JSON export.
+
+**First launch**
+- A fresh install opens with demo data and a short tour of each tab. The tour ends with a choice to clear the demo accounts, transactions and bills, or keep them to explore.
+- Updates never show the tour or add demo data.
 
 **Design**
 - Bento-style tiles, a colour and icon for every account and category, and light and dark themes that follow the phone.

@@ -50,6 +50,12 @@ interface TransactionDao {
     )
     suspend fun getLastCategoryForMerchant(merchant: String): String?
 
+    @Query("SELECT * FROM transactions")
+    suspend fun getAllTransactionsList(): List<TransactionEntity>
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE accountId = :accountId")
+    suspend fun countForAccount(accountId: Long): Int
+
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getTransactionById(id: Long): TransactionEntity?
 

@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,7 @@ import com.example.data.local.BillActionResult
 import com.example.data.local.BudgetRepository
 import com.example.data.local.entity.AccountEntity
 import com.example.data.preferences.AppPreferences
+import com.example.data.preferences.FirstRun
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.RecurringBillEntity
 import com.example.data.local.entity.TransactionEntity
@@ -31,21 +33,55 @@ import java.util.Calendar
  * instance (and all its in-memory filter/UI state) across configuration changes instead of
  * MainActivity.onCreate() rebuilding it from scratch every time.
  */
-class ExpenseViewModelFactory(private val repository: BudgetRepository) : ViewModelProvider.Factory {
+class ExpenseViewModelFactory(
+    private val repository: BudgetRepository,
+    private val settings: SharedPreferences,
+    private val seedDemo: () -> Boolean
+) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
-            return ExpenseViewModel(repository) as T
+            return ExpenseViewModel(repository, settings, seedDemo()) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
 
-class ExpenseViewModel(private val repository: BudgetRepository) : ViewModel() {
+class ExpenseViewModel(
+    private val repository: BudgetRepository,
+    private val settings: SharedPreferences,
+    seedDemo: Boolean
+) : ViewModel() {
+
+    // The welcome tour, shown once after a fresh install seeded demo data. Never after an update.
+    private val _tourVisible = MutableStateFlow(FirstRun.isTourPending(settings))
+    val tourVisible: StateFlow<Boolean> = _tourVisible.asStateFlow()
+
+    private val _hasDemoData = MutableStateFlow(FirstRun.demoData(settings) != null)
+    val hasDemoData: StateFlow<Boolean> = _hasDemoData.asStateFlow()
 
     init {
         viewModelScope.launch {
-            repository.initializeDefaultDataIfNeeded()
+            val demo = repository.initializeDefaultDataIfNeeded(seedDemo)
+            if (demo != null) {
+                FirstRun.recordDemoData(settings, demo)
+                _hasDemoData.value = true
+                _tourVisible.value = true
+            }
+        }
+    }
+
+    /** Ends the tour; with [clearDemo], first removes the demo accounts, transactions and bills. */
+    fun finishTour(clearDemo: Boolean) {
+        _tourVisible.value = false
+        FirstRun.finishTour(settings)
+        if (!clearDemo) return
+        val demo = FirstRun.demoData(settings) ?: return
+        viewModelScope.launch {
+            repository.clearDemoData(demo)
+            FirstRun.forgetDemoData(settings)
+            _hasDemoData.value = false
+            _importStatusMessage.value = "Demo data cleared. Add your accounts in Settings."
         }
     }
 

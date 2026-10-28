@@ -51,6 +51,7 @@ import com.example.data.local.entity.RecurringBillEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.utils.BillFrequency
 import com.example.data.utils.BillSchedule
+import com.example.data.utils.CategoryTotals
 import com.example.ui.components.frequencyName
 import com.example.ui.theme.ExpenseRed
 import java.text.SimpleDateFormat
@@ -75,6 +76,7 @@ fun AddOrEditRecurringBillDialog(
     onDelete: (() -> Unit)? = null
 ) {
     val defaultCategory = stringResource(R.string.recurring_bill_dialog_default_category)
+        .takeIf { name -> categories.any { it.name == name } } ?: CategoryTotals.UNCATEGORIZED
     val initialFrequency = BillFrequency.from(billToEdit?.frequency)
     var name by remember { mutableStateOf(billToEdit?.name ?: fromTransaction?.merchantOrSender ?: fromTransaction?.title ?: "") }
     var amountText by remember { mutableStateOf((billToEdit?.amount ?: fromTransaction?.amount)?.let { formatPlain(it) } ?: "") }

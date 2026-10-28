@@ -103,7 +103,9 @@ fun HomeScreen(
     }
     // Netted per category, transfers excluded - see CategoryTotals
     val monthTotals = remember(monthTransactions) { CategoryTotals.of(monthTransactions) }
-    val lowAccounts = remember(accounts, lowBalanceThreshold) { lowBalanceAccounts(accounts, lowBalanceThreshold) }
+    val lowAccounts = remember(accounts, lowBalanceThreshold, transactions) {
+        lowBalanceAccounts(accounts, lowBalanceThreshold, transactions)
+    }
     val monthlyBudget = remember(categories) { categories.filter { !it.isIncomeCategory }.sumOf { it.monthlyBudgetLimit } }
     val health = remember(monthTotals, monthlyBudget, lowAccounts) {
         FinancialHealth.of(monthTotals.expense, monthTotals.income, monthlyBudget, lowAccounts.size)

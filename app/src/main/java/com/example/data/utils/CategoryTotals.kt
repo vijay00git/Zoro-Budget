@@ -25,6 +25,10 @@ data class CategoryTotals(
     companion object {
         const val TRANSFER_CATEGORY = "Transfer"
 
+        // Where anything without a category goes, such as an SMS whose category was deleted.
+        // It can't be deleted itself.
+        const val UNCATEGORIZED = "Uncategorized"
+
         fun of(transactions: List<TransactionEntity>): CategoryTotals {
             var income = 0.0
             var expense = 0.0

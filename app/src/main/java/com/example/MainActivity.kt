@@ -52,6 +52,8 @@ import com.example.data.local.AppDatabase
 import com.example.data.local.BudgetRepository
 import com.example.data.savings.SavingsRepository
 import com.example.data.notifications.BillAlertScheduler
+import com.example.data.preferences.FirstRun
+import com.example.data.utils.CategoryTotals
 import com.example.data.local.entity.AccountEntity
 import com.example.data.local.entity.CategoryEntity
 import com.example.data.local.entity.RecurringBillEntity
@@ -65,7 +67,9 @@ import com.example.ui.dialogs.EditCategoryBudgetDialog
 import com.example.ui.dialogs.EditTransactionDialog
 import com.example.ui.dialogs.ExportImportBackupDialog
 import com.example.ui.dialogs.QuickReviewPendingDialog
+import com.example.ui.components.AppTourOverlay
 import com.example.ui.components.CompactNavBar
+import com.example.ui.components.TOUR_STEPS
 import com.example.ui.components.NavTab
 import com.example.ui.savings.SavingsScreen
 import com.example.ui.savings.SavingsViewModel
@@ -93,7 +97,11 @@ class MainActivity : ComponentActivity() {
     private val viewModel: ExpenseViewModel by viewModels {
         val db = AppDatabase.getDatabase(applicationContext)
         val repository = BudgetRepository(db, db.accountDao(), db.transactionDao(), db.categoryDao())
-        ExpenseViewModelFactory(repository)
+        ExpenseViewModelFactory(
+            repository = repository,
+            settings = applicationContext.getSharedPreferences(FirstRun.SETTINGS_PREFS, MODE_PRIVATE),
+            seedDemo = { FirstRun.claimDemoSeeding(applicationContext) }
+        )
     }
 
     private val savingsViewModel: SavingsViewModel by viewModels {
@@ -166,6 +174,9 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
     val smsSyncFromDate by viewModel.smsSyncFromDate.collectAsStateWithLifecycle()
     val balancesHidden by viewModel.balancesHidden.collectAsStateWithLifecycle()
     val accountsExpanded by viewModel.accountsExpanded.collectAsStateWithLifecycle()
+    val tourVisible by viewModel.tourVisible.collectAsStateWithLifecycle()
+    val hasDemoData by viewModel.hasDemoData.collectAsStateWithLifecycle()
+    var tourStep by rememberSaveable { mutableIntStateOf(0) }
 
     // Dialog state holders
     var editingTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
@@ -210,6 +221,11 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
     }
 
     BackHandler(enabled = selectedScreenIndex != 0) { selectedScreenIndex = 0 }
+    // During the tour, Back steps back through it; on the first step it closes the app as usual.
+    BackHandler(enabled = tourVisible && tourStep > 0) { tourStep-- }
+    LaunchedEffect(tourVisible, tourStep) {
+        if (tourVisible) selectedScreenIndex = TOUR_STEPS[tourStep].tabIndex
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets.systemBars,
@@ -483,7 +499,7 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
                         viewModel.updateCategory(cat, limit, iconName, colorHex)
                         editingCategoryBudget = null
                     },
-                    onDeleteCategory = if (!cat.isPredefined) {
+                    onDeleteCategory = if (cat.name != CategoryTotals.UNCATEGORIZED) {
                         {
                             viewModel.deleteCategory(cat)
                             editingCategoryBudget = null
@@ -582,6 +598,18 @@ fun SmartBudgetApp(viewModel: ExpenseViewModel, savingsViewModel: SavingsViewMod
                             editingAccount = null
                         }
                     } else null
+                )
+            }
+
+            if (tourVisible) {
+                AppTourOverlay(
+                    stepIndex = tourStep,
+                    hasDemoData = hasDemoData,
+                    onStepChange = { tourStep = it },
+                    onFinish = { clearDemo ->
+                        viewModel.finishTour(clearDemo)
+                        selectedScreenIndex = 0
+                    }
                 )
             }
         }
