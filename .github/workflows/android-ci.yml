@@ -22,20 +22,18 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # The app on the phone is signed with this key; signing CI builds with it lets each
-      # released APK install over the existing app as an update, keeping its data.
-      - name: Restore signing key
+      # Releases are signed with the project's release key, so each one installs over the last
+      # and Play Protect sees a named developer instead of the generic Android debug key.
+      - name: Restore release key
+        if: github.event_name == 'push'
         env:
-          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
-            echo "$DEBUG_KEYSTORE_BASE64" | base64 --decode > debug.keystore
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            echo "::error::Secret DEBUG_KEYSTORE_BASE64 is missing; a release signed with a random key would not install over the phone's app."
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "::error::Secret RELEASE_KEYSTORE_BASE64 is missing; a release signed with another key would not install over the app."
             exit 1
-          else
-            echo "No signing secret (pull request): building with a throwaway key, nothing is released."
           fi
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > release.jks
 
       - name: ktlint check
         run: ./gradlew ktlintCheck
@@ -43,15 +41,25 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
+      # Pull requests have no access to the key, so they only check that a debug build compiles.
       - name: Assemble debug APK
-        env:
-          BUILD_NUMBER: ${{ github.run_number }}
+        if: github.event_name != 'push'
         run: ./gradlew assembleDebug
 
+      - name: Assemble release APK
+        if: github.event_name == 'push'
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
       - name: Name the APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "smart-budget-build-${{ github.run_number }}.apk"
+        if: github.event_name == 'push'
+        run: cp app/build/outputs/apk/release/app-release.apk "smart-budget-build-${{ github.run_number }}.apk"
 
       - name: Upload APK to the run
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: smart-budget-build-${{ github.run_number }}

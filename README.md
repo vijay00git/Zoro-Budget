@@ -91,7 +91,9 @@ Built with Kotlin and Jetpack Compose.
 
 Each new release installs over the previous one as an update and keeps your data.
 
-> The release APKs are debug-signed builds for personal use. They are not on Google Play.
+> Smart Budget is not on Google Play. If Play Protect warns about an unknown app, tap **More details → Install anyway**. Don't turn Play Protect off.
+
+**Upgrading from build 10 or earlier:** from build 11 on, the app has a new package name and signing key, so it installs as a separate app. Open the old app, open **Data Backup & Export** in Settings and save a full (ZIP) backup, install the new APK, restore that backup in it, then uninstall the old app.
 
 ## Build from source
 
@@ -116,7 +118,10 @@ cd Zoro-Budget
 ./gradlew testDebugUnitTest    # unit tests (Robolectric, runs on the JVM)
 ```
 
-**Signing:** debug builds use `debug.keystore` in the project root if it exists, otherwise your default Android debug key. Use the same key every time if you want to update an installed build without uninstalling it. The keystore is listed in `.gitignore`; never commit it.
+**Signing:**
+- Debug builds use `debug.keystore` in the project root if it exists, otherwise your default Android debug key.
+- Release builds (`./gradlew assembleRelease`) are shrunk with R8 and need the release key: set `KEYSTORE_PATH`, `STORE_PASSWORD` and `KEY_PASSWORD`.
+- Keystores (`*.jks`, `debug.keystore`) are listed in `.gitignore`; never commit them.
 
 ## How it works
 
@@ -143,7 +148,7 @@ Your financial data stays on your phone:
 | `RECEIVE_SMS` | Record new bank messages as they arrive |
 | `POST_NOTIFICATIONS` | Bill reminders and alerts |
 
-**Known issue:** the build still includes Firebase, Retrofit and OkHttp, left over from the project template. The app never uses them, but they add `INTERNET` and a few other permissions to the installed APK. Removing them is on the roadmap.
+The app has **no internet permission**, so it cannot send your SMS or data anywhere. The scheduler used for bill reminders adds `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK` and `FOREGROUND_SERVICE` so reminders survive a restart.
 
 ## Project structure
 
@@ -174,11 +179,11 @@ docs/                          # plans and design notes
 
 `.github/workflows/android-ci.yml` runs on every push and pull request:
 1. ktlint and unit tests;
-2. building the APK.
+2. building the APK (debug for pull requests, signed release on `main`).
 
-On a push to `main` it also publishes a GitHub Release, `build-N`, with `smart-budget-build-N.apk` attached. The app's version is `1.0.N`; Settings shows it at the bottom.
+On a push to `main` it also publishes a GitHub Release, `build-N`, with `smart-budget-build-N.apk` attached. The app's version is `1.0.N` with version code `N`; Settings shows it at the bottom.
 
-Release builds are signed with the key stored in the repository secret `DEBUG_KEYSTORE_BASE64`, so each one installs over the last. If the secret is missing, a push fails instead of releasing an APK that couldn't update the installed app.
+Release builds are signed with the key in the repository secrets `RELEASE_KEYSTORE_BASE64`, `RELEASE_STORE_PASSWORD` and `RELEASE_KEY_PASSWORD`, so each one installs over the last. If the key is missing, a push fails instead of releasing an APK that couldn't update the installed app.
 
 ## Contributing
 
@@ -206,7 +211,6 @@ Planned work is tracked in [`docs/`](docs/):
   - budget history and multiple savings goals.
 - **[Savings plan](docs/SAVINGS_PLAN.md):** PDF and photo attachments, and charts for each savings section.
 - **[Redesign plan](docs/REDESIGN_PLAN.md):** a new app icon, plus the remaining polish.
-- **Cleanup:** remove the unused network libraries.
 
 ## License
 
